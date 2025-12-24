@@ -5,6 +5,10 @@ export interface Tag {
 	id: number;
 	name: string;
 	parent_tag_id: number | null; // For hierarchical tags
+	order: number; // For ordering tags within the same parent
+
+	created_at: Date;
+	updated_at: Date;
 }
 
 // Define your entity interface
@@ -18,6 +22,7 @@ export interface Task {
 	start: 'inbox' | 'someday' | null; // If start has value, it overrides start_date rules. Someday tasks go in someday, and inbox tasks go in inbox. Null means it follows start_date rules.
 	tags: number[]; // Array of tag IDs associated with the task.
 	checklist: { title: string; logged: boolean; logged_status: 'completed' | 'canceled' | null }[]; // Checklist items within the task.
+	order: number; // For ordering tasks within a list.
 
 	created_at: Date;
 	updated_at: Date;
@@ -31,22 +36,15 @@ export interface Task {
 	is_blocked_by: number | null; // If the task is blocked by another task, this field contains the id of that task.
 }
 
-export interface Sorting {
-	task_id: number;
-	order: number; // Lower numbers appear first
-}
-
 const db = new Dexie('ThingsDoDB') as Dexie & {
 	tasks: EntityTable<Task, 'id'>;
 	tags: EntityTable<Tag, 'id'>;
-	sortings: EntityTable<Sorting, 'task_id'>;
 };
 
 // Schema declaration:
 db.version(1).stores({
-	tasks: '++id, things_id',
-	tags: '++id, parent_tag_id',
-	sortings: 'task_id, order'
+	tasks: '++id, things_id, order',
+	tags: '++id, parent_tag_id, order'
 });
 
 export { db };

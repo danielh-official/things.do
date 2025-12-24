@@ -15,20 +15,9 @@
 
 		window.addEventListener('keydown', processKeydownEvent);
 
-		const sortings = await db.sortings.toArray();
-
 		const allTasks = await db.tasks.toArray();
 
-		tasks = allTasks
-			.filter((task) => task.start === 'inbox')
-			.map((task) => {
-				const sorting = sortings.find((s) => s.task_id === task.id);
-				return {
-					...task,
-					order: sorting ? sorting.order : Number.MAX_SAFE_INTEGER
-				};
-			})
-			.sort((a, b) => a.order - b.order);
+		tasks = allTasks.filter((task) => task.start === 'inbox').sort((a, b) => a.order - b.order);
 	});
 
 	function addTask(event: KeyboardEvent) {
@@ -48,7 +37,8 @@
 				is_blocked_by: null,
 				checklist: [],
 				logged_at: null,
-				logged_status: null
+				logged_status: null,
+				order: tasks.length > 0 ? Math.max(...tasks.map((t) => t.order)) + 1 : 1
 			});
 
 			input.value = '';
