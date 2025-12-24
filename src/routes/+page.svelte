@@ -201,104 +201,106 @@
 				onfocus={() => (addingNewTask = true)}
 				onblur={() => (addingNewTask = false)}
 			/>
-			<ul class="mt-4 space-y-2">
-				{#each $tasks as task (task.id)}
-					{#if openedTask && openedTask.id === task.id}
-						<li
-							class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
-							data-id={task.id}
-							use:clickOutside
-							onoutsideclick={() => (openedTask = null)}
-						>
-							<input
-								type="text"
-								class="mb-2 w-full rounded border border-gray-300 p-2"
-								bind:value={openedTask.title}
-								placeholder="New To-Do"
-								oninput={() =>
-									openedTask &&
-									saveTaskEdits(openedTask.id, {
-										title: openedTask.title
-									})}
-							/>
-							<textarea
-								class="mb-2 w-full rounded border border-gray-300 p-2"
-								placeholder="Notes"
-								rows="4"
-								bind:value={openedTask.notes}
-								oninput={() =>
-									openedTask &&
-									saveTaskEdits(openedTask.id, {
-										notes: openedTask.notes
-									})}
-							></textarea>
-							<div class="flex justify-between">
-								<div>
-									<button
-										class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-									>
-										<CalendarMonthSolid class="h-6 w-6 shrink-0" />
-									</button>
-									{#if task.deadline}
-										<div class="mt-2 flex flex-col md:mt-0 md:flex-row md:items-center">
-											<div class="flex">
-												<button
-													class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-													onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
-												>
-													<FlagSolid class="h-6 w-6 shrink-0" />
-													<span class="ml-2 text-gray-700">
-														{task.deadline.toDateString()}
-													</span>
-												</button>
-												<div class="content-center text-sm text-gray-500">
-													{getDeadlineRelativeText(task.deadline)}
+			{#if $tasks?.length > 0}
+				<ul class="mt-4 space-y-2">
+					{#each $tasks as task (task.id)}
+						{#if openedTask && openedTask.id === task.id}
+							<li
+								class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
+								data-id={task.id}
+								use:clickOutside
+								onoutsideclick={() => (openedTask = null)}
+							>
+								<input
+									type="text"
+									class="mb-2 w-full rounded border border-gray-300 p-2"
+									bind:value={openedTask.title}
+									placeholder="New To-Do"
+									oninput={() =>
+										openedTask &&
+										saveTaskEdits(openedTask.id, {
+											title: openedTask.title
+										})}
+								/>
+								<textarea
+									class="mb-2 w-full rounded border border-gray-300 p-2"
+									placeholder="Notes"
+									rows="4"
+									bind:value={openedTask.notes}
+									oninput={() =>
+										openedTask &&
+										saveTaskEdits(openedTask.id, {
+											notes: openedTask.notes
+										})}
+								></textarea>
+								<div class="flex justify-between">
+									<div>
+										<button
+											class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
+										>
+											<CalendarMonthSolid class="h-6 w-6 shrink-0" />
+										</button>
+										{#if task.deadline}
+											<div class="mt-2 flex flex-col md:mt-0 md:flex-row md:items-center">
+												<div class="flex">
+													<button
+														class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
+														onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
+													>
+														<FlagSolid class="h-6 w-6 shrink-0" />
+														<span class="ml-2 text-gray-700">
+															{task.deadline.toDateString()}
+														</span>
+													</button>
+													<div class="content-center text-sm text-gray-500">
+														{getDeadlineRelativeText(task.deadline)}
+													</div>
 												</div>
+												{#if editingDeadlineForTaskId === openedTask.id}
+													<input
+														type="date"
+														class="ml-4 rounded border border-gray-300 p-2"
+														value={openedTask.deadline?.toISOString().split('T')[0]}
+														onchange={setDeadlineForTask}
+													/>
+												{/if}
 											</div>
-											{#if editingDeadlineForTaskId === openedTask.id}
-												<input
-													type="date"
-													class="ml-4 rounded border border-gray-300 p-2"
-													value={openedTask.deadline?.toISOString().split('T')[0]}
-													onchange={setDeadlineForTask}
-												/>
-											{/if}
-										</div>
+										{/if}
+									</div>
+									{#if !task.deadline}
+										<button
+											class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
+											onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
+										>
+											<FlagSolid class="h-6 w-6 shrink-0" />
+										</button>
+										{#if editingDeadlineForTaskId === openedTask.id}
+											<input
+												type="date"
+												class="ml-4 rounded border border-gray-300 p-2"
+												value={openedTask.deadline?.toISOString().split('T')[0]}
+												onchange={setDeadlineForTask}
+											/>
+										{/if}
 									{/if}
 								</div>
-								{#if !task.deadline}
-									<button
-										class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-										onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
-									>
-										<FlagSolid class="h-6 w-6 shrink-0" />
-									</button>
-									{#if editingDeadlineForTaskId === openedTask.id}
-										<input
-											type="date"
-											class="ml-4 rounded border border-gray-300 p-2"
-											value={openedTask.deadline?.toISOString().split('T')[0]}
-											onchange={setDeadlineForTask}
-										/>
-									{/if}
-								{/if}
+							</li>
+						{:else}
+							<div class="flex items-center" data-id={task.id}>
+								<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->
+								<button
+									class="w-full cursor-pointer rounded bg-white p-2 text-left hover:bg-gray-50"
+									ondblclick={openTask}
+									data-id={task.id}
+									onclick={highlightTask}
+								>
+									{task.title}
+								</button>
 							</div>
-						</li>
-					{:else}
-						<div class="flex items-center" data-id={task.id}>
-							<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->
-							<button
-								class="w-full cursor-pointer rounded bg-white p-2 text-left hover:bg-gray-50"
-								ondblclick={openTask}
-								data-id={task.id}
-								onclick={highlightTask}
-							>
-								{task.title}
-							</button>
-						</div>
-					{/if}
-				{/each}
-			</ul>
+						{/if}
+					{/each}
+				</ul>
+			{/if}
 		</div>
 	{/if}
 </div>
