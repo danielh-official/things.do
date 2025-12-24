@@ -86,6 +86,20 @@
 			closeOpenedTask();
 			return;
 		}
+
+		if (event.key === 'Backspace' && highlightedTasks.size > 0) {
+			deleteHighlightedTasks();
+			return;
+		}
+	}
+
+	async function deleteHighlightedTasks() {
+		highlightedTasks.forEach(async (taskId) => {
+			await db.tasks.delete(taskId);
+		});
+		const allTasks = await db.tasks.toArray();
+		tasks = allTasks.filter((task) => task.start === 'inbox').sort((a, b) => a.order - b.order);
+		clearHighlightsForAllTasks();
 	}
 
 	function saveTaskEdits(
@@ -317,25 +331,12 @@
 			<!-- Box for showing options for showing controls for selected tasks. -->
 			{#if highlightedTasks.size > 0}
 				<div
-					class="fixed bottom-4 left-1/2 flex flex-col gap-y-4 -translate-x-1/2 transform space-x-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
+					class="fixed bottom-4 left-1/2 flex -translate-x-1/2 transform flex-col space-x-4 gap-y-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
 				>
 					<p>{highlightedTasks.size} task(s) selected</p>
 					<button
 						class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-						onclick={async () => {
-							if (!confirm('Are you sure you want to delete the selected tasks?')) {
-								return;
-							}
-
-							highlightedTasks.forEach(async (taskId) => {
-								await db.tasks.delete(taskId);
-							});
-							const allTasks = await db.tasks.toArray();
-							tasks = allTasks
-								.filter((task) => task.start === 'inbox')
-								.sort((a, b) => a.order - b.order);
-							clearHighlightsForAllTasks();
-						}}>Delete Selected</button
+						onclick={deleteHighlightedTasks}>Delete Selected</button
 					>
 				</div>
 			{/if}
