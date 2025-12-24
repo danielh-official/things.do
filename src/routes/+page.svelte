@@ -175,6 +175,8 @@
 	}
 
 	let highlightedTasks = $state<Set<number>>(new Set());
+	let draggingTaskId = $state<number | null>(null);
+	let dragOverTaskId = $state<number | null>(null);
 
 	function highlightTask(event: MouseEvent) {
 		const button = event.currentTarget as HTMLButtonElement;
@@ -197,6 +199,62 @@
 		}
 
 		highlightedTasks = newHighlightedTasks;
+	}
+
+	function handleDragStart(event: DragEvent, taskId: number) {
+		draggingTaskId = taskId;
+		event.dataTransfer?.setData('text/plain', String(taskId));
+	}
+
+	function handleDragOver(event: DragEvent, taskId: number) {
+		event.preventDefault();
+		dragOverTaskId = taskId;
+	}
+
+	async function handleDrop(event: DragEvent, targetTaskId: number) {
+		event.preventDefault();
+
+		const sourceId =
+			draggingTaskId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
+		if (!sourceId || sourceId === targetTaskId) {
+			resetDragState();
+			return;
+		}
+
+		const currentTasks = [...tasks];
+		const fromIndex = currentTasks.findIndex((task) => task.id === sourceId);
+		const toIndex = currentTasks.findIndex((task) => task.id === targetTaskId);
+
+		if (fromIndex === -1 || toIndex === -1) {
+			resetDragState();
+			return;
+		}
+
+		const [movedTask] = currentTasks.splice(fromIndex, 1);
+		currentTasks.splice(toIndex, 0, movedTask);
+
+		tasks = currentTasks;
+
+		await Promise.all(
+			currentTasks.map((task, index) => {
+				if (task.id == null) return Promise.resolve();
+				return db.tasks.update(task.id, {
+					order: index + 1,
+					updated_at: new Date()
+				});
+			})
+		);
+
+		resetDragState();
+	}
+
+	function handleDragEnd() {
+		resetDragState();
+	}
+
+	function resetDragState() {
+		draggingTaskId = null;
+		dragOverTaskId = null;
 	}
 
 	function clearHighlightsForAllTasks() {
@@ -319,7 +377,17 @@
 								</div>
 							</li>
 						{:else}
-							<div class="flex items-center" data-id={task.id}>
+							<div
+								class="flex items-center"
+								data-id={task.id}
+								role="button"
+								tabindex="0"
+								draggable="true"
+								ondragstart={(event) => handleDragStart(event, task.id)}
+								ondragover={(event) => handleDragOver(event, task.id)}
+								ondrop={(event) => handleDrop(event, task.id)}
+								ondragend={handleDragEnd}
+							>
 								<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->
 								<button
 									class="w-full cursor-pointer rounded bg-white p-2 text-left hover:bg-gray-50"
