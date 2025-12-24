@@ -20,7 +20,7 @@
 		tasks = allTasks.filter((task) => task.start === 'inbox').sort((a, b) => a.order - b.order);
 	});
 
-	function addTask(event: KeyboardEvent) {
+	async function addTask(event: KeyboardEvent) {
 		const input = event.target as HTMLInputElement;
 		const task = input.value.trim();
 		if (task) {
@@ -42,6 +42,10 @@
 			});
 
 			input.value = '';
+
+			const allTasks = await db.tasks.toArray();
+
+			tasks = allTasks.filter((task) => task.start === 'inbox').sort((a, b) => a.order - b.order);
 		}
 	}
 
@@ -154,19 +158,23 @@
 		const button = event.currentTarget as HTMLButtonElement;
 		const taskId = parseInt(button.getAttribute('data-id') || '', 10);
 
-		if (highlightedTasks.has(taskId)) {
-			highlightedTasks.delete(taskId);
+		const newHighlightedTasks = new Set(highlightedTasks);
+
+		if (newHighlightedTasks.has(taskId)) {
+			newHighlightedTasks.delete(taskId);
 			button.classList.add('bg-white');
 			button.classList.add('hover:bg-gray-50');
 			button.classList.remove('bg-blue-200');
 			button.classList.remove('hover:bg-blue-300');
 		} else {
-			highlightedTasks.add(taskId);
+			newHighlightedTasks.add(taskId);
 			button.classList.remove('bg-white');
 			button.classList.remove('hover:bg-gray-50');
 			button.classList.add('bg-blue-200');
 			button.classList.add('hover:bg-blue-300');
 		}
+
+		highlightedTasks = newHighlightedTasks;
 	}
 
 	function clearHighlightsForAllTasks() {
@@ -303,6 +311,33 @@
 						{/if}
 					{/each}
 				</ul>
+			{/if}
+		</div>
+		<div>
+			<!-- Box for showing options for showing controls for selected tasks. -->
+			{#if highlightedTasks.size > 0}
+				<div
+					class="fixed bottom-4 left-1/2 flex flex-col gap-y-4 -translate-x-1/2 transform space-x-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
+				>
+					<p>{highlightedTasks.size} task(s) selected</p>
+					<button
+						class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+						onclick={async () => {
+							if (!confirm('Are you sure you want to delete the selected tasks?')) {
+								return;
+							}
+
+							highlightedTasks.forEach(async (taskId) => {
+								await db.tasks.delete(taskId);
+							});
+							const allTasks = await db.tasks.toArray();
+							tasks = allTasks
+								.filter((task) => task.start === 'inbox')
+								.sort((a, b) => a.order - b.order);
+							clearHighlightsForAllTasks();
+						}}>Delete Selected</button
+					>
+				</div>
 			{/if}
 		</div>
 	{/if}
