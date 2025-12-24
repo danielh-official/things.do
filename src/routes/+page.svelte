@@ -1,21 +1,35 @@
 <script lang="ts">
 	import { db, type Task } from '$lib/db';
-	import { liveQuery } from 'dexie';
 	import { onMount } from 'svelte';
 	import { CalendarMonthSolid, FlagSolid } from 'flowbite-svelte-icons';
 	import { clickOutside } from '$lib';
 
 	let loading = $state(true);
 
-	onMount(() => {
+	let tasks = $state<Task[]>([]);
+
+	onMount(async () => {
 		setTimeout(() => {
 			loading = false;
 		}, 500);
 
 		window.addEventListener('keydown', processKeydownEvent);
-	});
 
-	const tasks = liveQuery(() => db.tasks.toArray());
+		const sortings = await db.sortings.toArray();
+
+		const allTasks = await db.tasks.toArray();
+
+		tasks = allTasks
+			.filter((task) => task.start === 'inbox')
+			.map((task) => {
+				const sorting = sortings.find((s) => s.task_id === task.id);
+				return {
+					...task,
+					order: sorting ? sorting.order : Number.MAX_SAFE_INTEGER
+				};
+			})
+			.sort((a, b) => a.order - b.order);
+	});
 
 	function addTask(event: KeyboardEvent) {
 		const input = event.target as HTMLInputElement;
@@ -49,9 +63,8 @@
 		const li = event.currentTarget as HTMLLIElement;
 
 		openedTask =
-			$tasks.filter(
-				(task: Task) => task.id === parseInt(li.getAttribute('data-id') || '', 10)
-			)[0] || null;
+			tasks.filter((task: Task) => task.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
+			null;
 	}
 
 	function closeOpenedTask() {
@@ -169,7 +182,7 @@
 	function clearHighlightsForAllTasks() {
 		highlightedTasks = new Set();
 
-		$tasks.forEach((task: Task) => {
+		tasks.forEach((task: Task) => {
 			const taskId = task.id;
 
 			const button = document.querySelector(`button[data-id='${taskId}']`) as HTMLButtonElement;
@@ -201,9 +214,9 @@
 				onfocus={() => (addingNewTask = true)}
 				onblur={() => (addingNewTask = false)}
 			/>
-			{#if $tasks?.length > 0}
+			{#if tasks?.length > 0}
 				<ul class="mt-4 space-y-2">
-					{#each $tasks as task (task.id)}
+					{#each tasks as task (task.id)}
 						{#if openedTask && openedTask.id === task.id}
 							<li
 								class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
