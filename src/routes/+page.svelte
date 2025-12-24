@@ -324,7 +324,8 @@
 											notes: openedTask.notes
 										})}
 								></textarea>
-								<div class="flex justify-between">
+                                <!-- TODO: Make sure the start date, deadline, tags, and checklist buttons show up on the right when empty state for each. -->
+								<div class="flex justify-content-right">
 									<div>
 										<button
 											class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
@@ -390,19 +391,24 @@
 							>
 								<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->
 								<button
-									class="w-full cursor-pointer rounded bg-white p-2 text-left hover:bg-gray-50 flex justify-between"
+									class="flex w-full cursor-pointer justify-between rounded bg-white p-2 text-left hover:bg-gray-50"
 									ondblclick={openTask}
 									data-id={task.id}
 									onclick={highlightTask}
 								>
-									{task.title}
-                                    <div>
-                                        {#if task.deadline}
-                                            <span class="text-sm text-gray-500">
-                                                {getDeadlineRelativeText(task.deadline)}
-                                            </span>
-                                        {/if}
-                                    </div>
+									<div>
+										{task.title}
+										{#if task.notes.length > 0}
+											<span class="ml-2 text-gray-400">📝</span>
+										{/if}
+									</div>
+									<div>
+										{#if task.deadline}
+											<span class="text-sm text-gray-500">
+												{getDeadlineRelativeText(task.deadline)}
+											</span>
+										{/if}
+									</div>
 								</button>
 							</div>
 						{/if}
