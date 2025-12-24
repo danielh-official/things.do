@@ -390,12 +390,19 @@
 							>
 								<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->
 								<button
-									class="w-full cursor-pointer rounded bg-white p-2 text-left hover:bg-gray-50"
+									class="w-full cursor-pointer rounded bg-white p-2 text-left hover:bg-gray-50 flex justify-between"
 									ondblclick={openTask}
 									data-id={task.id}
 									onclick={highlightTask}
 								>
 									{task.title}
+                                    <div>
+                                        {#if task.deadline}
+                                            <span class="text-sm text-gray-500">
+                                                {getDeadlineRelativeText(task.deadline)}
+                                            </span>
+                                        {/if}
+                                    </div>
 								</button>
 							</div>
 						{/if}
