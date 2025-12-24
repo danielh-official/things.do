@@ -12,35 +12,33 @@
 			loading = false;
 		}, 500);
 
-		window.addEventListener('keydown', closeOpenedTask);
+		window.addEventListener('keydown', processKeydownEvent);
 	});
 
 	const tasks = liveQuery(() => db.tasks.toArray());
 
 	function addTask(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			const input = event.target as HTMLInputElement;
-			const task = input.value.trim();
-			if (task) {
-				db.tasks.add({
-					things_id: null,
-					title: task,
-					notes: '',
-					start_date: null,
-					deadline: null,
-					start: 'inbox',
-					order: 0,
-					tags: [],
-					created_at: new Date(),
-					updated_at: new Date(),
-					is_blocked_by: null,
-					checklist: [],
-					logged_at: null,
-					logged_status: null
-				});
+		const input = event.target as HTMLInputElement;
+		const task = input.value.trim();
+		if (task) {
+			db.tasks.add({
+				things_id: null,
+				title: task,
+				notes: '',
+				start_date: null,
+				deadline: null,
+				start: 'inbox',
+				order: 0,
+				tags: [],
+				created_at: new Date(),
+				updated_at: new Date(),
+				is_blocked_by: null,
+				checklist: [],
+				logged_at: null,
+				logged_status: null
+			});
 
-				input.value = '';
-			}
+			input.value = '';
 		}
 	}
 
@@ -57,9 +55,30 @@
 			)[0] || null;
 	}
 
-	function closeOpenedTask(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
-			openedTask = null;
+	function closeOpenedTask() {
+		openedTask = null;
+	}
+
+	let addingNewTask = $state(false);
+
+	function processKeydownEvent(event: KeyboardEvent) {
+		if (event.code === 'Enter' && addingNewTask) {
+			addTask(event);
+			return;
+		}
+
+		if (event.code === 'Space' && !openedTask && !addingNewTask) {
+			const input = document.querySelector('input#new-task-input') as HTMLInputElement;
+			if (input) {
+				event.preventDefault();
+				input.focus();
+			}
+			return;
+		}
+
+		if (event.key === 'Escape' && openedTask) {
+			closeOpenedTask();
+			return;
 		}
 	}
 
@@ -178,8 +197,10 @@
 			<input
 				class="w-full rounded border border-gray-300 p-2"
 				type="text"
+				id="new-task-input"
 				placeholder="Enter task..."
-				onkeydown={addTask}
+				onfocus={() => (addingNewTask = true)}
+				onblur={() => (addingNewTask = false)}
 			/>
 			<ul class="mt-4 space-y-2">
 				{#each $tasks as task (task.id)}
