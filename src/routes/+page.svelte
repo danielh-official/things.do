@@ -94,6 +94,14 @@
 	}
 
 	async function deleteHighlightedTasks() {
+		if (
+			!confirm(
+				`Are you sure you want to delete ${highlightedTasks.size} selected task(s)? This action cannot be undone.`
+			)
+		) {
+			return;
+		}
+
 		highlightedTasks.forEach(async (taskId) => {
 			await db.tasks.delete(taskId);
 		});
