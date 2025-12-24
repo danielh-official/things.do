@@ -28,7 +28,7 @@
 				start_date: null,
 				deadline: null,
 				start: 'inbox',
-				order: 0,
+				order: ($tasks.length > 0 ? Math.max(...$tasks.map((t: Task) => t.order)) : 0) + 1,
 				tags: [],
 				created_at: new Date(),
 				updated_at: new Date(),
