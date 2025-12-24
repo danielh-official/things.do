@@ -16,7 +16,6 @@ export interface Task {
 	start_date: Date | null; // If start date is today, shows in today. If start date is upcoming, shows in upcoming. If no start date, shows in anytime.
 	deadline: Date | null;
 	start: 'inbox' | 'someday' | null; // If start has value, it overrides start_date rules. Someday tasks go in someday, and inbox tasks go in inbox. Null means it follows start_date rules.
-	order: number; // Order of the task in its respective list.
 	tags: number[]; // Array of tag IDs associated with the task.
 	checklist: { title: string; logged: boolean; logged_status: 'completed' | 'canceled' | null }[]; // Checklist items within the task.
 
@@ -32,15 +31,22 @@ export interface Task {
 	is_blocked_by: number | null; // If the task is blocked by another task, this field contains the id of that task.
 }
 
+export interface Sorting {
+	task_id: number;
+	order: number; // Lower numbers appear first
+}
+
 const db = new Dexie('ThingsDoDB') as Dexie & {
 	tasks: EntityTable<Task, 'id'>;
 	tags: EntityTable<Tag, 'id'>;
+	sortings: EntityTable<Sorting, 'task_id'>;
 };
 
 // Schema declaration:
 db.version(1).stores({
 	tasks: '++id, things_id',
-	tags: '++id, parent_tag_id'
+	tags: '++id, parent_tag_id',
+	sortings: 'task_id, order'
 });
 
 export { db };
