@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { db, type Item, type LogStatus } from '$lib/db';
-	import { CalendarMonthSolid, CheckSolid, XmarkSolid } from 'flowbite-svelte-icons';
+	import { CalendarMonthSolid, CheckCircleSolid, XSolid } from 'flowbite-svelte-icons';
 	import { clickOutside } from '$lib';
 	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
-	import { SvelteDate } from 'svelte/reactivity';
 
 	let {
 		task = $bindable(),
@@ -41,22 +40,32 @@
 	let editingDeadlineForTaskId: number | null = $state(null);
 	let pendingRemovalTaskId: number | null = $state(null);
 
-	function cycleTaskStatus(id: number) {
+	function cycleTaskStatus(event: MouseEvent, id: number) {
+		event.stopPropagation();
 		const currentStatus: LogStatus = task.logged_status as LogStatus;
 		let newStatus: LogStatus;
-		let newLoggedAt: SvelteDate | null = null;
+		let newLoggedAt: Date | null = null;
 
 		if (!currentStatus) {
 			newStatus = 'completed';
-			newLoggedAt = new SvelteDate();
+			newLoggedAt = new Date();
 		} else if (currentStatus === 'completed') {
 			newStatus = 'canceled';
-			newLoggedAt = new SvelteDate();
+			newLoggedAt = new Date();
 		} else {
 			newStatus = null;
 			newLoggedAt = null;
 		}
 
+		// Update local task object for reactive UI by creating a new object
+		task = {
+			...task,
+			logged_status: newStatus,
+			logged_at: newLoggedAt,
+			updated_at: new Date()
+		};
+
+		// Update database
 		db.items.update(id, {
 			logged_status: newStatus,
 			logged_at: newLoggedAt,
@@ -156,7 +165,21 @@
 		ondrop={(event: DragEvent) => handleDrop(event, task.id)}
 		ondragend={handleDragEnd}
 	>
-		<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open). Use the cycleTaskStatus function and the CheckSolid, XmarkSolid icons. -->
+		<!-- Status button with cycling functionality -->
+		<button
+			class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center"
+			onclick={(event: MouseEvent) => cycleTaskStatus(event, task.id)}
+		>
+			{#if task.logged_status === 'completed'}
+				<CheckCircleSolid class="h-6 w-6 text-green-600" />
+			{:else if task.logged_status === 'canceled'}
+				<div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-600">
+					<XSolid class="h-3 w-3 text-red-600" />
+				</div>
+			{:else}
+				<div class="h-6 w-6 rounded-full border-2 border-gray-400"></div>
+			{/if}
+		</button>
 
 		<button
 			class="flex w-full cursor-pointer justify-between rounded bg-white p-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
