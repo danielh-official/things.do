@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { db, type Item, type LogStatus } from '$lib/db';
-	import { CalendarMonthSolid, CheckCircleSolid, XSolid } from 'flowbite-svelte-icons';
+	import { CheckCircleSolid, XSolid } from 'flowbite-svelte-icons';
 	import { clickOutside } from '$lib';
 	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
 	import { SvelteDate } from 'svelte/reactivity';
+	import StartDateInputComponent from './StartDateInputComponent.svelte';
 
 	let {
 		task = $bindable(),
@@ -108,6 +109,8 @@
 			return `${-dayDiff} days ago`;
 		}
 	}
+
+	let editingStartDateForTaskId: number | null = $state(null);
 </script>
 
 {#if openedTask && openedTask.id === task.id}
@@ -140,7 +143,12 @@
 				})}
 		></textarea>
 		<div class="flex justify-between">
-			<div class="mb-4 flex flex-col md:flex-row md:justify-between">
+			<div class="mb-4 flex flex-col md:justify-between">
+				{#if task.start_date}
+					<div class="mt-2 flex flex-col md:mt-0 md:flex-row md:items-center">
+						<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
+					</div>
+				{/if}
 				{#if task.deadline}
 					<div class="mt-2 flex flex-col md:mt-0 md:flex-row md:items-center">
 						<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
@@ -148,11 +156,9 @@
 				{/if}
 			</div>
 			<div class="flex justify-end space-x-4">
-				<div>
-					<button class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600">
-						<CalendarMonthSolid class="h-6 w-6 shrink-0" />
-					</button>
-				</div>
+				{#if !task.start_date}
+					<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
+				{/if}
 				{#if !task.deadline}
 					<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
 				{/if}
