@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { db, type Task } from '$lib/db';
 	import { onMount } from 'svelte';
-	import { CalendarMonthSolid, FlagSolid } from 'flowbite-svelte-icons';
-	import { clickOutside } from '$lib';
+	import TaskComponent from '$lib/components/TaskComponent.svelte';
 
 	let loading = $state(true);
 
@@ -110,19 +109,6 @@
 		clearHighlightsForAllTasks();
 	}
 
-	function saveTaskEdits(
-		taskId: number,
-		task: {
-			title?: string;
-			notes?: string;
-		}
-	) {
-		db.tasks.update(taskId, {
-			...task,
-			updated_at: new Date()
-		});
-	}
-
 	let editingDeadlineForTaskId: number | null = $state(null);
 
 	function toggleDeadlinePickerForTask(taskId: number) {
@@ -134,49 +120,8 @@
 		editingDeadlineForTaskId = taskId;
 	}
 
-	function setDeadlineForTask(event: Event) {
-		const dateValue = (event.target as HTMLInputElement).value;
-
-		// Set to UTC timezone
-		const selectedDate = dateValue ? new Date(dateValue + 'T23:59:59Z') : null;
-
-		if (openedTask) {
-			// Make sure the deadline is saved with time set to 00:00:00
-			if (selectedDate) {
-				selectedDate.setHours(0, 0, 0, 0);
-			}
-
-			db.tasks.update(openedTask.id, {
-				deadline: selectedDate,
-				updated_at: new Date()
-			});
-
-			openedTask.deadline = selectedDate;
-		}
-		editingDeadlineForTaskId = null;
-	}
-
-	function getDeadlineRelativeText(deadline: Date | null): string {
-		if (!deadline) return '';
-
-		const now = new Date();
-		const timeDiff = deadline.getTime() - now.getTime();
-		const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-		if (dayDiff === 0) {
-			return 'today';
-		} else if (dayDiff >= 1) {
-			return `${dayDiff} days left`;
-		} else if (dayDiff === -1) {
-			return '1 day ago';
-		} else {
-			return `${-dayDiff} days ago`;
-		}
-	}
-
 	let highlightedTasks = $state<Set<number>>(new Set());
 	let draggingTaskId = $state<number | null>(null);
-	let dragOverTaskId = $state<number | null>(null);
 
 	function highlightTask(event: MouseEvent) {
 		const button = event.currentTarget as HTMLButtonElement;
@@ -208,7 +153,6 @@
 
 	function handleDragOver(event: DragEvent, taskId: number) {
 		event.preventDefault();
-		dragOverTaskId = taskId;
 	}
 
 	async function handleDrop(event: DragEvent, targetTaskId: number) {
@@ -254,7 +198,6 @@
 
 	function resetDragState() {
 		draggingTaskId = null;
-		dragOverTaskId = null;
 	}
 
 	function clearHighlightsForAllTasks() {
@@ -295,123 +238,16 @@
 			{#if tasks?.length > 0}
 				<ul class="mt-4 space-y-2">
 					{#each tasks as task (task.id)}
-						{#if openedTask && openedTask.id === task.id}
-							<li
-								class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
-								data-id={task.id}
-								use:clickOutside
-								onoutsideclick={() => (openedTask = null)}
-							>
-								<input
-									type="text"
-									class="mb-2 w-full rounded border border-gray-300 p-2"
-									bind:value={openedTask.title}
-									placeholder="New To-Do"
-									oninput={() =>
-										openedTask &&
-										saveTaskEdits(openedTask.id, {
-											title: openedTask.title
-										})}
-								/>
-								<textarea
-									class="mb-2 w-full rounded border border-gray-300 p-2"
-									placeholder="Notes"
-									rows="4"
-									bind:value={openedTask.notes}
-									oninput={() =>
-										openedTask &&
-										saveTaskEdits(openedTask.id, {
-											notes: openedTask.notes
-										})}
-								></textarea>
-                                <!-- TODO: Make sure the start date, deadline, tags, and checklist buttons show up on the right when empty state for each. -->
-								<div class="flex justify-content-right">
-									<div>
-										<button
-											class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-										>
-											<CalendarMonthSolid class="h-6 w-6 shrink-0" />
-										</button>
-										{#if task.deadline}
-											<div class="mt-2 flex flex-col md:mt-0 md:flex-row md:items-center">
-												<div class="flex">
-													<button
-														class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-														onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
-													>
-														<FlagSolid class="h-6 w-6 shrink-0" />
-														<span class="ml-2 text-gray-700">
-															{task.deadline.toDateString()}
-														</span>
-													</button>
-													<div class="content-center text-sm text-gray-500">
-														{getDeadlineRelativeText(task.deadline)}
-													</div>
-												</div>
-												{#if editingDeadlineForTaskId === openedTask.id}
-													<input
-														type="date"
-														class="ml-4 rounded border border-gray-300 p-2"
-														value={openedTask.deadline?.toISOString().split('T')[0]}
-														onchange={setDeadlineForTask}
-													/>
-												{/if}
-											</div>
-										{/if}
-									</div>
-									{#if !task.deadline}
-										<button
-											class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-											onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
-										>
-											<FlagSolid class="h-6 w-6 shrink-0" />
-										</button>
-										{#if editingDeadlineForTaskId === openedTask.id}
-											<input
-												type="date"
-												class="ml-4 rounded border border-gray-300 p-2"
-												value={openedTask.deadline?.toISOString().split('T')[0]}
-												onchange={setDeadlineForTask}
-											/>
-										{/if}
-									{/if}
-								</div>
-							</li>
-						{:else}
-							<div
-								class="flex items-center"
-								data-id={task.id}
-								role="button"
-								tabindex="0"
-								draggable="true"
-								ondragstart={(event) => handleDragStart(event, task.id)}
-								ondragover={(event) => handleDragOver(event, task.id)}
-								ondrop={(event) => handleDrop(event, task.id)}
-								ondragend={handleDragEnd}
-							>
-								<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->
-								<button
-									class="flex w-full cursor-pointer justify-between rounded bg-white p-2 text-left hover:bg-gray-50"
-									ondblclick={openTask}
-									data-id={task.id}
-									onclick={highlightTask}
-								>
-									<div>
-										{task.title}
-										{#if task.notes.length > 0}
-											<span class="ml-2 text-gray-400">📝</span>
-										{/if}
-									</div>
-									<div>
-										{#if task.deadline}
-											<span class="text-sm text-gray-500">
-												{getDeadlineRelativeText(task.deadline)}
-											</span>
-										{/if}
-									</div>
-								</button>
-							</div>
-						{/if}
+						<TaskComponent
+							{task}
+							bind:openedTask
+							{openTask}
+							{highlightTask}
+							handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
+							handleDragOver={(event: DragEvent) => handleDragOver(event, task.id!)}
+							handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
+							{handleDragEnd}
+						/>
 					{/each}
 				</ul>
 			{/if}
@@ -423,10 +259,20 @@
 					class="fixed bottom-4 left-1/2 flex -translate-x-1/2 transform flex-col space-x-4 gap-y-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
 				>
 					<p>{highlightedTasks.size} task(s) selected</p>
-					<button
-						class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-						onclick={deleteHighlightedTasks}>Delete Selected</button
-					>
+					<div class="flex space-x-4">
+						<button
+							class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+							onclick={deleteHighlightedTasks}
+						>
+							Delete Selected Tasks
+						</button>
+						<button
+							class="cursor-pointer rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+							onclick={clearHighlightsForAllTasks}
+						>
+							Clear Selected
+						</button>
+					</div>
 				</div>
 			{/if}
 		</div>
