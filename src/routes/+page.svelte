@@ -2,7 +2,7 @@
 	import { db, type Item as Task } from '$lib/db';
 	import { onMount } from 'svelte';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 
 	let loading = $state(true);
 
@@ -15,10 +15,30 @@
 
 		window.addEventListener('keydown', processKeydownEvent);
 
+		await updateItemsState();
+	});
+
+	async function updateItemsState() {
 		const allItems = await db.items.toArray();
 
-		items = allItems.filter((item) => item.start === 'inbox').sort((a, b) => a.order - b.order);
-	});
+		items = allItems
+			.filter((item) => {
+				if (item.start !== 'inbox') {
+					return false;
+				}
+
+				if (item.logged_at !== null) {
+					return false;
+				}
+
+				if (!!item.start_date) {
+					return false;
+				}
+
+				return true;
+			})
+			.sort((a, b) => a.order - b.order);
+	}
 
 	async function addTask(event: KeyboardEvent) {
 		const input = event.target as HTMLInputElement;
@@ -32,8 +52,8 @@
 				deadline: null,
 				start: 'inbox',
 				tags: [],
-				created_at: new Date(),
-				updated_at: new Date(),
+				created_at: new SvelteDate(),
+				updated_at: new SvelteDate(),
 				is_blocked_by: null,
 				checklist: [],
 				logged_at: null,
@@ -43,9 +63,7 @@
 
 			input.value = '';
 
-			const allItems = await db.items.toArray();
-
-			items = allItems.filter((item) => item.start === 'inbox').sort((a, b) => a.order - b.order);
+			updateItemsState();
 		}
 	}
 
@@ -105,8 +123,7 @@
 		highlightedTasks.forEach(async (taskId) => {
 			await db.items.delete(taskId);
 		});
-		const allItems = await db.items.toArray();
-		items = allItems.filter((item) => item.start === 'inbox').sort((a, b) => a.order - b.order);
+		updateItemsState();
 		clearHighlightsForAllTasks();
 	}
 
@@ -174,7 +191,7 @@
 				if (task.id == null) return Promise.resolve();
 				return db.items.update(task.id, {
 					order: index + 1,
-					updated_at: new Date()
+					updated_at: new SvelteDate()
 				});
 			})
 		);
@@ -205,6 +222,10 @@
 			}
 		});
 		highlightedTasks.clear();
+	}
+
+	function loggedStatusChanged() {
+		updateItemsState();
 	}
 </script>
 
@@ -237,6 +258,7 @@
 							handleDragOver={(event: DragEvent) => handleDragOver(event)}
 							handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
 							{handleDragEnd}
+							{loggedStatusChanged}
 						/>
 					{/each}
 				</ul>

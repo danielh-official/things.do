@@ -13,7 +13,8 @@
 		handleDrop,
 		handleDragEnd,
 		openTask,
-		highlightTask
+		highlightTask,
+		loggedStatusChanged
 	}: {
 		task: Item;
 		openedTask: Item | null;
@@ -23,6 +24,7 @@
 		handleDragEnd: (event: DragEvent) => void;
 		openTask: (event: MouseEvent) => void;
 		highlightTask: (event: MouseEvent) => void;
+		loggedStatusChanged: () => void;
 	} = $props();
 
 	function saveTaskEdits(
@@ -44,7 +46,7 @@
 	function cycleTaskStatus(id: number) {
 		const currentStatus: LogStatus = task.logged_status as LogStatus;
 		let newStatus: LogStatus;
-		let newLoggedAt: Date | null = null;
+		let newLoggedAt: SvelteDate | null = null;
 
 		if (!currentStatus) {
 			newStatus = 'completed';
@@ -78,16 +80,21 @@
 				if (pendingRemovalTaskId === id) {
 					pendingRemovalTaskId = null;
 				}
-			}, 3000);
+
+				loggedStatusChanged();
+			}, 2000);
 		} else if (newStatus === null) {
 			pendingRemovalTaskId = null;
+            setTimeout(() => {
+				loggedStatusChanged();
+			}, 2000);
 		}
 	}
 
-	function getDeadlineRelativeText(deadline: Date | null): string {
+	function getDeadlineRelativeText(deadline: SvelteDate | null): string {
 		if (!deadline) return '';
 
-		const now = new Date();
+		const now = new SvelteDate();
 		const timeDiff = deadline.getTime() - now.getTime();
 		const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
