@@ -27,7 +27,7 @@
 					return false;
 				}
 
-				if (item.logged_at !== null) {
+				if (item.logged_at !== null && item.logged_status !== null) {
 					return false;
 				}
 
@@ -55,7 +55,7 @@
 				created_at: new SvelteDate(),
 				updated_at: new SvelteDate(),
 				blocked_by: [],
-                evening: false,
+				evening: false,
 				checklist: [],
 				logged_at: null,
 				logged_status: null,
