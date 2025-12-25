@@ -21,6 +21,8 @@ export interface Item {
 	title: string;
 	notes: string;
 	start_date: SvelteDate | null; // If start date is today, shows in today. If start date is upcoming, shows in upcoming. If no start date, shows in anytime.
+	evening: boolean; // If true, the item would show under "This Evening" section in Today view.
+	// TODO: A possible addition to Things functionality could be to let it show for This Evening in other start dates as well.
 	deadline: SvelteDate | null;
 	start: 'inbox' | 'someday' | null; // If start has value, it overrides start_date rules. Someday tasks go in someday, and inbox tasks go in inbox. Null means it follows start_date rules.
 	tags: number[]; // Array of tag IDs associated with the task.
@@ -34,9 +36,7 @@ export interface Item {
 	logged_at: SvelteDate | null;
 	logged_status: LogStatus; // If logged_at is not null, this field indicates whether the task was completed or canceled.
 
-	// Below this are properties that aren't native to Things app, but are used for additional functionality.
-
-	is_blocked_by: number | null; // If the task is blocked by another task, this field contains the id of that task.
+	blocked_by: Array<number>; // Array of item IDs that block this task. This functionality is not native to Things 3.
 }
 
 const db = new Dexie('ThingsDoDB') as Dexie & {
