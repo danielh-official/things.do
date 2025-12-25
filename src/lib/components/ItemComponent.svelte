@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { db, type Item } from '$lib/db';
-	import { CalendarMonthSolid } from 'flowbite-svelte-icons';
+	import { db, type Item, type LogStatus } from '$lib/db';
+	import { CalendarMonthSolid, CheckSolid, XmarkSolid } from 'flowbite-svelte-icons';
 	import { clickOutside } from '$lib';
 	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	let {
 		task = $bindable(),
@@ -38,6 +39,42 @@
 	}
 
 	let editingDeadlineForTaskId: number | null = $state(null);
+	let pendingRemovalTaskId: number | null = $state(null);
+
+	function cycleTaskStatus(id: number) {
+		const currentStatus: LogStatus = task.logged_status as LogStatus;
+		let newStatus: LogStatus;
+		let newLoggedAt: SvelteDate | null = null;
+
+		if (!currentStatus) {
+			newStatus = 'completed';
+			newLoggedAt = new SvelteDate();
+		} else if (currentStatus === 'completed') {
+			newStatus = 'canceled';
+			newLoggedAt = new SvelteDate();
+		} else {
+			newStatus = null;
+			newLoggedAt = null;
+		}
+
+		db.items.update(id, {
+			logged_status: newStatus,
+			logged_at: newLoggedAt,
+			updated_at: new Date()
+		});
+
+		// Set pending removal if transitioning to completed or cancelled
+		if ((newStatus === 'completed' || newStatus === 'canceled') && currentStatus === null) {
+			pendingRemovalTaskId = id;
+			setTimeout(() => {
+				if (pendingRemovalTaskId === id) {
+					pendingRemovalTaskId = null;
+				}
+			}, 3000);
+		} else if (newStatus === null) {
+			pendingRemovalTaskId = null;
+		}
+	}
 
 	function getDeadlineRelativeText(deadline: Date | null): string {
 		if (!deadline) return '';
@@ -119,7 +156,8 @@
 		ondrop={(event: DragEvent) => handleDrop(event, task.id)}
 		ondragend={handleDragEnd}
 	>
-		<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->
+		<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open). Use the cycleTaskStatus function and the CheckSolid, XmarkSolid icons. -->
+
 		<button
 			class="flex w-full cursor-pointer justify-between rounded bg-white p-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
 			ondblclick={openTask}

@@ -11,6 +11,8 @@ export interface Tag {
 	updated_at: Date;
 }
 
+export type LogStatus = null | 'completed' | 'canceled';
+
 // Define your entity interface
 export interface Item {
 	id: number;
@@ -21,7 +23,7 @@ export interface Item {
 	deadline: Date | null;
 	start: 'inbox' | 'someday' | null; // If start has value, it overrides start_date rules. Someday tasks go in someday, and inbox tasks go in inbox. Null means it follows start_date rules.
 	tags: number[]; // Array of tag IDs associated with the task.
-	checklist: { title: string; logged: boolean; logged_status: 'completed' | 'canceled' | null }[]; // Checklist items within the task.
+	checklist: { title: string; logged: boolean; logged_status: LogStatus }[]; // Checklist items within the task.
 	order: number; // For ordering tasks within a list.
 
 	created_at: Date;
@@ -29,7 +31,7 @@ export interface Item {
 
 	// Open tasks are not in logbook. Completed and canceled tasks are in logbook. Any task in logbook overrides rules for start_date and start. Logbook tasks are grouped by logged date.
 	logged_at: Date | null;
-	logged_status: 'completed' | 'canceled' | null; // If logged_at is not null, this field indicates whether the task was completed or canceled.
+	logged_status: LogStatus; // If logged_at is not null, this field indicates whether the task was completed or canceled.
 
 	// Below this are properties that aren't native to Things app, but are used for additional functionality.
 
