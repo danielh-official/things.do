@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { db, type Task } from '$lib/db';
+	import { db, type Item } from '$lib/db';
 	import { FlagSolid } from 'flowbite-svelte-icons';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	let {
 		openedTask = $bindable(),
 		editingDeadlineForTaskId = $bindable()
 	}: {
-		openedTask: Task | null;
+		openedTask: Item | null;
 		editingDeadlineForTaskId: number | null;
 	} = $props();
 
@@ -23,7 +24,7 @@
 		const dateValue = (event.target as HTMLInputElement).value;
 
 		// Set to UTC timezone
-		const selectedDate = dateValue ? new Date(dateValue + 'T23:59:59Z') : null;
+		const selectedDate = dateValue ? new SvelteDate(dateValue + 'T23:59:59Z') : null;
 
 		if (openedTask) {
 			// Make sure the deadline is saved with time set to 00:00:00
@@ -31,9 +32,9 @@
 				selectedDate.setHours(0, 0, 0, 0);
 			}
 
-			db.tasks.update(openedTask.id, {
+			db.items.update(openedTask.id, {
 				deadline: selectedDate,
-				updated_at: new Date()
+				updated_at: new SvelteDate()
 			});
 
 			openedTask.deadline = selectedDate;

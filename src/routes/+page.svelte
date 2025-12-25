@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { db, type Task } from '$lib/db';
+	import { db, type Item as Task } from '$lib/db';
 	import { onMount } from 'svelte';
-	import TaskComponent from '$lib/components/TaskComponent.svelte';
+	import ItemComponent from '$lib/components/ItemComponent.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let loading = $state(true);
 
-	let tasks = $state<Task[]>([]);
+	let items = $state<Task[]>([]);
 
 	onMount(async () => {
 		setTimeout(() => {
@@ -14,18 +15,18 @@
 
 		window.addEventListener('keydown', processKeydownEvent);
 
-		const allTasks = await db.tasks.toArray();
+		const allItems = await db.items.toArray();
 
-		tasks = allTasks.filter((task) => task.start === 'inbox').sort((a, b) => a.order - b.order);
+		items = allItems.filter((item) => item.start === 'inbox').sort((a, b) => a.order - b.order);
 	});
 
 	async function addTask(event: KeyboardEvent) {
 		const input = event.target as HTMLInputElement;
-		const task = input.value.trim();
-		if (task) {
-			db.tasks.add({
+		const item = input.value.trim();
+		if (item) {
+			db.items.add({
 				things_id: null,
-				title: task,
+				title: item,
 				notes: '',
 				start_date: null,
 				deadline: null,
@@ -37,14 +38,14 @@
 				checklist: [],
 				logged_at: null,
 				logged_status: null,
-				order: tasks.length > 0 ? Math.max(...tasks.map((t) => t.order)) + 1 : 1
+				order: items.length > 0 ? Math.max(...items.map((t) => t.order)) + 1 : 1
 			});
 
 			input.value = '';
 
-			const allTasks = await db.tasks.toArray();
+			const allItems = await db.items.toArray();
 
-			tasks = allTasks.filter((task) => task.start === 'inbox').sort((a, b) => a.order - b.order);
+			items = allItems.filter((item) => item.start === 'inbox').sort((a, b) => a.order - b.order);
 		}
 	}
 
@@ -56,7 +57,7 @@
 		const li = event.currentTarget as HTMLLIElement;
 
 		openedTask =
-			tasks.filter((task: Task) => task.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
+			items.filter((task: Task) => task.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
 			null;
 	}
 
@@ -102,22 +103,11 @@
 		}
 
 		highlightedTasks.forEach(async (taskId) => {
-			await db.tasks.delete(taskId);
+			await db.items.delete(taskId);
 		});
-		const allTasks = await db.tasks.toArray();
-		tasks = allTasks.filter((task) => task.start === 'inbox').sort((a, b) => a.order - b.order);
+		const allItems = await db.items.toArray();
+		items = allItems.filter((item) => item.start === 'inbox').sort((a, b) => a.order - b.order);
 		clearHighlightsForAllTasks();
-	}
-
-	let editingDeadlineForTaskId: number | null = $state(null);
-
-	function toggleDeadlinePickerForTask(taskId: number) {
-		if (editingDeadlineForTaskId === taskId) {
-			editingDeadlineForTaskId = null;
-			return;
-		}
-
-		editingDeadlineForTaskId = taskId;
 	}
 
 	let highlightedTasks = $state<Set<number>>(new Set());
@@ -127,7 +117,7 @@
 		const button = event.currentTarget as HTMLButtonElement;
 		const taskId = parseInt(button.getAttribute('data-id') || '', 10);
 
-		const newHighlightedTasks = new Set(highlightedTasks);
+		const newHighlightedTasks = new SvelteSet(highlightedTasks);
 
 		if (newHighlightedTasks.has(taskId)) {
 			newHighlightedTasks.delete(taskId);
@@ -151,7 +141,7 @@
 		event.dataTransfer?.setData('text/plain', String(taskId));
 	}
 
-	function handleDragOver(event: DragEvent, taskId: number) {
+	function handleDragOver(event: DragEvent) {
 		event.preventDefault();
 	}
 
@@ -165,7 +155,7 @@
 			return;
 		}
 
-		const currentTasks = [...tasks];
+		const currentTasks = [...items];
 		const fromIndex = currentTasks.findIndex((task) => task.id === sourceId);
 		const toIndex = currentTasks.findIndex((task) => task.id === targetTaskId);
 
@@ -177,12 +167,12 @@
 		const [movedTask] = currentTasks.splice(fromIndex, 1);
 		currentTasks.splice(toIndex, 0, movedTask);
 
-		tasks = currentTasks;
+		items = currentTasks;
 
 		await Promise.all(
 			currentTasks.map((task, index) => {
 				if (task.id == null) return Promise.resolve();
-				return db.tasks.update(task.id, {
+				return db.items.update(task.id, {
 					order: index + 1,
 					updated_at: new Date()
 				});
@@ -201,9 +191,9 @@
 	}
 
 	function clearHighlightsForAllTasks() {
-		highlightedTasks = new Set();
+		highlightedTasks = new SvelteSet();
 
-		tasks.forEach((task: Task) => {
+		items.forEach((task: Task) => {
 			const taskId = task.id;
 
 			const button = document.querySelector(`button[data-id='${taskId}']`) as HTMLButtonElement;
@@ -235,16 +225,16 @@
 				onfocus={() => (addingNewTask = true)}
 				onblur={() => (addingNewTask = false)}
 			/>
-			{#if tasks?.length > 0}
+			{#if items?.length > 0}
 				<ul class="mt-4 space-y-2">
-					{#each tasks as task (task.id)}
-						<TaskComponent
+					{#each items as task (task.id)}
+						<ItemComponent
 							{task}
 							bind:openedTask
 							{openTask}
 							{highlightTask}
 							handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
-							handleDragOver={(event: DragEvent) => handleDragOver(event, task.id!)}
+							handleDragOver={(event: DragEvent) => handleDragOver(event)}
 							handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
 							{handleDragEnd}
 						/>

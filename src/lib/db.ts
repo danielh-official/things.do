@@ -12,7 +12,7 @@ export interface Tag {
 }
 
 // Define your entity interface
-export interface Task {
+export interface Item {
 	id: number;
 	things_id: string | null; // The unique identifier from Things app.
 	title: string;
@@ -37,13 +37,13 @@ export interface Task {
 }
 
 const db = new Dexie('ThingsDoDB') as Dexie & {
-	tasks: EntityTable<Task, 'id'>;
+	items: EntityTable<Item, 'id'>;
 	tags: EntityTable<Tag, 'id'>;
 };
 
 // Schema declaration:
 db.version(1).stores({
-	tasks: '++id, things_id, order',
+	items: '++id, things_id, order',
 	tags: '++id, parent_tag_id, order'
 });
 

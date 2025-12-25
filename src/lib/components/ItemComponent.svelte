@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { db, type Task } from '$lib/db';
-	import { CalendarMonthSolid, FlagSolid } from 'flowbite-svelte-icons';
+	import { db, type Item } from '$lib/db';
+	import { CalendarMonthSolid } from 'flowbite-svelte-icons';
 	import { clickOutside } from '$lib';
 	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
 
@@ -14,10 +14,10 @@
 		openTask,
 		highlightTask
 	}: {
-		task: Task;
-		openedTask: Task | null;
+		task: Item;
+		openedTask: Item | null;
 		handleDragStart: (event: DragEvent, taskId: number) => void;
-		handleDragOver: (event: DragEvent, taskId: number) => void;
+		handleDragOver: (event: DragEvent) => void;
 		handleDrop: (event: DragEvent, taskId: number) => void;
 		handleDragEnd: (event: DragEvent) => void;
 		openTask: (event: MouseEvent) => void;
@@ -31,44 +31,13 @@
 			notes?: string;
 		}
 	) {
-		db.tasks.update(taskId, {
+		db.items.update(taskId, {
 			...task,
 			updated_at: new Date()
 		});
 	}
 
 	let editingDeadlineForTaskId: number | null = $state(null);
-
-	function toggleDeadlinePickerForTask(taskId: number) {
-		if (editingDeadlineForTaskId === taskId) {
-			editingDeadlineForTaskId = null;
-			return;
-		}
-
-		editingDeadlineForTaskId = taskId;
-	}
-
-	function setDeadlineForTask(event: Event) {
-		const dateValue = (event.target as HTMLInputElement).value;
-
-		// Set to UTC timezone
-		const selectedDate = dateValue ? new Date(dateValue + 'T23:59:59Z') : null;
-
-		if (openedTask) {
-			// Make sure the deadline is saved with time set to 00:00:00
-			if (selectedDate) {
-				selectedDate.setHours(0, 0, 0, 0);
-			}
-
-			db.tasks.update(openedTask.id, {
-				deadline: selectedDate,
-				updated_at: new Date()
-			});
-
-			openedTask.deadline = selectedDate;
-		}
-		editingDeadlineForTaskId = null;
-	}
 
 	function getDeadlineRelativeText(deadline: Date | null): string {
 		if (!deadline) return '';
@@ -145,9 +114,9 @@
 		role="button"
 		tabindex="0"
 		draggable="true"
-		ondragstart={(event) => handleDragStart(event, task.id)}
-		ondragover={(event) => handleDragOver(event, task.id)}
-		ondrop={(event) => handleDrop(event, task.id)}
+		ondragstart={(event: DragEvent) => handleDragStart(event, task.id)}
+		ondragover={(event: DragEvent) => handleDragOver(event)}
+		ondrop={(event: DragEvent) => handleDrop(event, task.id)}
 		ondragend={handleDragEnd}
 	>
 		<!-- TODO: Button with functionality where if if clicked once, shows check (completed), clicked twice shows X (cancelled), and clicked after X makes it open again (there should be a timeout from when the log is done to when the task is moved to logbook to allow the user the chance to change to cancelled or open) -->

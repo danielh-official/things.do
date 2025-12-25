@@ -10,7 +10,8 @@ declare global {
 	}
 
 	namespace svelteHTML {
-		interface HTMLAttributes<T> {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		interface HTMLAttributes<_> {
 			onoutsideclick?: (event: CustomEvent<MouseEvent>) => void;
 		}
 	}

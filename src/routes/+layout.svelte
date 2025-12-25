@@ -4,22 +4,24 @@
 	import { liveQuery } from 'dexie';
 	import { db } from '$lib/db';
 	import { page } from '$app/state';
+	import { SvelteDate } from 'svelte/reactivity';
+	import { resolve } from '$app/paths';
 
 	let { children } = $props();
 
 	let inboxTasks = liveQuery(() =>
-		db.tasks.toArray().then((allTasks) =>
-			allTasks
-				.filter((task) => {
-					if (task.start !== 'inbox') {
+		db.items.toArray().then((allItems) =>
+			allItems
+				.filter((item) => {
+					if (item.start !== 'inbox') {
 						return false;
 					}
 
-					if (task.logged_at !== null) {
+					if (item.logged_at !== null) {
 						return false;
 					}
 
-					if (task.start_date) {
+					if (item.start_date) {
 						return false;
 					}
 
@@ -34,17 +36,17 @@
 	});
 
 	let startDateTodayTasks = liveQuery(() =>
-		db.tasks.toArray().then((allTasks) => {
-			const today = new Date();
+		db.items.toArray().then((allItems) => {
+			const today = new SvelteDate();
 			today.setHours(0, 0, 0, 0);
 
-			return allTasks
-				.filter((task) => {
-					if (task.start_date === null) {
+			return allItems
+				.filter((item) => {
+					if (item.start_date === null) {
 						return false;
 					}
 
-					const taskStartDate = new Date(task.start_date);
+					const taskStartDate = new SvelteDate(item.start_date);
 					taskStartDate.setHours(0, 0, 0, 0);
 
 					return taskStartDate.getTime() === today.getTime();
@@ -58,17 +60,17 @@
 	});
 
 	let deadlineTodayTasks = liveQuery(() =>
-		db.tasks.toArray().then((allTasks) => {
-			const today = new Date();
+		db.items.toArray().then((allItems) => {
+			const today = new SvelteDate();
 			today.setHours(0, 0, 0, 0);
 
-			return allTasks
-				.filter((task) => {
-					if (task.deadline === null) {
+			return allItems
+				.filter((item) => {
+					if (item.deadline === null) {
 						return false;
 					}
 
-					const taskDeadline = new Date(task.deadline);
+					const taskDeadline = new SvelteDate(item.deadline);
 					taskDeadline.setHours(0, 0, 0, 0);
 
 					return taskDeadline.getTime() === today.getTime();
@@ -93,7 +95,7 @@
 		<ul class="space-y-2 font-medium">
 			<li class="mb-5">
 				<a
-					href={'/'}
+					href={resolve('/')}
 					class={{
 						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/'
@@ -126,7 +128,7 @@
 			</li>
 			<li>
 				<a
-					href={'/today'}
+					href={resolve('/today')}
 					class={{
 						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/today'
@@ -165,7 +167,7 @@
 			</li>
 			<li>
 				<a
-					href={'/upcoming'}
+					href={resolve('/upcoming')}
 					class={{
 						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/upcoming'
@@ -192,7 +194,7 @@
 			</li>
 			<li>
 				<a
-					href={'/anytime'}
+					href={resolve('/anytime')}
 					class={{
 						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/anytime'
@@ -219,7 +221,7 @@
 			</li>
 			<li>
 				<a
-					href={'/someday'}
+					href={resolve('/someday')}
 					class={{
 						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/someday'
@@ -246,7 +248,7 @@
 			</li>
 			<li class="mt-5">
 				<a
-					href={'/logbook'}
+					href={resolve('/logbook')}
 					class={{
 						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/logbook'
@@ -271,10 +273,10 @@
 					<span class="ms-3 flex-1 whitespace-nowrap">Logbook</span>
 				</a>
 			</li>
-            <hr class="mt-6 mb-3 border-gray-300 dark:border-gray-600" />
+			<hr class="mt-6 mb-3 border-gray-300 dark:border-gray-600" />
 			<li>
 				<a
-					href={'/deadlines'}
+					href={resolve('/deadlines')}
 					class={{
 						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/deadlines'
@@ -299,7 +301,7 @@
 					<span class="ms-3 flex-1 whitespace-nowrap">Deadlines</span>
 				</a>
 			</li>
-            <hr class="mt-3 mb-6 border-gray-300 dark:border-gray-600" />
+			<hr class="mt-3 mb-6 border-gray-300 dark:border-gray-600" />
 		</ul>
 	</div>
 </aside>
