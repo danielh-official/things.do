@@ -62,13 +62,13 @@
 			...task,
 			logged_status: newStatus,
 			logged_at: newLoggedAt,
-			updated_at: new Date()
+			updated_at: new SvelteDate()
 		};
 
 		db.items.update(id, {
 			logged_status: newStatus,
 			logged_at: newLoggedAt,
-			updated_at: new Date()
+			updated_at: new SvelteDate()
 		});
 
 		// Set pending removal if transitioning to completed or cancelled
