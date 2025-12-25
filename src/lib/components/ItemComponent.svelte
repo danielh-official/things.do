@@ -40,8 +40,7 @@
 	let editingDeadlineForTaskId: number | null = $state(null);
 	let pendingRemovalTaskId: number | null = $state(null);
 
-	function cycleTaskStatus(event: MouseEvent, id: number) {
-		event.stopPropagation();
+	function cycleTaskStatus(id: number) {
 		const currentStatus: LogStatus = task.logged_status as LogStatus;
 		let newStatus: LogStatus;
 		let newLoggedAt: Date | null = null;
@@ -57,7 +56,7 @@
 			newLoggedAt = null;
 		}
 
-		// Update local task object for reactive UI by creating a new object
+		// Update local task object for reactive UI
 		task = {
 			...task,
 			logged_status: newStatus,
@@ -65,7 +64,6 @@
 			updated_at: new Date()
 		};
 
-		// Update database
 		db.items.update(id, {
 			logged_status: newStatus,
 			logged_at: newLoggedAt,
@@ -168,7 +166,10 @@
 		<!-- Status button with cycling functionality -->
 		<button
 			class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center"
-			onclick={(event: MouseEvent) => cycleTaskStatus(event, task.id)}
+			onclick={(event: MouseEvent) => {
+				event.stopPropagation();
+				cycleTaskStatus(task.id);
+			}}
 		>
 			{#if task.logged_status === 'completed'}
 				<CheckCircleSolid class="h-6 w-6 text-green-600" />
