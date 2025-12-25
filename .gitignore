@@ -1,6 +1,9 @@
 test-results
 node_modules
 
+# Temporary files
+/tmp
+
 # Output
 .output
 .vercel
