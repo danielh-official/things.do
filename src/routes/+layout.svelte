@@ -213,7 +213,7 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							stroke-width="2"
-							d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 15h-2v-6h2Zm0-8h-2V7h2Z"
+							d="M2 6h20M2 12h20M2 18h20"
 						/></svg
 					>
 					<span class="ms-3 flex-1 whitespace-nowrap">Anytime</span>
@@ -240,7 +240,7 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							stroke-width="2"
-							d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8.009 8.009 0 0 1-8 8Zm1-13h-2v6h2Zm0 8h-2v2h2Z"
+							d="M3 5h18v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm6 7l2 2 4-4"
 						/></svg
 					>
 					<span class="ms-3 flex-1 whitespace-nowrap">Someday</span>
@@ -267,7 +267,7 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							stroke-width="2"
-							d="M3 5h18M8 9h8M4 13h16M10 17h4"
+							d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm0 0v16M10 11l2 2 4-4"
 						/></svg
 					>
 					<span class="ms-3 flex-1 whitespace-nowrap">Logbook</span>
@@ -295,7 +295,7 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							stroke-width="2"
-							d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm1 15h-2v-6h2Zm0-8h-2V7h2Z"
+							d="M5 4v16M5 5h11v6H5"
 						/></svg
 					>
 					<span class="ms-3 flex-1 whitespace-nowrap">Deadlines</span>
