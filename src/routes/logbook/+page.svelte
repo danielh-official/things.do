@@ -48,8 +48,8 @@
 				updated_at: new SvelteDate(),
 				is_blocked_by: null,
 				checklist: [],
-				logged_at: null,
-				logged_status: null,
+				logged_at: new SvelteDate(),
+				logged_status: 'completed',
 				order: items.length > 0 ? Math.max(...items.map((t) => t.order)) + 1 : 1
 			});
 
