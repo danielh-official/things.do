@@ -31,7 +31,7 @@
 					return false;
 				}
 
-				if (!!item.start_date) {
+				if (item.start_date) {
 					return false;
 				}
 

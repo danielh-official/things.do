@@ -85,7 +85,7 @@
 			}, 2000);
 		} else if (newStatus === null) {
 			pendingRemovalTaskId = null;
-            setTimeout(() => {
+			setTimeout(() => {
 				loggedStatusChanged();
 			}, 2000);
 		}
