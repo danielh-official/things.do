@@ -3,6 +3,7 @@
 	import { CalendarMonthSolid, CheckCircleSolid, XSolid } from 'flowbite-svelte-icons';
 	import { clickOutside } from '$lib';
 	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	let {
 		task = $bindable(),
@@ -33,7 +34,7 @@
 	) {
 		db.items.update(taskId, {
 			...task,
-			updated_at: new Date()
+			updated_at: new SvelteDate()
 		});
 	}
 
@@ -47,10 +48,10 @@
 
 		if (!currentStatus) {
 			newStatus = 'completed';
-			newLoggedAt = new Date();
+			newLoggedAt = new SvelteDate();
 		} else if (currentStatus === 'completed') {
 			newStatus = 'canceled';
-			newLoggedAt = new Date();
+			newLoggedAt = new SvelteDate();
 		} else {
 			newStatus = null;
 			newLoggedAt = null;
