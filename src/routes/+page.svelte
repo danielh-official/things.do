@@ -1,23 +1,24 @@
 <script lang="ts">
-	import { db, type Item } from '$lib/db';
+	import { db, type Tag, type Item } from '$lib/db';
 	import { onMount } from 'svelte';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
 	import { flip } from 'svelte/animate';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-	import MultiselectOptionBox from '$lib/components/MultiselectOptionBox.svelte';
-	import ItemInputBox from '$lib/components/ItemInputBox.svelte';
-	import { getFocusingTasks } from '$lib';
+	import MultiselectOptionBox from '$lib/components/MultiselectOptionBoxComponent.svelte';
+	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
+	import { getFocusingItems } from '$lib';
 
 	let items = $state<Item[]>([]);
 
-	onMount(async () => {
-		window.addEventListener('keydown', processKeydownEvent);
+	let tags = $state<Tag[]>([]);
 
+	onMount(async () => {
 		await updateItemsState();
 	});
 
 	async function updateItemsState() {
-		items = await getFocusingTasks();
+		items = await getFocusingItems();
+		tags = await db.tags.toArray();
 	}
 
 	async function addItem(event: KeyboardEvent) {
@@ -31,7 +32,7 @@
 				start_date: null,
 				deadline: null,
 				start: null,
-				tags: [],
+				tag_ids: [],
 				created_at: new SvelteDate(),
 				updated_at: new SvelteDate(),
 				blocked_by: [],
@@ -70,37 +71,6 @@
 	}
 
 	let addingNewItem = $state(false);
-
-	function processKeydownEvent(event: KeyboardEvent) {
-		if (event.code === 'Enter' && addingNewItem) {
-			addItem(event);
-			return;
-		}
-
-		if (event.code === 'Space' && !openedItem && !addingNewItem) {
-			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
-			if (input) {
-				event.preventDefault();
-				input.focus();
-			}
-			return;
-		}
-
-		if (event.key === 'Escape' && openedItem) {
-			closeOpenedItem();
-			return;
-		}
-
-		if (event.key === 'Escape' && highlightedItems.size > 0) {
-			clearHighlightsForAllItems();
-			return;
-		}
-
-		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
-			deleteHighlightedItems();
-			return;
-		}
-	}
 
 	async function deleteHighlightedItems() {
 		if (
@@ -274,11 +244,50 @@
 	function loggedStatusChanged() {
 		updateItemsState();
 	}
+
+	$effect(() => {
+		tags;
+
+		updateItemsState();
+	});
+
+	function processKeydownEvent(event: KeyboardEvent) {
+		if (event.code === 'Enter' && addingNewItem) {
+			addItem(event);
+			return;
+		}
+
+		if (event.code === 'Space' && !openedItem && !addingNewItem) {
+			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
+			if (input) {
+				event.preventDefault();
+				input.focus();
+			}
+			return;
+		}
+
+		if (event.key === 'Escape' && openedItem) {
+			closeOpenedItem();
+			return;
+		}
+
+		if (event.key === 'Escape' && highlightedItems.size > 0) {
+			clearHighlightsForAllItems();
+			return;
+		}
+
+		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
+			deleteHighlightedItems();
+			return;
+		}
+	}
 </script>
 
 <svelte:head>
 	<title>Focus | Things.do</title>
 </svelte:head>
+
+<svelte:window onkeydown={processKeydownEvent} />
 
 <ItemInputBox bind:addingNewItem />
 {#if items?.length > 0}
@@ -287,13 +296,11 @@
 			<li
 				animate:flip
 				data-id={item.id}
-				class={
-					dragInsertIndex === index
-						? 'relative -my-2 border-t-2 border-blue-400'
-						: dragInsertIndex === items.length && index === items.length - 1
+				class={dragInsertIndex === index
+					? 'relative -my-2 border-t-2 border-blue-400'
+					: dragInsertIndex === items.length && index === items.length - 1
 						? 'relative -my-2 border-b-2 border-blue-400'
-						: ''
-				}
+						: ''}
 			>
 				<ItemComponent
 					{item}

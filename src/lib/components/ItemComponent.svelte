@@ -4,6 +4,7 @@
 	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
 	import { SvelteDate } from 'svelte/reactivity';
 	import StartDateInputComponent from './StartDateInputComponent.svelte';
+	import { tick } from 'svelte';
 
 	let {
 		item = $bindable(),
@@ -26,6 +27,27 @@
 		highlightItem: (event: MouseEvent) => void;
 		loggedStatusChanged: () => void;
 	} = $props();
+
+	let tags = $state<Tag[]>([]);
+	let tagsForItem: Tag[] = $state([]);
+
+	$effect(() => {
+		item.tag_ids;
+
+		updateTagsForItem();
+	});
+
+	async function updateTagsForItem() {
+		tags = await db.tags.toArray();
+
+		if (item.tag_ids && item.tag_ids.length > 0) {
+			tagsForItem = tags
+				.filter((t) => item.tag_ids?.includes(t.id))
+				.sort((a, b) => a.order - b.order);
+		} else {
+			tagsForItem = [];
+		}
+	}
 
 	function saveTaskEdits(
 		taskId: number,
@@ -110,6 +132,131 @@
 	}
 
 	let editingStartDateForItemId: number | null = $state(null);
+
+	// Tags UI state
+	let tagInputOpen = $state(false);
+	let tagInputText = $state('');
+	import type { Tag } from '$lib/db';
+	import TagsInputComponent from './TagsInputComponent.svelte';
+	let allTagOptions = $state<Tag[]>([]);
+	let filteredTagOptions = $state<Tag[]>([]);
+	let tagNameById: Record<number, string> = $state({});
+
+	$effect(() => {
+		// Ensure names for current item's tags are loaded
+		const ids = (item.tag_ids ?? []) as number[];
+		if (ids.length > 0) {
+			(async () => {
+				const rows = await db.tags.bulkGet(ids);
+				const mapUpdate: Record<number, string> = {};
+				for (const row of rows) {
+					if (row) mapUpdate[row.id] = row.name;
+				}
+				tagNameById = { ...tagNameById, ...mapUpdate };
+			})();
+		}
+	});
+
+	$effect(() => {
+		const q = tagInputText.trim().toLowerCase();
+		const current = new Set<number>((item.tag_ids ?? []) as number[]);
+		const opts = allTagOptions.filter((t) => !current.has(t.id));
+		if (!q) {
+			filteredTagOptions = opts.slice(0, 8);
+			return;
+		}
+		const starts = opts.filter((t) => t.name.toLowerCase().startsWith(q));
+		const contains = opts.filter(
+			(t) => !t.name.toLowerCase().startsWith(q) && t.name.toLowerCase().includes(q)
+		);
+		filteredTagOptions = [...starts, ...contains].slice(0, 8);
+	});
+
+	async function openTagInput() {
+		if (tagInputOpen) {
+			closeTagInput();
+			return;
+		}
+
+		tagInputOpen = true;
+		tagInputText = '';
+		// gather all tags from DB, unique
+		const all = await db.tags.toArray();
+		all.sort((a, b) => a.name.localeCompare(b.name));
+		allTagOptions = all;
+		// populate name map
+		const mapUpdate: Record<number, string> = {};
+		for (const t of all) mapUpdate[t.id] = t.name;
+		tagNameById = { ...tagNameById, ...mapUpdate };
+		await tick();
+		const el = document.getElementById(`tag-input-${item.id}`) as HTMLInputElement | null;
+		if (el) el.focus();
+	}
+
+	function closeTagInput() {
+		tagInputOpen = false;
+		tagInputText = '';
+	}
+
+	async function addTagId(tagId: number) {
+		const existingIds = Array.isArray(item.tag_ids) ? (item.tag_ids as number[]) : [];
+		if (existingIds.includes(tagId)) {
+			closeTagInput();
+			return;
+		}
+		const nextTags = [...existingIds, tagId];
+		item = { ...item, tag_ids: nextTags, updated_at: new SvelteDate() };
+		if (item.id != null) {
+			await db.items.update(item.id, { tag_ids: nextTags, updated_at: new SvelteDate() });
+		}
+		tagInputText = '';
+		tagInputOpen = false;
+	}
+
+	async function addTagFromInput() {
+		const name = tagInputText.trim();
+		if (!name) return;
+		const existing = allTagOptions.find((t) => t.name.toLowerCase() === name.toLowerCase());
+		if (existing) {
+			await addTagId(existing.id);
+			return;
+		}
+		const nextOrder = allTagOptions.length
+			? Math.max(...allTagOptions.map((t) => t.order ?? 0)) + 1
+			: 1;
+		const id = await db.tags.add({
+			name,
+			parent_tag_id: null,
+			order: nextOrder,
+			created_at: new SvelteDate(),
+			updated_at: new SvelteDate()
+		});
+		const newTag: Tag = {
+			id: id as number,
+			name,
+			parent_tag_id: null,
+			order: nextOrder,
+			created_at: new SvelteDate(),
+			updated_at: new SvelteDate()
+		};
+		allTagOptions = [...allTagOptions, newTag].sort((a, b) => a.name.localeCompare(b.name));
+		tagNameById[newTag.id] = newTag.name;
+		await addTagId(newTag.id);
+	}
+
+	function onTagInputKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			addTagFromInput();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			closeTagInput();
+		}
+	}
+
+	function findTagById(tagId: number): Tag | null {
+		return tags.find((t) => t.id === tagId) || null;
+	}
 </script>
 
 {#if openedItem && openedItem.id === item.id}
@@ -143,29 +290,70 @@
 		></textarea>
 
 		{#if item.start_date || item.start}
-			<div class="flex space-x-4 text-left">
+			<div class="flex items-center space-x-4 text-left">
 				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
+				<TagsInputComponent {item} {openTagInput} />
 			</div>
 		{/if}
 
 		{#if item.deadline}
-			<div class="flex space-x-4 text-left">
+			<div class="flex items-center space-x-4 text-left">
 				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
+				<TagsInputComponent {item} {openTagInput} />
 			</div>
 		{/if}
 
 		{#if !item.start_date && !item.start && !item.deadline}
-			<div class="flex justify-end space-x-4">
+			<div class="flex items-center justify-end space-x-4">
 				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
 				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
+				<TagsInputComponent {item} {openTagInput} />
 			</div>
 		{:else if !item.start_date && !item.start}
-			<div class="flex justify-end space-x-4">
+			<div class="flex items-center justify-end space-x-4">
 				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
+				<TagsInputComponent {item} {openTagInput} />
 			</div>
 		{:else if !item.deadline}
-			<div class="flex justify-end space-x-4">
+			<div class="flex items-center justify-end space-x-4">
 				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
+				<TagsInputComponent {item} {openTagInput} />
+			</div>
+		{/if}
+
+		{#if item.tag_ids && item.tag_ids.length}
+			<div class="mt-3 flex flex-wrap gap-2">
+				{#each tagsForItem as tag}
+					<span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">{tag.name}</span>
+				{/each}
+				<button
+					class="rounded px-2 py-1 text-xs text-blue-600 hover:underline"
+					onclick={openTagInput}>+ Add tag</button
+				>
+			</div>
+		{/if}
+
+		{#if tagInputOpen}
+			<div class="relative mt-2">
+				<input
+					id={`tag-input-${item.id}`}
+					class="w-full rounded border border-gray-300 p-2"
+					placeholder="Type a tag and press Enter"
+					bind:value={tagInputText}
+					onkeydown={onTagInputKeydown}
+				/>
+				{#if filteredTagOptions.length}
+					<ul class="absolute z-10 mt-1 w-full rounded border bg-white shadow">
+						{#each filteredTagOptions as opt}
+							<li>
+								<button
+									class="w-full px-3 py-2 text-left hover:bg-gray-100"
+									onclick={() => addTagId(opt.id)}>{opt.name}</button
+								>
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -237,6 +425,9 @@
 				{item.title}
 				{#if item.notes && item.notes.length > 0}
 					<span class="ml-2 text-gray-400">📝</span>
+				{/if}
+				{#if item.tag_ids && item.tag_ids.length > 0}
+					<span class="ml-2 text-gray-400">🏷️</span>
 				{/if}
 			</div>
 			<div>
