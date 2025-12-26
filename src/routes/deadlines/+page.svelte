@@ -5,6 +5,39 @@
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	let items = $state<Task[]>([]);
 
+	let groupedBlocks = $state<Array<{ key: string; title: string; tasks: Task[] }>>([]);
+
+	function startOfDay(date: Date) {
+		const d = new SvelteDate(date);
+		d.setHours(0, 0, 0, 0);
+		return d;
+	}
+
+	function getTodayStart(): SvelteDate {
+		const t = new SvelteDate();
+		t.setHours(0, 0, 0, 0);
+		return t;
+	}
+
+	function getTomorrowStart(): SvelteDate {
+		const t = getTodayStart();
+		t.setDate(t.getDate() + 1);
+		return t;
+	}
+
+	function monthKey(date: Date): string {
+		const y = date.getFullYear();
+		const m = String(date.getMonth() + 1).padStart(2, '0');
+		return `${y}-${m}`;
+	}
+
+	function monthTitle(date: Date): string {
+		const currentYear = new SvelteDate().getFullYear();
+		const monthName = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(date);
+		const y = date.getFullYear();
+		return y === currentYear ? monthName : `${monthName} ${y}`;
+	}
+
 	onMount(async () => {
 		await updateItemsState();
 	});
@@ -12,19 +45,69 @@
 	async function updateItemsState() {
 		const allItems = await db.items.toArray();
 
-		items = allItems
-			.filter((item) => {
-				if (item.deadline === null) {
-					return false;
-				}
+		items = allItems.filter((item) => {
+			if (item.deadline === null) {
+				return false;
+			}
 
-				if (item.logged_at !== null && item.logged_status !== null) {
-					return false;
-				}
+			if (item.logged_at !== null && item.logged_status !== null) {
+				return false;
+			}
 
-				return true;
-			})
-			.sort((a, b) => a.order - b.order);
+			return true;
+		});
+
+		// Build deadline-based groups: Overdue, Today, Tomorrow, future months
+		const overdue: Task[] = [];
+		const today: Task[] = [];
+		const tomorrow: Task[] = [];
+		const futureMonths: Record<string, { title: string; tasks: Task[] }> = {};
+
+		const todayStart = getTodayStart();
+		const tomorrowStart = getTomorrowStart();
+
+		for (const item of items) {
+			const d = startOfDay(item.deadline!);
+			if (d.getTime() < todayStart.getTime()) {
+				overdue.push(item);
+				continue;
+			}
+			if (d.getTime() === todayStart.getTime()) {
+				today.push(item);
+				continue;
+			}
+			if (d.getTime() === tomorrowStart.getTime()) {
+				tomorrow.push(item);
+				continue;
+			}
+
+			const key = monthKey(d);
+			if (!futureMonths[key]) {
+				futureMonths[key] = { title: monthTitle(d), tasks: [] };
+			}
+			futureMonths[key].tasks.push(item);
+		}
+
+		// Sort tasks within each group by order
+		const byOrder = (a: Task, b: Task) => a.order - b.order;
+		overdue.sort(byOrder);
+		today.sort(byOrder);
+		tomorrow.sort(byOrder);
+		Object.keys(futureMonths).forEach((k) => {
+			futureMonths[k].tasks.sort(byOrder);
+		});
+
+		// Build grouped blocks in required order
+		const blocks: Array<{ key: string; title: string; tasks: Task[] }> = [];
+		if (overdue.length > 0) blocks.push({ key: 'overdue', title: 'Overdue', tasks: overdue });
+		if (today.length > 0) blocks.push({ key: 'today', title: 'Today', tasks: today });
+		if (tomorrow.length > 0) blocks.push({ key: 'tomorrow', title: 'Tomorrow', tasks: tomorrow });
+		const sortedMonthKeys = Object.keys(futureMonths).sort();
+		sortedMonthKeys.forEach((k) => {
+			blocks.push({ key: k, title: futureMonths[k].title, tasks: futureMonths[k].tasks });
+		});
+
+		groupedBlocks = blocks;
 	}
 
 	async function addTask(event: KeyboardEvent) {
@@ -56,6 +139,12 @@
 	}
 
 	let openedTask: Task | null = $state(null);
+
+	$effect(() => {
+		openedTask;
+
+		updateItemsState();
+	});
 
 	function openTask(event: MouseEvent) {
 		clearHighlightsForAllTasks();
@@ -116,7 +205,6 @@
 	}
 
 	let highlightedTasks = $state<Set<number>>(new Set());
-	let draggingTaskId = $state<number | null>(null);
 
 	function highlightTask(event: MouseEvent) {
 		const button = event.currentTarget as HTMLButtonElement;
@@ -139,60 +227,6 @@
 		}
 
 		highlightedTasks = newHighlightedTasks;
-	}
-
-	function handleDragStart(event: DragEvent, taskId: number) {
-		draggingTaskId = taskId;
-		event.dataTransfer?.setData('text/plain', String(taskId));
-	}
-
-	function handleDragOver(event: DragEvent) {
-		event.preventDefault();
-	}
-
-	async function handleDrop(event: DragEvent, targetTaskId: number) {
-		event.preventDefault();
-
-		const sourceId =
-			draggingTaskId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
-		if (!sourceId || sourceId === targetTaskId) {
-			resetDragState();
-			return;
-		}
-
-		const currentTasks = [...items];
-		const fromIndex = currentTasks.findIndex((task) => task.id === sourceId);
-		const toIndex = currentTasks.findIndex((task) => task.id === targetTaskId);
-
-		if (fromIndex === -1 || toIndex === -1) {
-			resetDragState();
-			return;
-		}
-
-		const [movedTask] = currentTasks.splice(fromIndex, 1);
-		currentTasks.splice(toIndex, 0, movedTask);
-
-		items = currentTasks;
-
-		await Promise.all(
-			currentTasks.map((task, index) => {
-				if (task.id == null) return Promise.resolve();
-				return db.items.update(task.id, {
-					order: index + 1,
-					updated_at: new SvelteDate()
-				});
-			})
-		);
-
-		resetDragState();
-	}
-
-	function handleDragEnd() {
-		resetDragState();
-	}
-
-	function resetDragState() {
-		draggingTaskId = null;
 	}
 
 	function clearHighlightsForAllTasks() {
@@ -232,22 +266,21 @@
 		onfocus={() => (addingNewTask = true)}
 		onblur={() => (addingNewTask = false)}
 	/>
-	{#if items?.length > 0}
-		<ul class="mt-4 space-y-2">
-			{#each items as task (task.id)}
-				<ItemComponent
-					{task}
-					bind:openedTask
-					{openTask}
-					{highlightTask}
-					handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
-					handleDragOver={(event: DragEvent) => handleDragOver(event)}
-					handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
-					{handleDragEnd}
-					{loggedStatusChanged}
-				/>
-			{/each}
-		</ul>
+	{#if groupedBlocks.length > 0}
+		{#each groupedBlocks as block (block.key)}
+			<h2 class="mt-6 text-sm font-semibold text-gray-700">{block.title}</h2>
+			<ul class="mt-2 space-y-2">
+				{#each block.tasks as task (task.id)}
+					<ItemComponent
+						{task}
+						bind:openedTask
+						{openTask}
+						{highlightTask}
+						{loggedStatusChanged}
+					/>
+				{/each}
+			</ul>
+		{/each}
 	{/if}
 </div>
 <div>
