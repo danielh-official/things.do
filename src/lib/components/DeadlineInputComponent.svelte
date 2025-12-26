@@ -61,24 +61,26 @@
 	}
 </script>
 
-<button
-	class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-	onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
->
-	<FlagSolid class="h-6 w-6 shrink-0" />
-</button>
+<div class="flex items-center space-x-2">
+	<button
+		class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
+		onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
+	>
+		<FlagSolid class="h-6 w-6 shrink-0" />
+	</button>
 
-{#if openedTask && openedTask.deadline}
-	<div class="content-center text-sm text-gray-500">
-		{getDeadlineRelativeText(openedTask.deadline)}
-	</div>
-{/if}
+	{#if openedTask && openedTask.deadline}
+		<div class="content-center text-sm text-gray-500">
+			{getDeadlineRelativeText(openedTask.deadline)}
+		</div>
+	{/if}
 
-{#if openedTask && editingDeadlineForTaskId === openedTask.id}
-	<input
-		type="date"
-		class="ml-4 rounded border border-gray-300 p-2"
-		value={openedTask.deadline?.toISOString().split('T')[0]}
-		onchange={setDeadlineForTask}
-	/>
-{/if}
+	{#if openedTask && editingDeadlineForTaskId === openedTask.id}
+		<input
+			type="date"
+			class="ml-4 rounded border border-gray-300 p-2"
+			value={openedTask.deadline?.toISOString().split('T')[0]}
+			onchange={setDeadlineForTask}
+		/>
+	{/if}
+</div>
