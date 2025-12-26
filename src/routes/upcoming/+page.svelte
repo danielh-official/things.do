@@ -6,6 +6,46 @@
 
 	let items = $state<Task[]>([]);
 
+	// Grouped items by local date (YYYY-MM-DD) for start_date and/or deadline
+	let groupedItemsByDate = $state<Record<string, Task[]>>({});
+	let groupDateKeys = $state<string[]>([]);
+
+	function startOfDay(date: Date) {
+		const d = new SvelteDate(date);
+		d.setHours(0, 0, 0, 0);
+		return d;
+	}
+
+	function getTomorrowStart(): SvelteDate {
+		const t = new SvelteDate();
+		t.setHours(0, 0, 0, 0);
+		t.setDate(t.getDate() + 1);
+		return t;
+	}
+
+	function isUpcomingDate(date?: Date | null): boolean {
+		if (!date) return false;
+		return startOfDay(date).getTime() >= getTomorrowStart().getTime();
+	}
+
+	function toDateKey(date: Date): string {
+		const d = startOfDay(date);
+		const y = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		return `${y}-${m}-${day}`;
+	}
+
+	function formatDateFromKey(key: string): string {
+		const [y, m, d] = key.split('-').map((s) => parseInt(s, 10));
+		const date = new SvelteDate(y, m - 1, d);
+		return new Intl.DateTimeFormat(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		}).format(date);
+	}
+
 	onMount(async () => {
 		await updateItemsState();
 	});
@@ -13,29 +53,54 @@
 	async function updateItemsState() {
 		const allItems = await db.items.toArray();
 
-		items = allItems
-			.filter((item) => {
-				// Return false if start_date is not tomorrow or later's date
-				const itemDate = item.start_date?.getDate();
-				const tomorrowDate = new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() + 1)).getDate();
+		// Upcoming shows items that are relevant tomorrow or later
+		const filtered = allItems.filter((item) => {
+			if (item.start === 'inbox' || item.start === 'someday') {
+				return false;
+			}
 
-				if (
-					(itemDate && itemDate < tomorrowDate) || !item.start_date
-				) {
-					return false;
+			if (item.logged_at !== null && item.logged_status !== null) {
+				return false;
+			}
+
+			const startUpcoming = isUpcomingDate(item.start_date ?? null);
+			const deadlineUpcoming = isUpcomingDate(item.deadline ?? null);
+
+			// Include tasks that have either upcoming start_date or upcoming deadline
+			return startUpcoming || deadlineUpcoming;
+		});
+
+		items = filtered.sort((a, b) => a.order - b.order);
+
+		// Build date groupings for start_date and deadline (future-only)
+		const groups: Record<string, Task[]> = {};
+		for (const item of items) {
+			const addedKeys = new SvelteSet<string>();
+
+			if (isUpcomingDate(item.start_date ?? null)) {
+				const key = toDateKey(item.start_date!);
+				if (!groups[key]) groups[key] = [];
+				groups[key].push(item);
+				addedKeys.add(key);
+			}
+
+			if (isUpcomingDate(item.deadline ?? null)) {
+				const key = toDateKey(item.deadline!);
+				// Avoid duplicate insertion if start and deadline are same day
+				if (!addedKeys.has(key)) {
+					if (!groups[key]) groups[key] = [];
+					groups[key].push(item);
 				}
+			}
+		}
 
-				if (item.start === 'inbox' || item.start === 'someday') {
-					return false;
-				}
+		// Sort tasks within each group by order
+		Object.keys(groups).forEach((key) => {
+			groups[key] = groups[key].slice().sort((a, b) => a.order - b.order);
+		});
 
-				if (item.logged_at !== null && item.logged_status !== null) {
-					return false;
-				}
-
-				return true;
-			})
-			.sort((a, b) => a.order - b.order);
+		groupedItemsByDate = groups;
+		groupDateKeys = Object.keys(groups).sort();
 	}
 
 	async function addTask(event: KeyboardEvent) {
@@ -47,7 +112,7 @@
 				title: item,
 				notes: '',
 				// Should be tomorrow's date
-				start_date: new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() + 1)),
+				start_date: (() => { const t = new SvelteDate(); t.setHours(0,0,0,0); t.setDate(t.getDate() + 1); return t; })(),
 				deadline: null,
 				start: null,
 				tags: [],
@@ -136,18 +201,23 @@
 
 		const newHighlightedTasks = new SvelteSet(highlightedTasks);
 
+		const buttons = document.querySelectorAll<HTMLButtonElement>(`button[data-id='${taskId}']`);
 		if (newHighlightedTasks.has(taskId)) {
 			newHighlightedTasks.delete(taskId);
-			button.classList.add('bg-white');
-			button.classList.add('hover:bg-gray-50');
-			button.classList.remove('bg-blue-200');
-			button.classList.remove('hover:bg-blue-300');
+			buttons.forEach((btn) => {
+				btn.classList.add('bg-white');
+				btn.classList.add('hover:bg-gray-50');
+				btn.classList.remove('bg-blue-200');
+				btn.classList.remove('hover:bg-blue-300');
+			});
 		} else {
 			newHighlightedTasks.add(taskId);
-			button.classList.remove('bg-white');
-			button.classList.remove('hover:bg-gray-50');
-			button.classList.add('bg-blue-200');
-			button.classList.add('hover:bg-blue-300');
+			buttons.forEach((btn) => {
+				btn.classList.remove('bg-white');
+				btn.classList.remove('hover:bg-gray-50');
+				btn.classList.add('bg-blue-200');
+				btn.classList.add('hover:bg-blue-300');
+			});
 		}
 
 		highlightedTasks = newHighlightedTasks;
@@ -212,14 +282,13 @@
 
 		items.forEach((task: Task) => {
 			const taskId = task.id;
-
-			const button = document.querySelector(`button[data-id='${taskId}']`) as HTMLButtonElement;
-			if (button) {
+			const buttons = document.querySelectorAll<HTMLButtonElement>(`button[data-id='${taskId}']`);
+			buttons.forEach((button) => {
 				button.classList.add('bg-white');
 				button.classList.add('hover:bg-gray-50');
 				button.classList.remove('bg-blue-200');
 				button.classList.remove('hover:bg-blue-300');
-			}
+			});
 		});
 		highlightedTasks.clear();
 	}
@@ -244,22 +313,25 @@
 		onfocus={() => (addingNewTask = true)}
 		onblur={() => (addingNewTask = false)}
 	/>
-	{#if items?.length > 0}
-		<ul class="mt-4 space-y-2">
-			{#each items as task (task.id)}
-				<ItemComponent
-					{task}
-					bind:openedTask
-					{openTask}
-					{highlightTask}
-					handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
-					handleDragOver={(event: DragEvent) => handleDragOver(event)}
-					handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
-					{handleDragEnd}
-					{loggedStatusChanged}
-				/>
-			{/each}
-		</ul>
+	{#if groupDateKeys.length > 0}
+		{#each groupDateKeys as dateKey (dateKey)}
+			<h2 class="mt-6 text-sm font-semibold text-gray-700">{formatDateFromKey(dateKey)}</h2>
+			<ul class="mt-2 space-y-2">
+				{#each groupedItemsByDate[dateKey] as task (task.id)}
+					<ItemComponent
+						{task}
+						bind:openedTask
+						{openTask}
+						{highlightTask}
+						handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
+						handleDragOver={(event: DragEvent) => handleDragOver(event)}
+						handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
+						{handleDragEnd}
+						{loggedStatusChanged}
+					/>
+				{/each}
+			</ul>
+		{/each}
 	{/if}
 </div>
 <div>
