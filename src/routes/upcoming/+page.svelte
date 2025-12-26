@@ -10,6 +10,7 @@
 	let groupedItemsByDate = $state<Record<string, Task[]>>({});
 	let groupDateKeys = $state<string[]>([]);
 	let draggingTaskId = $state<number | null>(null);
+	let groupReasonByTask = $state<Record<number, 'start' | 'deadline'>>({});
 
 	function startOfDay(date: Date) {
 		const d = new SvelteDate(date);
@@ -80,25 +81,24 @@
 
 		items = filtered.sort((a, b) => a.order - b.order);
 
-		// Build date groupings for start_date and deadline (future-only)
+		// Build date groupings with a single source per item:
+		// Prefer upcoming start_date; otherwise upcoming deadline
 		const groups: Record<string, Task[]> = {};
+		const reasons: Record<number, 'start' | 'deadline'> = {};
 		for (const item of items) {
-			const addedKeys = new SvelteSet<string>();
-
 			if (isUpcomingDate(item.start_date ?? null)) {
 				const key = toDateKey(item.start_date!);
 				if (!groups[key]) groups[key] = [];
 				groups[key].push(item);
-				addedKeys.add(key);
+				if (item.id != null) reasons[item.id] = 'start';
+				continue;
 			}
 
 			if (isUpcomingDate(item.deadline ?? null)) {
 				const key = toDateKey(item.deadline!);
-				// Avoid duplicate insertion if start and deadline are same day
-				if (!addedKeys.has(key)) {
-					if (!groups[key]) groups[key] = [];
-					groups[key].push(item);
-				}
+				if (!groups[key]) groups[key] = [];
+				groups[key].push(item);
+				if (item.id != null) reasons[item.id] = 'deadline';
 			}
 		}
 
@@ -109,6 +109,7 @@
 
 		groupedItemsByDate = groups;
 		groupDateKeys = Object.keys(groups).sort();
+		groupReasonByTask = reasons;
 	}
 
 	async function addTask(event: KeyboardEvent) {
@@ -264,10 +265,16 @@
 
 		items = currentTasks;
 
-		// If dropping into a different date group, set start_date to that date
+		// Cross-group: assign start_date unless moving within the item's deadline group
 		const targetDate = dateFromKey(targetDateKey);
+		const reason = movedTask.id != null ? groupReasonByTask[movedTask.id] : undefined;
 		const currentStartKey = movedTask.start_date ? toDateKey(movedTask.start_date) : null;
-		const shouldSetStartDate = !currentStartKey || currentStartKey !== targetDateKey;
+		const currentDeadlineKey = movedTask.deadline ? toDateKey(movedTask.deadline) : null;
+		let shouldSetStartDate = !currentStartKey || currentStartKey !== targetDateKey;
+		if (reason === 'deadline' && currentDeadlineKey === targetDateKey) {
+			// Reordering within deadline group should not change start_date
+			shouldSetStartDate = false;
+		}
 
 		await Promise.all(
 			currentTasks.map((task, index) => {
@@ -318,6 +325,8 @@
 		items = currentTasks;
 
 		const targetDate = dateFromKey(targetDateKey);
+		const reason = movedTask.id != null ? groupReasonByTask[movedTask.id] : undefined;
+		const currentDeadlineKey = movedTask.deadline ? toDateKey(movedTask.deadline) : null;
 
 		Promise.all(
 			currentTasks.map((task, index) => {
@@ -327,7 +336,10 @@
 					updated_at: new SvelteDate()
 				};
 				if (task.id === sourceId) {
-					(update as any).start_date = targetDate;
+					// Within deadline group, do not change start_date
+					if (!(reason === 'deadline' && currentDeadlineKey === targetDateKey)) {
+						(update as any).start_date = targetDate;
+					}
 				}
 				return db.items.update(task.id, update);
 			})
