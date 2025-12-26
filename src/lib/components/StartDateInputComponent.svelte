@@ -104,15 +104,14 @@
 	</div>
 
 	{#if openedItem && editingStartDateForItemId === openedItem.id}
-		<div class="flex flex-col items-center space-y-4">
+		<div class="flex flex-row items-center space-x-4">
 			<input
 				type="date"
 				class="ml-4 rounded border border-gray-300 p-2"
 				value={openedItem.start_date?.toISOString().split('T')[0]}
 				onchange={setStartDateForItem}
 			/>
-			<div class="flex items-center">
-				<label id="start-label" for="start-select">Start</label>
+			<div class="flex">
 				<select
 					id="start-select"
 					class="ml-2 rounded border border-gray-300 p-2"
