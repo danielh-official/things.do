@@ -253,10 +253,6 @@
 			closeTagInput();
 		}
 	}
-
-	function findTagById(tagId: number): Tag | null {
-		return tags.find((t) => t.id === tagId) || null;
-	}
 </script>
 
 {#if openedItem && openedItem.id === item.id}
@@ -356,11 +352,11 @@
 					onkeydown={onTagInputKeydown}
 				/>
 				{#if filteredTagOptions.length}
-					<ul class="absolute z-10 mt-1 w-full rounded border bg-white shadow">
+					<ul class="absolute mt-1 w-full rounded border bg-white shadow">
 						{#each filteredTagOptions as opt}
 							<li>
 								<button
-									class="w-full px-3 py-2 text-left hover:bg-gray-100"
+									class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
 									onclick={() => addTagId(opt.id)}>{opt.name}</button
 								>
 							</li>
