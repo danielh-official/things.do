@@ -2,17 +2,11 @@
 	import { db, type Item as Task } from '$lib/db';
 	import { onMount } from 'svelte';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-
-	let loading = $state(true);
+	import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	let items = $state<Task[]>([]);
 
 	onMount(async () => {
-		setTimeout(() => {
-			loading = false;
-		}, 500);
-
 		await updateItemsState();
 	});
 
@@ -218,6 +212,62 @@
 	function loggedStatusChanged() {
 		updateItemsState();
 	}
+
+	// Generate a grouped by list by completion date
+	// The groups are "Today", "Yesterday", "The Current Month", "The Last Month", all the way down to the earliest month.
+	// If a group has no tasks, it should not be shown.
+	// Each group should be sorted by completion date descending (most recent first).
+
+	const groupedItems: Map<string, Task[]> = $derived.by(() => {
+		const groups: Map<string, Task[]> = new SvelteMap();
+
+		const now = new SvelteDate();
+		const currentYear = now.getFullYear();
+		const currentMonth = now.getMonth();
+
+		items.forEach((item) => {
+			if (!item.logged_at) return;
+
+			const loggedDate = new SvelteDate(item.logged_at);
+			const year = loggedDate.getFullYear();
+			const month = loggedDate.getMonth();
+			const day = loggedDate.getDate();
+
+			let groupKey: string;
+
+			const isToday = year === currentYear && month === currentMonth && day === now.getDate();
+			const isYesterday =
+				year === currentYear && month === currentMonth && day === now.getDate() - 1;
+
+			if (isToday) {
+				groupKey = 'Today';
+			} else if (isYesterday) {
+				groupKey = 'Yesterday';
+			} else {
+				groupKey = `${loggedDate.toLocaleString('default', {
+					month: 'long'
+				})} ${year}`;
+			}
+
+			if (!groups.has(groupKey)) {
+				groups.set(groupKey, []);
+			}
+
+			groups.get(groupKey)!.push(item);
+		});
+
+		// Sort each group's items by logged_at descending
+		groups.forEach((groupItems) => {
+			groupItems.sort((a, b) => {
+				if (a.logged_at && b.logged_at) {
+					return b.logged_at.getTime() - a.logged_at.getTime();
+				}
+				return 0;
+			});
+		});
+
+		return groups;
+	});
 </script>
 
 <svelte:head>
@@ -227,59 +277,60 @@
 <svelte:window onkeydown={processKeydownEvent} />
 
 <div>
-	{#if loading}
-		<p>Loading tasks...</p>
-	{:else}
-		<div>
-			<input
-				class="w-full rounded border border-gray-300 p-2"
-				type="text"
-				id="new-task-input"
-				placeholder="Enter task..."
-				onfocus={() => (addingNewTask = true)}
-				onblur={() => (addingNewTask = false)}
-			/>
-			{#if items?.length > 0}
-				<ul class="mt-4 space-y-2">
-					{#each items as task (task.id)}
-						<ItemComponent
-							{task}
-							bind:openedTask
-							{openTask}
-							{highlightTask}
-							handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
-							handleDragOver={(event: DragEvent) => handleDragOver(event)}
-							handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
-							{handleDragEnd}
-							{loggedStatusChanged}
-						/>
-					{/each}
-				</ul>
-			{/if}
-		</div>
-		<div>
-			<!-- Box for showing options for showing controls for selected tasks. -->
-			{#if highlightedTasks.size > 0}
-				<div
-					class="fixed bottom-4 left-1/2 flex -translate-x-1/2 transform flex-col space-x-4 gap-y-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
+	<input
+		class="w-full rounded border border-gray-300 p-2"
+		type="text"
+		id="new-task-input"
+		placeholder="Enter task..."
+		onfocus={() => (addingNewTask = true)}
+		onblur={() => (addingNewTask = false)}
+	/>
+	{#if items?.length > 0}
+		<ul class="mt-4 space-y-2">
+			{#each Array.from(groupedItems.entries()) as [groupName, groupTasks] (groupName)}
+				<li>
+					<h2 class="mt-4 mb-2 text-lg font-bold">{groupName}</h2>
+					<ul class="space-y-2">
+						{#each groupTasks as task (task.id)}
+							<ItemComponent
+								{task}
+								bind:openedTask
+								{openTask}
+								{highlightTask}
+								handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
+								handleDragOver={(event: DragEvent) => handleDragOver(event)}
+								handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
+								{handleDragEnd}
+								{loggedStatusChanged}
+							/>
+						{/each}
+					</ul>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+</div>
+<div>
+	<!-- Box for showing options for showing controls for selected tasks. -->
+	{#if highlightedTasks.size > 0}
+		<div
+			class="fixed bottom-4 left-1/2 flex -translate-x-1/2 transform flex-col space-x-4 gap-y-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
+		>
+			<p>{highlightedTasks.size} task(s) selected</p>
+			<div class="flex space-x-4">
+				<button
+					class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+					onclick={deleteHighlightedTasks}
 				>
-					<p>{highlightedTasks.size} task(s) selected</p>
-					<div class="flex space-x-4">
-						<button
-							class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-							onclick={deleteHighlightedTasks}
-						>
-							Delete Selected Tasks
-						</button>
-						<button
-							class="cursor-pointer rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-							onclick={clearHighlightsForAllTasks}
-						>
-							Clear Selected
-						</button>
-					</div>
-				</div>
-			{/if}
+					Delete Selected Tasks
+				</button>
+				<button
+					class="cursor-pointer rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+					onclick={clearHighlightsForAllTasks}
+				>
+					Clear Selected
+				</button>
+			</div>
 		</div>
 	{/if}
 </div>

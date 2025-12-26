@@ -195,15 +195,34 @@
 			}}
 		>
 			{#if task.logged_status === 'completed'}
-				<div class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600" aria-label="Completed">
+				<div
+					class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600"
+					aria-label="Completed"
+				>
 					<svg viewBox="0 0 20 20" class="h-3 w-3 text-gray-800" aria-hidden="true">
-						<path d="M5 10l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M5 10l3 3 7-7"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 				</div>
 			{:else if task.logged_status === 'canceled'}
-				<div class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600" aria-label="Canceled">
+				<div
+					class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600"
+					aria-label="Canceled"
+				>
 					<svg viewBox="0 0 20 20" class="h-3 w-3 text-gray-800" aria-hidden="true">
-						<path d="M5 5l10 10M15 5l-10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+						<path
+							d="M5 5l10 10M15 5l-10 10"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
 					</svg>
 				</div>
 			{:else if task.start === 'someday'}

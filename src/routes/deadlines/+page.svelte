@@ -1,18 +1,11 @@
 <script lang="ts">
 	import { db, type Item as Task } from '$lib/db';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-
-	let loading = $state(true);
-
 	let items = $state<Task[]>([]);
 
 	onMount(async () => {
-		setTimeout(() => {
-			loading = false;
-		}, 500);
-
 		await updateItemsState();
 	});
 
@@ -231,59 +224,53 @@
 <svelte:window onkeydown={processKeydownEvent} />
 
 <div>
-	{#if loading}
-		<p>Loading tasks...</p>
-	{:else}
-		<div>
-			<input
-				class="w-full rounded border border-gray-300 p-2"
-				type="text"
-				id="new-task-input"
-				placeholder="Enter task..."
-				onfocus={() => (addingNewTask = true)}
-				onblur={() => (addingNewTask = false)}
-			/>
-			{#if items?.length > 0}
-				<ul class="mt-4 space-y-2">
-					{#each items as task (task.id)}
-						<ItemComponent
-							{task}
-							bind:openedTask
-							{openTask}
-							{highlightTask}
-							handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
-							handleDragOver={(event: DragEvent) => handleDragOver(event)}
-							handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
-							{handleDragEnd}
-							{loggedStatusChanged}
-						/>
-					{/each}
-				</ul>
-			{/if}
-		</div>
-		<div>
-			<!-- Box for showing options for showing controls for selected tasks. -->
-			{#if highlightedTasks.size > 0}
-				<div
-					class="fixed bottom-4 left-1/2 flex -translate-x-1/2 transform flex-col space-x-4 gap-y-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
+	<input
+		class="w-full rounded border border-gray-300 p-2"
+		type="text"
+		id="new-task-input"
+		placeholder="Enter task..."
+		onfocus={() => (addingNewTask = true)}
+		onblur={() => (addingNewTask = false)}
+	/>
+	{#if items?.length > 0}
+		<ul class="mt-4 space-y-2">
+			{#each items as task (task.id)}
+				<ItemComponent
+					{task}
+					bind:openedTask
+					{openTask}
+					{highlightTask}
+					handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
+					handleDragOver={(event: DragEvent) => handleDragOver(event)}
+					handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
+					{handleDragEnd}
+					{loggedStatusChanged}
+				/>
+			{/each}
+		</ul>
+	{/if}
+</div>
+<div>
+	<!-- Box for showing options for showing controls for selected tasks. -->
+	{#if highlightedTasks.size > 0}
+		<div
+			class="fixed bottom-4 left-1/2 flex -translate-x-1/2 transform flex-col space-x-4 gap-y-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
+		>
+			<p>{highlightedTasks.size} task(s) selected</p>
+			<div class="flex space-x-4">
+				<button
+					class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+					onclick={deleteHighlightedTasks}
 				>
-					<p>{highlightedTasks.size} task(s) selected</p>
-					<div class="flex space-x-4">
-						<button
-							class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-							onclick={deleteHighlightedTasks}
-						>
-							Delete Selected Tasks
-						</button>
-						<button
-							class="cursor-pointer rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-							onclick={clearHighlightsForAllTasks}
-						>
-							Clear Selected
-						</button>
-					</div>
-				</div>
-			{/if}
+					Delete Selected Tasks
+				</button>
+				<button
+					class="cursor-pointer rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+					onclick={clearHighlightsForAllTasks}
+				>
+					Clear Selected
+				</button>
+			</div>
 		</div>
 	{/if}
 </div>
