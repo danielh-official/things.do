@@ -324,7 +324,20 @@
 		{#if item.tag_ids && item.tag_ids.length}
 			<div class="mt-3 flex flex-wrap gap-2">
 				{#each tagsForItem as tag}
-					<span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">{tag.name}</span>
+					<button
+						class="cursor-pointer rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:line-through"
+						onclick={() => {
+							const existingIds = Array.isArray(item.tag_ids) ? (item.tag_ids as number[]) : [];
+							const nextTags = existingIds.filter((id) => id !== tag.id);
+							item = { ...item, tag_ids: nextTags, updated_at: new SvelteDate() };
+							if (item.id != null) {
+								db.items.update(item.id, {
+									tag_ids: nextTags,
+									updated_at: new SvelteDate()
+								});
+							}
+						}}>{tag.name}</button
+					>
 				{/each}
 				<button
 					class="rounded px-2 py-1 text-xs text-blue-600 hover:underline"
