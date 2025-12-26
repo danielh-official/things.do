@@ -119,6 +119,7 @@
 
 	let highlightedItems = $state<Set<number>>(new Set());
 	let draggingItemId = $state<number | null>(null);
+	let dragInsertIndex = $state<number | null>(null);
 
 	function highlightItem(event: MouseEvent) {
 		const button = event.currentTarget as HTMLButtonElement;
@@ -144,11 +145,39 @@
 
 	function handleDragStart(event: DragEvent, itemId: number) {
 		draggingItemId = itemId;
+		// Keep the source id in dataTransfer for fallback cases
 		event.dataTransfer?.setData('text/plain', String(itemId));
 	}
 
 	function handleDragOver(event: DragEvent) {
 		event.preventDefault();
+
+		const el = event.currentTarget as HTMLElement;
+		const idAttr = el.getAttribute('data-id');
+		if (!idAttr) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		const targetId = parseInt(idAttr, 10);
+		// If dragging a highlighted group and hovering over one of the group items, hide indicator
+		const isGroupMove =
+			draggingItemId != null && highlightedItems.size > 0 && highlightedItems.has(draggingItemId);
+		if (isGroupMove && highlightedItems.has(targetId)) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		const rect = el.getBoundingClientRect();
+		const dropAfter = event.clientY > rect.top + rect.height / 2;
+
+		const idx = items.findIndex((i) => i.id === targetId);
+		if (idx === -1) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		dragInsertIndex = idx + (dropAfter ? 1 : 0);
 	}
 
 	async function handleDrop(event: DragEvent, targetItemId: number) {
@@ -156,22 +185,49 @@
 
 		const sourceId =
 			draggingItemId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
-		if (!sourceId || sourceId === targetItemId) {
+		if (!sourceId) {
+			resetDragState();
+			return;
+		}
+
+		// Determine if we are moving a group: move all highlighted items together
+		const isGroupMove = highlightedItems.size > 0 && highlightedItems.has(sourceId);
+		const groupIds: number[] = isGroupMove
+			? items.filter((i) => i.id != null && highlightedItems.has(i.id!)).map((i) => i.id!)
+			: [sourceId];
+
+		// No-op if target is inside the group being moved
+		if (groupIds.includes(targetItemId)) {
 			resetDragState();
 			return;
 		}
 
 		const currentItems = [...items];
-		const fromIndex = currentItems.findIndex((item) => item.id === sourceId);
-		const toIndex = currentItems.findIndex((item) => item.id === targetItemId);
 
-		if (fromIndex === -1 || toIndex === -1) {
+		// Remove all items being moved, preserving their original relative order
+		const movedItems: Item[] = [];
+		for (const id of groupIds) {
+			const idx = currentItems.findIndex((item) => item.id === id);
+			if (idx !== -1) {
+				const [mi] = currentItems.splice(idx, 1);
+				movedItems.push(mi);
+			}
+		}
+
+		// Determine insertion position (before/after) based on cursor position
+		const el = event.currentTarget as HTMLElement;
+		const rect = el.getBoundingClientRect();
+		const dropAfter = event.clientY > rect.top + rect.height / 2;
+
+		let insertionIndex = currentItems.findIndex((item) => item.id === targetItemId);
+		if (insertionIndex === -1) {
 			resetDragState();
 			return;
 		}
+		if (dropAfter) insertionIndex += 1;
 
-		const [movedItem] = currentItems.splice(fromIndex, 1);
-		currentItems.splice(toIndex, 0, movedItem);
+		// Insert the moved items as a contiguous block
+		currentItems.splice(insertionIndex, 0, ...movedItems);
 
 		items = currentItems;
 
@@ -194,6 +250,7 @@
 
 	function resetDragState() {
 		draggingItemId = null;
+		dragInsertIndex = null;
 	}
 
 	function clearHighlightsForAllItems() {
@@ -222,10 +279,16 @@
 	<title>Focus | Things.do</title>
 </svelte:head>
 
+<h1 class="text-xl font-semibold">Focus</h1>
 <ItemInputBox bind:addingNewItem />
 {#if items?.length > 0}
 	<ul class="mt-4 space-y-2">
-		{#each items as item (item.id)}
+		{#each items as item, index (item.id)}
+			{#if dragInsertIndex === index}
+				<li class="pointer-events-none relative -my-2">
+					<div class="border-t-2 border-blue-400"></div>
+				</li>
+			{/if}
 			<ItemComponent
 				{item}
 				bind:openedItem
@@ -238,6 +301,11 @@
 				{loggedStatusChanged}
 			/>
 		{/each}
+		{#if dragInsertIndex === items.length}
+			<li class="pointer-events-none relative -my-2">
+				<div class="border-t-2 border-blue-400"></div>
+			</li>
+		{/if}
 	</ul>
 {/if}
 <MultiselectOptionBox {highlightedItems} {deleteHighlightedItems} {clearHighlightsForAllItems} />
