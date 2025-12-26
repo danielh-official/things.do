@@ -6,24 +6,24 @@
 	import StartDateInputComponent from './StartDateInputComponent.svelte';
 
 	let {
-		task = $bindable(),
-		openedTask = $bindable(),
+		item = $bindable(),
+		openedItem = $bindable(),
 		handleDragStart,
 		handleDragOver,
 		handleDrop,
 		handleDragEnd,
-		openTask,
-		highlightTask,
+		openItem,
+		highlightItem,
 		loggedStatusChanged
 	}: {
-		task: Item;
-		openedTask: Item | null;
+		item: Item;
+		openedItem: Item | null;
 		handleDragStart?: (event: DragEvent, taskId: number) => void;
 		handleDragOver?: (event: DragEvent) => void;
 		handleDrop?: (event: DragEvent, taskId: number) => void;
 		handleDragEnd?: (event: DragEvent) => void;
-		openTask: (event: MouseEvent) => void;
-		highlightTask: (event: MouseEvent) => void;
+		openItem: (event: MouseEvent) => void;
+		highlightItem: (event: MouseEvent) => void;
 		loggedStatusChanged: () => void;
 	} = $props();
 
@@ -31,7 +31,7 @@
 		taskId: number,
 		task: {
 			title?: string;
-			notes?: string;
+			notes?: string | null;
 		}
 	) {
 		db.items.update(taskId, {
@@ -40,11 +40,11 @@
 		});
 	}
 
-	let editingDeadlineForTaskId: number | null = $state(null);
+	let editingDeadlineForItemId: number | null = $state(null);
 	let pendingRemovalTaskId: number | null = $state(null);
 
 	function cycleTaskStatus(id: number) {
-		const currentStatus: LogStatus = task.logged_status as LogStatus;
+		const currentStatus: LogStatus = item.logged_status as LogStatus;
 		let newStatus: LogStatus;
 		let newLoggedAt: SvelteDate | null = null;
 
@@ -60,8 +60,8 @@
 		}
 
 		// Update local task object for reactive UI
-		task = {
-			...task,
+		item = {
+			...item,
 			logged_status: newStatus,
 			logged_at: newLoggedAt,
 			updated_at: new SvelteDate()
@@ -109,76 +109,76 @@
 		}
 	}
 
-	let editingStartDateForTaskId: number | null = $state(null);
+	let editingStartDateForItemId: number | null = $state(null);
 </script>
 
-{#if openedTask && openedTask.id === task.id}
+{#if openedItem && openedItem.id === item.id}
 	<li
 		class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
-		data-id={task.id}
+		data-id={item.id}
 		use:clickOutside
-		onoutsideclick={() => (openedTask = null)}
+		onoutsideclick={() => (openedItem = null)}
 	>
 		<input
 			type="text"
 			class="mb-2 w-full rounded border border-gray-300 p-2"
-			bind:value={openedTask.title}
+			bind:value={openedItem.title}
 			placeholder="New To-Do"
 			oninput={() =>
-				openedTask &&
-				saveTaskEdits(openedTask.id, {
-					title: openedTask.title
+				openedItem &&
+				saveTaskEdits(openedItem.id, {
+					title: openedItem.title
 				})}
 		/>
 		<textarea
 			class="mb-2 w-full rounded border border-gray-300 p-2"
 			placeholder="Notes"
 			rows="4"
-			bind:value={openedTask.notes}
+			bind:value={openedItem.notes}
 			oninput={() =>
-				openedTask &&
-				saveTaskEdits(openedTask.id, {
-					notes: openedTask.notes
+				openedItem &&
+				saveTaskEdits(openedItem.id, {
+					notes: openedItem.notes
 				})}
 		></textarea>
 
-		{#if task.start_date || task.start === 'someday'}
+		{#if item.start_date || item.start}
 			<div class="flex space-x-4 text-left">
-				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
+				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
 			</div>
 		{/if}
 
-		{#if task.deadline}
+		{#if item.deadline}
 			<div class="flex space-x-4 text-left">
-				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
+				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
 			</div>
 		{/if}
 
-		{#if !task.start_date && task.start !== 'someday' && !task.deadline}
+		{#if !item.start_date && !item.start && !item.deadline}
 			<div class="flex justify-end space-x-4">
-				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
-				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
+				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
+				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
 			</div>
-		{:else if !task.start_date && task.start !== 'someday'}
+		{:else if !item.start_date && !item.start}
 			<div class="flex justify-end space-x-4">
-				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
+				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
 			</div>
-		{:else if !task.deadline}
+		{:else if !item.deadline}
 			<div class="flex justify-end space-x-4">
-				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
+				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
 			</div>
 		{/if}
 	</li>
 {:else}
 	<div
 		class="flex items-center"
-		data-id={task.id}
+		data-id={item.id}
 		role="button"
 		tabindex="0"
 		draggable="true"
-		ondragstart={(event: DragEvent) => handleDragStart && handleDragStart(event, task.id)}
+		ondragstart={(event: DragEvent) => handleDragStart && handleDragStart(event, item.id)}
 		ondragover={(event: DragEvent) => handleDragOver && handleDragOver(event)}
-		ondrop={(event: DragEvent) => handleDrop && handleDrop(event, task.id)}
+		ondrop={(event: DragEvent) => handleDrop && handleDrop(event, item.id)}
 		ondragend={handleDragEnd && handleDragEnd}
 	>
 		<!-- Status button with cycling functionality -->
@@ -186,15 +186,15 @@
 			class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center"
 			onclick={(event: MouseEvent) => {
 				event.stopPropagation();
-				cycleTaskStatus(task.id);
+				cycleTaskStatus(item.id);
 			}}
 		>
-			{#if task.logged_status === 'completed'}
+			{#if item.logged_status === 'completed'}
 				<div
-					class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600"
+					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
 					aria-label="Completed"
 				>
-					<svg viewBox="0 0 20 20" class="h-3 w-3 text-gray-800" aria-hidden="true">
+					<svg viewBox="0 0 20 20" class="h-3 w-3 text-white" aria-hidden="true">
 						<path
 							d="M5 10l3 3 7-7"
 							fill="none"
@@ -205,12 +205,12 @@
 						/>
 					</svg>
 				</div>
-			{:else if task.logged_status === 'canceled'}
+			{:else if item.logged_status === 'canceled'}
 				<div
-					class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600"
+					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
 					aria-label="Canceled"
 				>
-					<svg viewBox="0 0 20 20" class="h-3 w-3 text-gray-800" aria-hidden="true">
+					<svg viewBox="0 0 20 20" class="h-3 w-3 text-white" aria-hidden="true">
 						<path
 							d="M5 5l10 10M15 5l-10 10"
 							fill="none"
@@ -220,7 +220,7 @@
 						/>
 					</svg>
 				</div>
-			{:else if task.start === 'someday'}
+			{:else if item.start === 'someday'}
 				<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
 			{:else}
 				<div class="h-4 w-4 border-2 border-gray-400"></div>
@@ -229,20 +229,20 @@
 
 		<button
 			class="flex w-full cursor-pointer justify-between rounded bg-white p-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-			ondblclick={openTask}
-			data-id={task.id}
-			onclick={highlightTask}
+			ondblclick={openItem}
+			data-id={item.id}
+			onclick={highlightItem}
 		>
 			<div>
-				{task.title}
-				{#if task.notes.length > 0}
+				{item.title}
+				{#if item.notes && item.notes.length > 0}
 					<span class="ml-2 text-gray-400">📝</span>
 				{/if}
 			</div>
 			<div>
-				{#if task.deadline}
+				{#if item.deadline}
 					<span class="text-sm text-gray-500">
-						{getDeadlineRelativeText(task.deadline)}
+						{getDeadlineRelativeText(item.deadline)}
 					</span>
 				{/if}
 			</div>
