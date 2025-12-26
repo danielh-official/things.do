@@ -90,7 +90,7 @@
 			return;
 		}
 
-		if (event.key === 'Backspace' && highlightedItems.size > 0) {
+		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
 			deleteHighlightedItems();
 			return;
 		}
