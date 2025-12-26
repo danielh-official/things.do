@@ -1,10 +1,13 @@
 <script lang="ts">
-	import { db, type Item as Task } from '$lib/db';
+	import { db, type Item } from '$lib/db';
 	import { onMount } from 'svelte';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import MultiselectOptionBox from '$lib/components/MultiselectOptionBox.svelte';
+	import ItemInputBox from '$lib/components/ItemInputBox.svelte';
+	import { getFocusingTasks } from '$lib';
 
-	let items = $state<Task[]>([]);
+	let items = $state<Item[]>([]);
 
 	onMount(async () => {
 		window.addEventListener('keydown', processKeydownEvent);
@@ -13,28 +16,10 @@
 	});
 
 	async function updateItemsState() {
-		const allItems = await db.items.toArray();
-
-		items = allItems
-			.filter((item) => {
-				if (item.start !== 'inbox') {
-					return false;
-				}
-
-				if (item.logged_at !== null && item.logged_status !== null) {
-					return false;
-				}
-
-				if (item.start_date) {
-					return false;
-				}
-
-				return true;
-			})
-			.sort((a, b) => a.order - b.order);
+		items = await getFocusingTasks();
 	}
 
-	async function addTask(event: KeyboardEvent) {
+	async function addItem(event: KeyboardEvent) {
 		const input = event.target as HTMLInputElement;
 		const item = input.value.trim();
 		if (item) {
@@ -44,7 +29,7 @@
 				notes: '',
 				start_date: null,
 				deadline: null,
-				start: 'inbox',
+				start: null,
 				tags: [],
 				created_at: new SvelteDate(),
 				updated_at: new SvelteDate(),
@@ -53,7 +38,12 @@
 				checklist: [],
 				logged_at: null,
 				logged_status: null,
-				order: items.length > 0 ? Math.max(...items.map((t) => t.order)) + 1 : 1
+				order: items.length > 0 ? Math.max(...items.map((t) => t.order)) + 1 : 1,
+				deleted_at: null,
+				type: 'task',
+				later: false,
+				parent_id: null,
+				parent_things_id: null
 			});
 
 			input.value = '';
@@ -62,32 +52,32 @@
 		}
 	}
 
-	let openedTask: Task | null = $state(null);
+	let openedItem: Item | null = $state(null);
 
-	function openTask(event: MouseEvent) {
-		clearHighlightsForAllTasks();
+	function openItem(event: MouseEvent) {
+		clearHighlightsForAllItems();
 
 		const li = event.currentTarget as HTMLLIElement;
 
-		openedTask =
-			items.filter((task: Task) => task.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
+		openedItem =
+			items.filter((item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
 			null;
 	}
 
-	function closeOpenedTask() {
-		openedTask = null;
+	function closeOpenedItem() {
+		openedItem = null;
 	}
 
-	let addingNewTask = $state(false);
+	let addingNewItem = $state(false);
 
 	function processKeydownEvent(event: KeyboardEvent) {
-		if (event.code === 'Enter' && addingNewTask) {
-			addTask(event);
+		if (event.code === 'Enter' && addingNewItem) {
+			addItem(event);
 			return;
 		}
 
-		if (event.code === 'Space' && !openedTask && !addingNewTask) {
-			const input = document.querySelector('input#new-task-input') as HTMLInputElement;
+		if (event.code === 'Space' && !openedItem && !addingNewItem) {
+			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
 			if (input) {
 				event.preventDefault();
 				input.focus();
@@ -95,96 +85,95 @@
 			return;
 		}
 
-		if (event.key === 'Escape' && openedTask) {
-			closeOpenedTask();
+		if (event.key === 'Escape' && openedItem) {
+			closeOpenedItem();
 			return;
 		}
 
-		if (event.key === 'Backspace' && highlightedTasks.size > 0) {
-			deleteHighlightedTasks();
+		if (event.key === 'Backspace' && highlightedItems.size > 0) {
+			deleteHighlightedItems();
 			return;
 		}
 	}
 
-	async function deleteHighlightedTasks() {
+	async function deleteHighlightedItems() {
 		if (
 			!confirm(
-				`Are you sure you want to delete ${highlightedTasks.size} selected task(s)? This action cannot be undone.`
+				`Are you sure you want to delete ${highlightedItems.size} selected item(s)? This action cannot be undone.`
 			)
 		) {
 			return;
 		}
 
-		highlightedTasks.forEach(async (taskId) => {
-			await db.items.delete(taskId);
+		highlightedItems.forEach(async (itemId) => {
+			await db.items.update(itemId, { deleted_at: new SvelteDate() });
 		});
 		updateItemsState();
-		clearHighlightsForAllTasks();
+		clearHighlightsForAllItems();
 	}
 
-	let highlightedTasks = $state<Set<number>>(new Set());
-	let draggingTaskId = $state<number | null>(null);
+	let highlightedItems = $state<Set<number>>(new Set());
+	let draggingItemId = $state<number | null>(null);
 
-	function highlightTask(event: MouseEvent) {
+	function highlightItem(event: MouseEvent) {
 		const button = event.currentTarget as HTMLButtonElement;
-		const taskId = parseInt(button.getAttribute('data-id') || '', 10);
+		const itemId = parseInt(button.getAttribute('data-id') || '', 10);
+		const newHighlightedItems = new SvelteSet(highlightedItems);
 
-		const newHighlightedTasks = new SvelteSet(highlightedTasks);
-
-		if (newHighlightedTasks.has(taskId)) {
-			newHighlightedTasks.delete(taskId);
+		if (newHighlightedItems.has(itemId)) {
+			newHighlightedItems.delete(itemId);
 			button.classList.add('bg-white');
 			button.classList.add('hover:bg-gray-50');
 			button.classList.remove('bg-blue-200');
 			button.classList.remove('hover:bg-blue-300');
 		} else {
-			newHighlightedTasks.add(taskId);
+			newHighlightedItems.add(itemId);
 			button.classList.remove('bg-white');
 			button.classList.remove('hover:bg-gray-50');
 			button.classList.add('bg-blue-200');
 			button.classList.add('hover:bg-blue-300');
 		}
 
-		highlightedTasks = newHighlightedTasks;
+		highlightedItems = newHighlightedItems;
 	}
 
-	function handleDragStart(event: DragEvent, taskId: number) {
-		draggingTaskId = taskId;
-		event.dataTransfer?.setData('text/plain', String(taskId));
+	function handleDragStart(event: DragEvent, itemId: number) {
+		draggingItemId = itemId;
+		event.dataTransfer?.setData('text/plain', String(itemId));
 	}
 
 	function handleDragOver(event: DragEvent) {
 		event.preventDefault();
 	}
 
-	async function handleDrop(event: DragEvent, targetTaskId: number) {
+	async function handleDrop(event: DragEvent, targetItemId: number) {
 		event.preventDefault();
 
 		const sourceId =
-			draggingTaskId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
-		if (!sourceId || sourceId === targetTaskId) {
+			draggingItemId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
+		if (!sourceId || sourceId === targetItemId) {
 			resetDragState();
 			return;
 		}
 
-		const currentTasks = [...items];
-		const fromIndex = currentTasks.findIndex((task) => task.id === sourceId);
-		const toIndex = currentTasks.findIndex((task) => task.id === targetTaskId);
+		const currentItems = [...items];
+		const fromIndex = currentItems.findIndex((item) => item.id === sourceId);
+		const toIndex = currentItems.findIndex((item) => item.id === targetItemId);
 
 		if (fromIndex === -1 || toIndex === -1) {
 			resetDragState();
 			return;
 		}
 
-		const [movedTask] = currentTasks.splice(fromIndex, 1);
-		currentTasks.splice(toIndex, 0, movedTask);
+		const [movedItem] = currentItems.splice(fromIndex, 1);
+		currentItems.splice(toIndex, 0, movedItem);
 
-		items = currentTasks;
+		items = currentItems;
 
 		await Promise.all(
-			currentTasks.map((task, index) => {
-				if (task.id == null) return Promise.resolve();
-				return db.items.update(task.id, {
+			currentItems.map((item, index) => {
+				if (item.id == null) return Promise.resolve();
+				return db.items.update(item.id, {
 					order: index + 1,
 					updated_at: new SvelteDate()
 				});
@@ -199,16 +188,16 @@
 	}
 
 	function resetDragState() {
-		draggingTaskId = null;
+		draggingItemId = null;
 	}
 
-	function clearHighlightsForAllTasks() {
-		highlightedTasks = new SvelteSet();
+	function clearHighlightsForAllItems() {
+		highlightedItems = new SvelteSet();
 
-		items.forEach((task: Task) => {
-			const taskId = task.id;
+		items.forEach((item: Item) => {
+			const itemId = item.id;
 
-			const button = document.querySelector(`button[data-id='${taskId}']`) as HTMLButtonElement;
+			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
 			if (button) {
 				button.classList.add('bg-white');
 				button.classList.add('hover:bg-gray-50');
@@ -216,7 +205,7 @@
 				button.classList.remove('hover:bg-blue-300');
 			}
 		});
-		highlightedTasks.clear();
+		highlightedItems.clear();
 	}
 
 	function loggedStatusChanged() {
@@ -225,57 +214,25 @@
 </script>
 
 <svelte:head>
-	<title>Inbox | Things.do</title>
+	<title>Focus | Things.do</title>
 </svelte:head>
 
-<div>
-	<input
-		class="w-full rounded border border-gray-300 p-2"
-		type="text"
-		id="new-task-input"
-		placeholder="Enter task..."
-		onfocus={() => (addingNewTask = true)}
-		onblur={() => (addingNewTask = false)}
-	/>
-	{#if items?.length > 0}
-		<ul class="mt-4 space-y-2">
-			{#each items as task (task.id)}
-				<ItemComponent
-					{task}
-					bind:openedTask
-					{openTask}
-					{highlightTask}
-					handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
-					handleDragOver={(event: DragEvent) => handleDragOver(event)}
-					handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
-					{handleDragEnd}
-					{loggedStatusChanged}
-				/>
-			{/each}
-		</ul>
-	{/if}
-</div>
-<div>
-	<!-- Box for showing options for showing controls for selected tasks. -->
-	{#if highlightedTasks.size > 0}
-		<div
-			class="fixed bottom-4 left-1/2 flex -translate-x-1/2 transform flex-col space-x-4 gap-y-4 rounded border border-gray-300 bg-white p-4 shadow-lg"
-		>
-			<p>{highlightedTasks.size} task(s) selected</p>
-			<div class="flex space-x-4">
-				<button
-					class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-					onclick={deleteHighlightedTasks}
-				>
-					Delete Selected Tasks
-				</button>
-				<button
-					class="cursor-pointer rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
-					onclick={clearHighlightsForAllTasks}
-				>
-					Clear Selected
-				</button>
-			</div>
-		</div>
-	{/if}
-</div>
+<ItemInputBox bind:addingNewItem />
+{#if items?.length > 0}
+	<ul class="mt-4 space-y-2">
+		{#each items as item (item.id)}
+			<ItemComponent
+				{item}
+				bind:openedItem
+				{openItem}
+				{highlightItem}
+				handleDragStart={(event: DragEvent) => handleDragStart(event, item.id!)}
+				handleDragOver={(event: DragEvent) => handleDragOver(event)}
+				handleDrop={(event: DragEvent) => handleDrop(event, item.id!)}
+				{handleDragEnd}
+				{loggedStatusChanged}
+			/>
+		{/each}
+	</ul>
+{/if}
+<MultiselectOptionBox {highlightedItems} {deleteHighlightedItems} {clearHighlightsForAllItems} />
