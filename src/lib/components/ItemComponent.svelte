@@ -154,21 +154,16 @@
 			</div>
 		{/if}
 
-		<!-- When neither start_date nor deadline is set, show them at the right -->
 		{#if !task.start_date && task.start !== 'someday' && !task.deadline}
 			<div class="flex justify-end space-x-4">
 				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
 				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
 			</div>
-		{/if}
-
-		{#if !task.start_date && task.start !== 'someday'}
+		{:else if !task.start_date && task.start !== 'someday'}
 			<div class="flex justify-end space-x-4">
 				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
 			</div>
-		{/if}
-
-		{#if !task.deadline}
+		{:else if !task.deadline}
 			<div class="flex justify-end space-x-4">
 				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
 			</div>
