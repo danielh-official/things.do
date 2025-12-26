@@ -200,17 +200,12 @@
 
 	async function addTagId(tagId: number) {
 		const existingIds = Array.isArray(item.tag_ids) ? (item.tag_ids as number[]) : [];
-		if (existingIds.includes(tagId)) {
-			closeTagInput();
-			return;
-		}
 		const nextTags = [...existingIds, tagId];
 		item = { ...item, tag_ids: nextTags, updated_at: new SvelteDate() };
 		if (item.id != null) {
 			await db.items.update(item.id, { tag_ids: nextTags, updated_at: new SvelteDate() });
 		}
 		tagInputText = '';
-		tagInputOpen = false;
 	}
 
 	async function addTagFromInput() {
@@ -260,7 +255,7 @@
 		class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
 		data-id={item.id}
 		use:clickOutside
-		onoutsideclick={() => (openedItem = null)}
+		onoutsideclick={() => (!tagInputOpen && (openedItem = null))}
 	>
 		<input
 			type="text"
