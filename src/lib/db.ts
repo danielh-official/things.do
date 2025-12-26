@@ -41,7 +41,6 @@ export interface Item {
 
 	blocked_by: Array<number>; // Array of item IDs that block this task. This functionality is not native to Things 3.
 	later: boolean; // Indicates if the item is postponed to a later time. Not native to Things 3.
-
 }
 
 const db = new Dexie('ThingsDoDB') as Dexie & {
