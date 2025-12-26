@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { db, type Item, type LogStatus } from '$lib/db';
 	import { clickOutside } from '$lib';
-	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
 	import { SvelteDate } from 'svelte/reactivity';
-	import StartDateInputComponent from './StartDateInputComponent.svelte';
 	import { tick } from 'svelte';
 
 	let {
@@ -62,7 +60,6 @@
 		});
 	}
 
-	let editingDeadlineForItemId: number | null = $state(null);
 	let pendingRemovalTaskId: number | null = $state(null);
 
 	function cycleTaskStatus(id: number) {
@@ -131,13 +128,11 @@
 		}
 	}
 
-	let editingStartDateForItemId: number | null = $state(null);
-
 	// Tags UI state
 	let tagInputOpen = $state(false);
 	let tagInputText = $state('');
 	import type { Tag } from '$lib/db';
-	import TagsInputComponent from './TagsInputComponent.svelte';
+	import { TagSolid } from 'flowbite-svelte-icons';
 	let allTagOptions = $state<Tag[]>([]);
 	let filteredTagOptions = $state<Tag[]>([]);
 	let tagNameById: Record<number, string> = $state({});
@@ -255,9 +250,10 @@
 		class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
 		data-id={item.id}
 		use:clickOutside
-		onoutsideclick={() => (!tagInputOpen && (openedItem = null))}
+		onoutsideclick={() => !tagInputOpen && (openedItem = null)}
 	>
 		<input
+			id={`item-title-input-${item.id}`}
 			type="text"
 			class="mb-2 w-full rounded border border-gray-300 p-2"
 			bind:value={openedItem.title}
@@ -269,6 +265,7 @@
 				})}
 		/>
 		<textarea
+			id={`item-notes-input-${item.id}`}
 			class="mb-2 w-full rounded border border-gray-300 p-2"
 			placeholder="Notes"
 			rows="4"
@@ -280,37 +277,13 @@
 				})}
 		></textarea>
 
-		{#if item.start_date || item.start}
-			<div class="flex items-center space-x-4 text-left">
-				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
-				<TagsInputComponent {item} {openTagInput} />
-			</div>
-		{/if}
-
-		{#if item.deadline}
-			<div class="flex items-center space-x-4 text-left">
-				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
-				<TagsInputComponent {item} {openTagInput} />
-			</div>
-		{/if}
-
-		{#if !item.start_date && !item.start && !item.deadline}
-			<div class="flex items-center justify-end space-x-4">
-				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
-				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
-				<TagsInputComponent {item} {openTagInput} />
-			</div>
-		{:else if !item.start_date && !item.start}
-			<div class="flex items-center justify-end space-x-4">
-				<StartDateInputComponent bind:openedItem bind:editingStartDateForItemId />
-				<TagsInputComponent {item} {openTagInput} />
-			</div>
-		{:else if !item.deadline}
-			<div class="flex items-center justify-end space-x-4">
-				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
-				<TagsInputComponent {item} {openTagInput} />
-			</div>
-		{/if}
+		<div class="flex items-center space-x-4 text-left">
+			{#if !(item.tag_ids && item.tag_ids.length)}
+				<button class="ml-auto text-sm" title="Add tag" onclick={openTagInput}>
+					<TagSolid class="inline h-6 w-6" />
+				</button>
+			{/if}
+		</div>
 
 		{#if item.tag_ids && item.tag_ids.length}
 			<div class="mt-3 flex flex-wrap gap-2">
@@ -347,7 +320,7 @@
 					onkeydown={onTagInputKeydown}
 				/>
 				{#if filteredTagOptions.length}
-					<ul class="absolute mt-1 w-full rounded border bg-white shadow">
+					<ul class="absolute z-40 mt-1 w-full rounded border bg-white shadow">
 						{#each filteredTagOptions as opt}
 							<li>
 								<button
