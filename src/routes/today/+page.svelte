@@ -15,8 +15,11 @@
 
 		items = allItems
 			.filter((item) => {
-				// Return false if not today's start_date tasks
-				if (item.start_date?.toDateString() !== new SvelteDate().toDateString()) {
+				// Return false if not today or earlier's start_date tasks
+				const itemDate = item.start_date?.getDate();
+				const todayDate = new SvelteDate().getDate();
+
+				if ((itemDate && itemDate > todayDate) || !item.start_date) {
 					return false;
 				}
 
