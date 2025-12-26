@@ -385,7 +385,7 @@
 	{#if groupDateKeys.length > 0}
 		{#each groupDateKeys as dateKey (dateKey)}
 			<h2 class="mt-6 text-sm font-semibold text-gray-700">{formatDateFromKey(dateKey)}</h2>
-			<ul class="mt-2 space-y-2" ondragover={handleDragOver} ondrop={(event) => handleDropOnGroup(event, dateKey)}>
+			<ul class="mt-2 space-y-2" ondragover={handleDragOver} ondrop={(event: DragEvent) => handleDropOnGroup(event, dateKey)}>
 				{#each groupedItemsByDate[dateKey] as task (task.id)}
 					<ItemComponent
 						{task}
