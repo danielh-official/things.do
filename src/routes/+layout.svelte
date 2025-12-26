@@ -59,7 +59,7 @@
 		return $startDateTodayTasks?.length ?? 0;
 	});
 
-	let deadlineTodayTasks = liveQuery(() =>
+	let deadlineTodayOrEarlierTasks = liveQuery(() =>
 		db.items.toArray().then((allItems) => {
 			const today = new SvelteDate();
 			today.setHours(0, 0, 0, 0);
@@ -73,14 +73,14 @@
 					const taskDeadline = new SvelteDate(item.deadline);
 					taskDeadline.setHours(0, 0, 0, 0);
 
-					return taskDeadline.getTime() === today.getTime();
+					return taskDeadline.getTime() <= today.getTime();
 				})
 				.sort((a, b) => a.order - b.order);
 		})
 	);
 
-	let deadlineTodayTasksCount = $derived.by(() => {
-		return $deadlineTodayTasks?.length ?? 0;
+	let deadlineTodayOrEarlierTasksCount = $derived.by(() => {
+		return $deadlineTodayOrEarlierTasks?.length ?? 0;
 	});
 </script>
 
@@ -88,7 +88,7 @@
 
 <aside
 	id="default-sidebar"
-	class="fixed top-0 left-0 z-40 h-full w-64 sm:translate-x-0"
+	class="fixed top-0 left-0 z-40 h-full w-64 sm:translate-x-0 transition-transform bg-gray-100 dark:bg-gray-800"
 	aria-label="Sidebar"
 >
 	<div class="border-default h-full overflow-y-auto border-e px-3 py-4">
@@ -97,7 +97,7 @@
 				<a
 					href={resolve('/')}
 					class={{
-						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
+						'text-body rounded-base group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/'
 					}}
 				>
@@ -120,7 +120,7 @@
 					<span class="ms-3 flex-1 whitespace-nowrap">Inbox</span>
 					{#if inboxTasksCount > 0}
 						<span
-							class="text-fg-danger-strong bg-danger-soft border-danger-subtle ms-2 inline-flex h-4.5 w-4.5 items-center justify-center text-xs font-medium"
+							class="ms-2 inline-flex h-4.5 w-4.5 items-center justify-center text-xs font-medium"
 							>{inboxTasksCount}</span
 						>
 					{/if}
@@ -130,7 +130,7 @@
 				<a
 					href={resolve('/today')}
 					class={{
-						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
+						'text-body rounded-base group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/today'
 					}}
 				>
@@ -153,14 +153,14 @@
 					<span class="ms-3 flex-1 whitespace-nowrap">Today</span>
 					{#if startDateTodayTasksCount > 0}
 						<span
-							class="text-fg-danger-strong bg-danger-soft border-danger-subtle ms-2 inline-flex h-4.5 w-4.5 items-center justify-center text-xs font-medium"
+							class="ms-2 inline-flex h-4.5 w-4.5 items-center justify-center text-xs font-medium"
 							>{startDateTodayTasksCount}</span
 						>
 					{/if}
-					{#if deadlineTodayTasksCount > 0}
+					{#if deadlineTodayOrEarlierTasksCount > 0}
 						<span
-							class="text-fg-danger-strong bg-danger-soft border-danger-subtle ms-2 inline-flex h-4.5 w-4.5 items-center justify-center text-xs font-medium"
-							>{deadlineTodayTasksCount}</span
+							class="ms-2 inline-flex h-4.5 w-4.5 items-center justify-center bg-red-500 text-xs font-medium text-white"
+							>{deadlineTodayOrEarlierTasksCount}</span
 						>
 					{/if}
 				</a>
@@ -169,7 +169,7 @@
 				<a
 					href={resolve('/upcoming')}
 					class={{
-						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
+						'text-body rounded-base group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/upcoming'
 					}}
 				>
@@ -196,7 +196,7 @@
 				<a
 					href={resolve('/anytime')}
 					class={{
-						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
+						'text-body rounded-base group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/anytime'
 					}}
 				>
@@ -223,7 +223,7 @@
 				<a
 					href={resolve('/someday')}
 					class={{
-						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
+						'text-body rounded-base group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/someday'
 					}}
 				>
@@ -250,7 +250,7 @@
 				<a
 					href={resolve('/logbook')}
 					class={{
-						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
+						'text-body rounded-base group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/logbook'
 					}}
 				>
@@ -278,7 +278,7 @@
 				<a
 					href={resolve('/deadlines')}
 					class={{
-						'text-body rounded-base hover:bg-neutral-tertiary hover:text-fg-brand group flex items-center px-2 py-1.5': true,
+						'text-body rounded-base group flex items-center px-2 py-1.5': true,
 						'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/deadlines'
 					}}
 				>
