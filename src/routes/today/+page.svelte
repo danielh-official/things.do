@@ -13,8 +13,6 @@
 			loading = false;
 		}, 500);
 
-		window.addEventListener('keydown', processKeydownEvent);
-
 		await updateItemsState();
 	});
 
@@ -228,8 +226,10 @@
 </script>
 
 <svelte:head>
-	<title>Inbox | Things.do</title>
+	<title>Today | Things.do</title>
 </svelte:head>
+
+<svelte:window onkeydown={processKeydownEvent} />
 
 <div>
 	{#if loading}
