@@ -142,28 +142,38 @@
 					notes: openedTask.notes
 				})}
 		></textarea>
-		<div class="flex justify-between">
-			<div class="mb-4 flex flex-col md:justify-between">
-				{#if task.start_date}
-					<div class="mt-2 flex flex-col md:mt-0 md:flex-row md:items-center">
-						<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
-					</div>
-				{/if}
-				{#if task.deadline}
-					<div class="mt-2 flex flex-col md:mt-0 md:flex-row md:items-center">
-						<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
-					</div>
-				{/if}
+
+		{#if task.start_date || task.start === 'someday'}
+			<div class="flex space-x-4 text-left">
+				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
 			</div>
+		{/if}
+
+		{#if task.deadline}
+			<div class="flex space-x-4 text-left">
+				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
+			</div>
+		{/if}
+
+		<!-- When neither start_date nor deadline is set, show them at the right -->
+		{#if !task.start_date && task.start !== 'someday' && !task.deadline}
 			<div class="flex justify-end space-x-4">
-				{#if !task.start_date}
-					<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
-				{/if}
-				{#if !task.deadline}
-					<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
-				{/if}
+				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
+				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
 			</div>
-		</div>
+		{/if}
+
+		{#if !task.start_date && task.start !== 'someday'}
+			<div class="flex justify-end space-x-4">
+				<StartDateInputComponent {openedTask} {editingStartDateForTaskId} />
+			</div>
+		{/if}
+
+		{#if !task.deadline}
+			<div class="flex justify-end space-x-4">
+				<DeadlineInputComponent {openedTask} {editingDeadlineForTaskId} />
+			</div>
+		{/if}
 	</li>
 {:else}
 	<div
@@ -186,13 +196,15 @@
 			}}
 		>
 			{#if task.logged_status === 'completed'}
-				<CheckCircleSolid class="h-6 w-6 text-green-600" />
+				<CheckCircleSolid class="h-4 w-4 text-green-600" />
 			{:else if task.logged_status === 'canceled'}
 				<div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-600">
 					<XSolid class="h-3 w-3 text-red-600" />
 				</div>
+			{:else if task.start === 'someday'}
+				<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
 			{:else}
-				<div class="h-6 w-6 rounded-full border-2 border-gray-400"></div>
+				<div class="h-4 w-4 border-2 border-gray-400"></div>
 			{/if}
 		</button>
 
