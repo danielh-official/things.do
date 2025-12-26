@@ -43,43 +43,70 @@
 		editingStartDateForTaskId = null;
 	}
 
-	function getStartDateRelativeText(deadline: Date | null): string {
-		if (!deadline) return '';
+	function getStartDateRelativeText(startDate: Date | null): string {
+		if (!startDate) return '';
 
 		const now = new Date();
-		const timeDiff = deadline.getTime() - now.getTime();
+		const timeDiff = startDate.getTime() - now.getTime();
 		const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
 		if (dayDiff === 0) {
 			return 'today';
-		} else if (dayDiff >= 1) {
-			return `${dayDiff} days left`;
-		} else if (dayDiff === -1) {
-			return '1 day ago';
 		} else {
-			return `${-dayDiff} days ago`;
+			return startDate.toLocaleDateString();
+		}
+	}
+
+	function setSomedayForTask(event: Event) {
+		const isChecked = (event.target as HTMLInputElement).checked;
+		if (openedTask) {
+			db.items.update(openedTask.id, {
+				start: isChecked ? 'someday' : null,
+				start_date: isChecked ? null : openedTask.start_date, // Clear start_date if setting to someday
+				updated_at: new SvelteDate()
+			});
+			openedTask.start = isChecked ? 'someday' : null;
+			if (isChecked) {
+				openedTask.start_date = null;
+			}
 		}
 	}
 </script>
 
-<button
-	class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-	onclick={() => openedTask && toggleStartDatePickerForTask(openedTask.id)}
->
-	<CalendarMonthSolid class="h-6 w-6 shrink-0" />
-</button>
+<div class="flex flex-col space-y-2">
+	<div class="flex items-center space-x-2">
+		<button
+			class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
+			onclick={() => openedTask && toggleStartDatePickerForTask(openedTask.id)}
+		>
+			<CalendarMonthSolid class="h-6 w-6 shrink-0" />
+		</button>
 
-{#if openedTask && openedTask.start_date}
-	<div class="content-center text-sm text-gray-500">
-		{getStartDateRelativeText(openedTask.start_date)}
+		{#if openedTask && openedTask.start_date}
+			<div class="content-center text-sm text-gray-500">
+				{getStartDateRelativeText(openedTask.start_date)}
+			</div>
+		{/if}
+
+		{#if openedTask && openedTask.start === 'someday' && openedTask.start_date === null}
+			<div class="content-center text-sm text-gray-500">Someday</div>
+		{/if}
 	</div>
-{/if}
 
-{#if openedTask && editingStartDateForTaskId === openedTask.id}
-	<input
-		type="date"
-		class="ml-4 rounded border border-gray-300 p-2"
-		value={openedTask.start_date?.toISOString().split('T')[0]}
-		onchange={setStartDateForTask}
-	/>
-{/if}
+	{#if openedTask && editingStartDateForTaskId === openedTask.id}
+		<div class="flex flex-col items-center space-y-4">
+			<input
+				type="date"
+				class="ml-4 rounded border border-gray-300 p-2"
+				value={openedTask.start_date?.toISOString().split('T')[0]}
+				onchange={setStartDateForTask}
+			/>
+			<input
+				type="checkbox"
+				class="ml-4"
+				checked={openedTask.start === 'someday'}
+				onchange={setSomedayForTask}
+			/> Someday
+		</div>
+	{/if}
+</div>
