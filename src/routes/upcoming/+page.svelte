@@ -16,10 +16,16 @@
 		items = allItems
 			.filter((item) => {
 				// Return false if start_date is not tomorrow or later's date
+				const itemDate = item.start_date?.getDate();
+				const tomorrowDate = new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() + 1)).getDate();
+
 				if (
-					item.start_date?.getDate() !==
-					new SvelteDate(new SvelteDate().setDate(new SvelteDate().getDate() + 1)).getDate()
+					(itemDate && itemDate < tomorrowDate) || !item.start_date
 				) {
+					return false;
+				}
+
+				if (item.start === 'inbox' || item.start === 'someday') {
 					return false;
 				}
 
