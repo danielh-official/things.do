@@ -2,7 +2,7 @@
 
 import { db } from './db';
 
-export function clickOutside(node: HTMLLIElement) {
+export function clickOutside(node: HTMLElement) {
 	// the node has been mounted in the DOM
 
 	window.addEventListener('click', handleClick);

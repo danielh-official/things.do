@@ -2,6 +2,7 @@
 	import { db, type Item } from '$lib/db';
 	import { onMount } from 'svelte';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
+	import { flip } from 'svelte/animate';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import MultiselectOptionBox from '$lib/components/MultiselectOptionBox.svelte';
 	import ItemInputBox from '$lib/components/ItemInputBox.svelte';
@@ -284,28 +285,30 @@
 {#if items?.length > 0}
 	<ul class="mt-4 space-y-2">
 		{#each items as item, index (item.id)}
-			{#if dragInsertIndex === index}
-				<li class="pointer-events-none relative -my-2">
-					<div class="border-t-2 border-blue-400"></div>
-				</li>
-			{/if}
-			<ItemComponent
-				{item}
-				bind:openedItem
-				{openItem}
-				{highlightItem}
-				handleDragStart={(event: DragEvent) => handleDragStart(event, item.id!)}
-				handleDragOver={(event: DragEvent) => handleDragOver(event)}
-				handleDrop={(event: DragEvent) => handleDrop(event, item.id!)}
-				{handleDragEnd}
-				{loggedStatusChanged}
-			/>
-		{/each}
-		{#if dragInsertIndex === items.length}
-			<li class="pointer-events-none relative -my-2">
-				<div class="border-t-2 border-blue-400"></div>
+			<li
+				animate:flip
+				data-id={item.id}
+				class={
+					dragInsertIndex === index
+						? 'relative -my-2 border-t-2 border-blue-400'
+						: dragInsertIndex === items.length && index === items.length - 1
+						? 'relative -my-2 border-b-2 border-blue-400'
+						: ''
+				}
+			>
+				<ItemComponent
+					{item}
+					bind:openedItem
+					{openItem}
+					{highlightItem}
+					handleDragStart={(event: DragEvent) => handleDragStart(event, item.id!)}
+					handleDragOver={(event: DragEvent) => handleDragOver(event)}
+					handleDrop={(event: DragEvent) => handleDrop(event, item.id!)}
+					{handleDragEnd}
+					{loggedStatusChanged}
+				/>
 			</li>
-		{/if}
+		{/each}
 	</ul>
 {/if}
 <MultiselectOptionBox {highlightedItems} {deleteHighlightedItems} {clearHighlightsForAllItems} />

@@ -113,7 +113,7 @@
 </script>
 
 {#if openedItem && openedItem.id === item.id}
-	<li
+	<div
 		class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
 		data-id={item.id}
 		use:clickOutside
@@ -168,7 +168,7 @@
 				<DeadlineInputComponent bind:openedItem bind:editingDeadlineForItemId />
 			</div>
 		{/if}
-	</li>
+	</div>
 {:else}
 	<div
 		class="flex items-center"
