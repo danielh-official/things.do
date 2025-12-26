@@ -4,43 +4,43 @@
 	import { SvelteDate } from 'svelte/reactivity';
 
 	let {
-		openedTask = $bindable(),
-		editingStartDateForTaskId = $bindable()
+		openedItem = $bindable(),
+		editingStartDateForItemId = $bindable()
 	}: {
-		openedTask: Item | null;
-		editingStartDateForTaskId: number | null;
+		openedItem: Item | null;
+		editingStartDateForItemId: number | null;
 	} = $props();
 
-	function toggleStartDatePickerForTask(taskId: number) {
-		if (editingStartDateForTaskId === taskId) {
-			editingStartDateForTaskId = null;
+	function toggleStartDatePickerForItem(itemId: number) {
+		if (editingStartDateForItemId === itemId) {
+			editingStartDateForItemId = null;
 			return;
 		}
 
-		editingStartDateForTaskId = taskId;
+		editingStartDateForItemId = itemId;
 	}
 
-	function setStartDateForTask(event: Event) {
+	function setStartDateForItem(event: Event) {
 		const dateValue = (event.target as HTMLInputElement).value;
 
 		// Set to UTC timezone
 		const selectedDate = dateValue ? new SvelteDate(dateValue + 'T23:59:59Z') : null;
 
-		if (openedTask) {
+		if (openedItem) {
 			// Make sure the start date is saved with time set to 00:00:00
 			if (selectedDate) {
 				selectedDate.setHours(0, 0, 0, 0);
 			}
 
-			db.items.update(openedTask.id, {
+			db.items.update(openedItem.id, {
 				start_date: selectedDate,
-				start: selectedDate ? null : openedTask.start, // Clear start if setting start_date, since start_date takes precedence
+				start: null,
 				updated_at: new SvelteDate()
 			});
 
-			openedTask.start_date = selectedDate;
+			openedItem.start_date = selectedDate;
 		}
-		editingStartDateForTaskId = null;
+		editingStartDateForItemId = null;
 	}
 
 	function getStartDateRelativeText(startDate: Date | null): string {
@@ -57,19 +57,29 @@
 		}
 	}
 
-	function setSomedayForTask(event: Event) {
-		const isChecked = (event.target as HTMLInputElement).checked;
-		if (openedTask) {
-			db.items.update(openedTask.id, {
-				start: isChecked ? 'someday' : null,
-				start_date: isChecked ? null : openedTask.start_date, // Clear start_date if setting to someday
+	function handleStartSelect(event: { target: HTMLSelectElement }) {
+		const selectedValue = (event.target as HTMLSelectElement).value;
+
+		if (selectedValue !== 'anytime' && selectedValue !== 'someday' && selectedValue !== '') {
+			return;
+		}
+
+		if (openedItem) {
+			db.items.update(openedItem.id, {
+				start: selectedValue === '' ? null : selectedValue,
+				start_date: selectedValue === '' ? null : openedItem.start_date,
 				updated_at: new SvelteDate()
 			});
-			openedTask.start = isChecked ? 'someday' : null;
-			if (isChecked) {
-				openedTask.start_date = null;
+			openedItem.start = selectedValue === '' ? null : selectedValue;
+			if (selectedValue === '') {
+				openedItem.start_date = null;
 			}
 		}
+	}
+
+	function capitalize(str: string | null): string {
+		if (!str) return '';
+		return str.charAt(0).toUpperCase() + str.slice(1);
 	}
 </script>
 
@@ -77,36 +87,42 @@
 	<div class="flex items-center space-x-2">
 		<button
 			class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-			onclick={() => openedTask && toggleStartDatePickerForTask(openedTask.id)}
+			onclick={() => openedItem && toggleStartDatePickerForItem(openedItem.id)}
 		>
 			<CalendarMonthSolid class="h-6 w-6 shrink-0" />
 		</button>
 
-		{#if openedTask && openedTask.start_date}
+		{#if openedItem && openedItem.start_date}
 			<div class="content-center text-sm text-gray-500">
-				{getStartDateRelativeText(openedTask.start_date)}
+				{getStartDateRelativeText(openedItem.start_date)}
 			</div>
 		{/if}
 
-		{#if openedTask && openedTask.start === 'someday' && openedTask.start_date === null}
-			<div class="content-center text-sm text-gray-500">Someday</div>
+		{#if openedItem && openedItem.start && openedItem.start_date === null}
+			<div class="content-center text-sm text-gray-500">{capitalize(openedItem.start)}</div>
 		{/if}
 	</div>
 
-	{#if openedTask && editingStartDateForTaskId === openedTask.id}
+	{#if openedItem && editingStartDateForItemId === openedItem.id}
 		<div class="flex flex-col items-center space-y-4">
 			<input
 				type="date"
 				class="ml-4 rounded border border-gray-300 p-2"
-				value={openedTask.start_date?.toISOString().split('T')[0]}
-				onchange={setStartDateForTask}
+				value={openedItem.start_date?.toISOString().split('T')[0]}
+				onchange={setStartDateForItem}
 			/>
-			<input
-				type="checkbox"
-				class="ml-4"
-				checked={openedTask.start === 'someday'}
-				onchange={setSomedayForTask}
-			/> Someday
+			<div class="flex items-center">
+				<label id="start-label" for="start-select">Start</label>
+				<select
+					id="start-select"
+					class="ml-2 rounded border border-gray-300 p-2"
+					onchange={handleStartSelect}
+				>
+					<option value="" selected={!openedItem.start}>Inbox</option>
+					<option value="anytime" selected={openedItem.start === 'anytime'}>Anytime</option>
+					<option value="someday" selected={openedItem.start === 'someday'}>Someday</option>
+				</select>
+			</div>
 		</div>
 	{/if}
 </div>
