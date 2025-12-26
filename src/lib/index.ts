@@ -21,7 +21,7 @@ export function clickOutside(node: HTMLElement) {
 	};
 }
 
-export async function getFocusingTasks() {
+export async function getFocusingItems() {
 	const allItems = await db.items.toArray();
 
 	return allItems
@@ -37,4 +37,66 @@ export async function getFocusingTasks() {
 			return true;
 		})
 		.sort((a, b) => a.order - b.order);
+}
+
+export async function getLaterItems() {
+	const allItems = await db.items.toArray();
+
+	return allItems
+		.filter((item) => {
+			if (item.type === 'area' || item.type === 'project') {
+				return false;
+			}
+
+			if (item.deleted_at && item.deleted_at !== null) {
+				return false;
+			}
+
+			if (item.later) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
+export async function getBlockedItems() {
+	const allItems = await db.items.toArray();
+
+	return allItems
+		.filter((item) => {
+			if (item.type === 'area' || item.type === 'project') {
+				return false;
+			}
+
+			if (item.deleted_at && item.deleted_at !== null) {
+				return false;
+			}
+
+			if (item.blocked_by && item.blocked_by.length > 0) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
+export async function getTrashItems() {
+	const allItems = await db.items.toArray();
+
+	return allItems
+		.filter((item) => {
+			if (item.deleted_at && item.deleted_at !== null) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
+export async function getTags() {
+	return await db.tags.toArray();
 }
