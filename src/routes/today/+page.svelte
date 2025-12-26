@@ -24,6 +24,10 @@
 					return false;
 				}
 
+				if (item.start === 'inbox' || item.start === 'someday') {
+					return false;
+				}
+
 				return true;
 			})
 			.sort((a, b) => a.order - b.order);
