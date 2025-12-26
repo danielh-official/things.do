@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { db, type Item, type LogStatus } from '$lib/db';
-	import { CheckCircleSolid, XSolid } from 'flowbite-svelte-icons';
 	import { clickOutside } from '$lib';
 	import DeadlineInputComponent from './DeadlineInputComponent.svelte';
 	import { SvelteDate } from 'svelte/reactivity';
@@ -196,10 +195,16 @@
 			}}
 		>
 			{#if task.logged_status === 'completed'}
-				<CheckCircleSolid class="h-4 w-4 text-green-600" />
+				<div class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600" aria-label="Completed">
+					<svg viewBox="0 0 20 20" class="h-3 w-3 text-gray-800" aria-hidden="true">
+						<path d="M5 10l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+				</div>
 			{:else if task.logged_status === 'canceled'}
-				<div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-600">
-					<XSolid class="h-3 w-3 text-red-600" />
+				<div class="grid h-4 w-4 place-items-center border-2 border-blue-600 bg-blue-600" aria-label="Canceled">
+					<svg viewBox="0 0 20 20" class="h-3 w-3 text-gray-800" aria-hidden="true">
+						<path d="M5 5l10 10M15 5l-10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+					</svg>
 				</div>
 			{:else if task.start === 'someday'}
 				<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
