@@ -280,7 +280,6 @@
 	<title>Focus | Things.do</title>
 </svelte:head>
 
-<h1 class="text-xl font-semibold">Focus</h1>
 <ItemInputBox bind:addingNewItem />
 {#if items?.length > 0}
 	<ul class="mt-4 space-y-2">
