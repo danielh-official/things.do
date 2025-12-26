@@ -18,10 +18,10 @@
 	}: {
 		task: Item;
 		openedTask: Item | null;
-		handleDragStart: (event: DragEvent, taskId: number) => void;
-		handleDragOver: (event: DragEvent) => void;
-		handleDrop: (event: DragEvent, taskId: number) => void;
-		handleDragEnd: (event: DragEvent) => void;
+		handleDragStart?: (event: DragEvent, taskId: number) => void;
+		handleDragOver?: (event: DragEvent) => void;
+		handleDrop?: (event: DragEvent, taskId: number) => void;
+		handleDragEnd?: (event: DragEvent) => void;
 		openTask: (event: MouseEvent) => void;
 		highlightTask: (event: MouseEvent) => void;
 		loggedStatusChanged: () => void;
@@ -176,10 +176,10 @@
 		role="button"
 		tabindex="0"
 		draggable="true"
-		ondragstart={(event: DragEvent) => handleDragStart(event, task.id)}
-		ondragover={(event: DragEvent) => handleDragOver(event)}
-		ondrop={(event: DragEvent) => handleDrop(event, task.id)}
-		ondragend={handleDragEnd}
+		ondragstart={(event: DragEvent) => handleDragStart && handleDragStart(event, task.id)}
+		ondragover={(event: DragEvent) => handleDragOver && handleDragOver(event)}
+		ondrop={(event: DragEvent) => handleDrop && handleDrop(event, task.id)}
+		ondragend={handleDragEnd && handleDragEnd}
 	>
 		<!-- Status button with cycling functionality -->
 		<button
