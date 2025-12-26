@@ -29,7 +29,7 @@ export interface Item {
 	deadline: SvelteDate | null;
 	checklist: { title: string; logged: boolean; logged_status: LogStatus }[];
 	order: number;
-	tags: number[];
+	tag_ids: number[];
 	evening: boolean;
 
 	created_at: SvelteDate;
