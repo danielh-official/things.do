@@ -9,6 +9,7 @@
 	// Grouped items by local date (YYYY-MM-DD) for start_date and/or deadline
 	let groupedItemsByDate = $state<Record<string, Task[]>>({});
 	let groupDateKeys = $state<string[]>([]);
+	let draggingTaskId = $state<number | null>(null);
 
 	function startOfDay(date: Date) {
 		const d = new SvelteDate(date);
@@ -44,6 +45,13 @@
 			month: 'short',
 			day: 'numeric'
 		}).format(date);
+	}
+
+	function dateFromKey(key: string): SvelteDate {
+		const [y, m, d] = key.split('-').map((s) => parseInt(s, 10));
+		const t = new SvelteDate(y, m - 1, d);
+		t.setHours(0, 0, 0, 0);
+		return t;
 	}
 
 	onMount(async () => {
@@ -193,7 +201,7 @@
 	}
 
 	let highlightedTasks = $state<Set<number>>(new Set());
-	let draggingTaskId = $state<number | null>(null);
+	// draggingTaskId declared above alongside grouped state
 
 	function highlightTask(event: MouseEvent) {
 		const button = event.currentTarget as HTMLButtonElement;
@@ -223,7 +231,7 @@
 		highlightedTasks = newHighlightedTasks;
 	}
 
-	function handleDragStart(event: DragEvent, taskId: number) {
+	function handleDragStart(event: DragEvent, taskId: number, _sourceDateKey?: string) {
 		draggingTaskId = taskId;
 		event.dataTransfer?.setData('text/plain', String(taskId));
 	}
@@ -232,7 +240,7 @@
 		event.preventDefault();
 	}
 
-	async function handleDrop(event: DragEvent, targetTaskId: number) {
+	async function handleDrop(event: DragEvent, targetTaskId: number, targetDateKey: string) {
 		event.preventDefault();
 
 		const sourceId =
@@ -256,17 +264,78 @@
 
 		items = currentTasks;
 
+		// If dropping into a different date group, set start_date to that date
+		const targetDate = dateFromKey(targetDateKey);
+		const currentStartKey = movedTask.start_date ? toDateKey(movedTask.start_date) : null;
+		const shouldSetStartDate = !currentStartKey || currentStartKey !== targetDateKey;
+
 		await Promise.all(
 			currentTasks.map((task, index) => {
 				if (task.id == null) return Promise.resolve();
-				return db.items.update(task.id, {
+				const update: Partial<Task> = {
 					order: index + 1,
 					updated_at: new SvelteDate()
-				});
+				};
+				if (shouldSetStartDate && task.id === sourceId) {
+					(update as any).start_date = targetDate;
+				}
+				return db.items.update(task.id, update);
 			})
 		);
 
 		resetDragState();
+		// Recompute groups after updates
+		await updateItemsState();
+	}
+	function handleDropOnGroup(event: DragEvent, targetDateKey: string) {
+		event.preventDefault();
+		const sourceId =
+			draggingTaskId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
+		if (!sourceId) {
+			resetDragState();
+			return;
+		}
+
+		const currentTasks = [...items];
+		const fromIndex = currentTasks.findIndex((task) => task.id === sourceId);
+		if (fromIndex === -1) {
+			resetDragState();
+			return;
+		}
+
+		// Determine insertion index as end of target group in global order
+		const targetGroup = groupedItemsByDate[targetDateKey] ?? [];
+		let insertIndex = currentTasks.length;
+		if (targetGroup.length > 0) {
+			const lastId = targetGroup[targetGroup.length - 1].id;
+			const idx = currentTasks.findIndex((t) => t.id === lastId);
+			insertIndex = idx === -1 ? currentTasks.length : idx + 1;
+		}
+
+		const [movedTask] = currentTasks.splice(fromIndex, 1);
+		currentTasks.splice(insertIndex, 0, movedTask);
+
+		items = currentTasks;
+
+		const targetDate = dateFromKey(targetDateKey);
+
+		Promise.all(
+			currentTasks.map((task, index) => {
+				if (task.id == null) return Promise.resolve();
+				const update: Partial<Task> = {
+					order: index + 1,
+					updated_at: new SvelteDate()
+				};
+				if (task.id === sourceId) {
+					(update as any).start_date = targetDate;
+				}
+				return db.items.update(task.id, update);
+			})
+		)
+			.then(async () => {
+				resetDragState();
+				await updateItemsState();
+			});
 	}
 
 	function handleDragEnd() {
@@ -316,16 +385,16 @@
 	{#if groupDateKeys.length > 0}
 		{#each groupDateKeys as dateKey (dateKey)}
 			<h2 class="mt-6 text-sm font-semibold text-gray-700">{formatDateFromKey(dateKey)}</h2>
-			<ul class="mt-2 space-y-2">
+			<ul class="mt-2 space-y-2" ondragover={handleDragOver} ondrop={(event) => handleDropOnGroup(event, dateKey)}>
 				{#each groupedItemsByDate[dateKey] as task (task.id)}
 					<ItemComponent
 						{task}
 						bind:openedTask
 						{openTask}
 						{highlightTask}
-						handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!)}
+						handleDragStart={(event: DragEvent) => handleDragStart(event, task.id!, dateKey)}
 						handleDragOver={(event: DragEvent) => handleDragOver(event)}
-						handleDrop={(event: DragEvent) => handleDrop(event, task.id!)}
+						handleDrop={(event: DragEvent) => handleDrop(event, task.id!, dateKey)}
 						{handleDragEnd}
 						{loggedStatusChanged}
 					/>
