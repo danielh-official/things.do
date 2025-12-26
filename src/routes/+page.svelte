@@ -90,6 +90,11 @@
 			return;
 		}
 
+		if (event.key === 'Escape' && highlightedItems.size > 0) {
+			clearHighlightsForAllItems();
+			return;
+		}
+
 		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
 			deleteHighlightedItems();
 			return;
