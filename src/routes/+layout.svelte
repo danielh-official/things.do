@@ -307,7 +307,7 @@
 		</div>
 	</aside>
 
-	<main class="p-4 md:mx-auto md:max-w-lg">
+	<main class="p-4 md:mx-auto max-w-xl w-full">
 		{@render children()}
 	</main>
 </div>
