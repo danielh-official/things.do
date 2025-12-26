@@ -13,8 +13,6 @@
 			loading = false;
 		}, 500);
 
-		window.addEventListener('keydown', processKeydownEvent);
-
 		await updateItemsState();
 	});
 
@@ -47,7 +45,7 @@
 				created_at: new SvelteDate(),
 				updated_at: new SvelteDate(),
 				blocked_by: [],
-                evening: false,
+				evening: false,
 				checklist: [],
 				logged_at: new SvelteDate(),
 				logged_status: 'completed',
@@ -223,8 +221,10 @@
 </script>
 
 <svelte:head>
-	<title>Inbox | Things.do</title>
+	<title>Logbook | Things.do</title>
 </svelte:head>
+
+<svelte:window onkeydown={processKeydownEvent} />
 
 <div>
 	{#if loading}
