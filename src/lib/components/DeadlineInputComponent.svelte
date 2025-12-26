@@ -4,42 +4,42 @@
 	import { SvelteDate } from 'svelte/reactivity';
 
 	let {
-		openedTask = $bindable(),
-		editingDeadlineForTaskId = $bindable()
+		openedItem = $bindable(),
+		editingDeadlineForItemId = $bindable()
 	}: {
-		openedTask: Item | null;
-		editingDeadlineForTaskId: number | null;
+		openedItem: Item | null;
+		editingDeadlineForItemId: number | null;
 	} = $props();
 
-	function toggleDeadlinePickerForTask(taskId: number) {
-		if (editingDeadlineForTaskId === taskId) {
-			editingDeadlineForTaskId = null;
+	function toggleDeadlinePickerForItem(itemId: number) {
+		if (editingDeadlineForItemId === itemId) {
+			editingDeadlineForItemId = null;
 			return;
 		}
 
-		editingDeadlineForTaskId = taskId;
+		editingDeadlineForItemId = itemId;
 	}
 
-	function setDeadlineForTask(event: Event) {
+	function setDeadlineForItem(event: Event) {
 		const dateValue = (event.target as HTMLInputElement).value;
 
 		// Set to UTC timezone
 		const selectedDate = dateValue ? new SvelteDate(dateValue + 'T23:59:59Z') : null;
 
-		if (openedTask) {
+		if (openedItem) {
 			// Make sure the deadline is saved with time set to 00:00:00
 			if (selectedDate) {
 				selectedDate.setHours(0, 0, 0, 0);
 			}
 
-			db.items.update(openedTask.id, {
+			db.items.update(openedItem.id, {
 				deadline: selectedDate,
 				updated_at: new SvelteDate()
 			});
 
-			openedTask.deadline = selectedDate;
+			openedItem.deadline = selectedDate;
 		}
-		editingDeadlineForTaskId = null;
+		editingDeadlineForItemId = null;
 	}
 
 	function getDeadlineRelativeText(deadline: Date | null): string {
@@ -64,23 +64,23 @@
 <div class="flex items-center space-x-2">
 	<button
 		class="flex cursor-pointer items-center rounded px-3 py-2 hover:text-gray-600"
-		onclick={() => openedTask && toggleDeadlinePickerForTask(openedTask.id)}
+		onclick={() => openedItem && toggleDeadlinePickerForItem(openedItem.id)}
 	>
 		<FlagSolid class="h-6 w-6 shrink-0" />
 	</button>
 
-	{#if openedTask && openedTask.deadline}
+	{#if openedItem && openedItem.deadline}
 		<div class="content-center text-sm text-gray-500">
-			{getDeadlineRelativeText(openedTask.deadline)}
+			{getDeadlineRelativeText(openedItem.deadline)}
 		</div>
 	{/if}
 
-	{#if openedTask && editingDeadlineForTaskId === openedTask.id}
+	{#if openedItem && editingDeadlineForItemId === openedItem.id}
 		<input
 			type="date"
 			class="ml-4 rounded border border-gray-300 p-2"
-			value={openedTask.deadline?.toISOString().split('T')[0]}
-			onchange={setDeadlineForTask}
+			value={openedItem.deadline?.toISOString().split('T')[0]}
+			onchange={setDeadlineForItem}
 		/>
 	{/if}
 </div>
