@@ -1,14 +1,18 @@
 <script lang="ts">
+	import { db } from '$lib/db';
+
 	let {
 		highlightedItems = $bindable(),
 		deleteHighlightedItems,
 		restoreHighlightedItems,
-		clearHighlightsForAllItems
+		clearHighlightsForAllItems,
+		isLater
 	}: {
 		highlightedItems: Set<number>;
 		deleteHighlightedItems: () => Promise<void>;
 		restoreHighlightedItems?: () => Promise<void>;
 		clearHighlightsForAllItems: () => void;
+		isLater?: boolean;
 	} = $props();
 </script>
 
@@ -34,6 +38,33 @@
 				>
 					{!!restoreHighlightedItems ? 'Permanently' : ''} Delete Selected Items
 				</button>
+				{#if isLater}
+					<button
+						class="cursor-pointer rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+						onclick={() => {
+							highlightedItems.forEach(async (itemId) => {
+								const item = await db.items.get(itemId);
+								if (item) {
+									await db.items.update(itemId, { later: false });
+								}
+							});
+							clearHighlightsForAllItems();
+						}}>Focus On Now</button
+					>
+				{:else}
+					<button
+						class="cursor-pointer rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+						onclick={() => {
+							highlightedItems.forEach(async (itemId) => {
+								const item = await db.items.get(itemId);
+								if (item) {
+									await db.items.update(itemId, { later: true });
+								}
+							});
+							clearHighlightsForAllItems();
+						}}>Set Aside For Later</button
+					>
+				{/if}
 				<button
 					class="cursor-pointer rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
 					onclick={clearHighlightsForAllItems}
