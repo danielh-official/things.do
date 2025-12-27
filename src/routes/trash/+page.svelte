@@ -1,24 +1,14 @@
 <script lang="ts">
-	import { db, type Tag, type Item } from '$lib/db';
-	import { onMount } from 'svelte';
+	import { db, type Item } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import { flip } from 'svelte/animate';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import MultiselectOptionBox from '$lib/components/MultiselectOptionBoxComponent.svelte';
-	import { getTrashItems } from '$lib';
+	import { getTrashedItems } from '$lib';
+	import { liveQuery } from 'dexie';
 
-	let items = $state<Item[]>([]);
+	let items = liveQuery(() => getTrashedItems());
 
-	let tags = $state<Tag[]>([]);
-
-	onMount(async () => {
-		await updateItemsState();
-	});
-
-	async function updateItemsState() {
-		items = await getTrashItems();
-		tags = await db.tags.toArray();
-	}
+	let tags = liveQuery(() => db.tags.toArray());
 
 	let openedItem: Item | null = $state(null);
 
@@ -28,8 +18,9 @@
 		const li = event.currentTarget as HTMLLIElement;
 
 		openedItem =
-			items.filter((item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
-			null;
+			$items.filter(
+				(item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10)
+			)[0] || null;
 	}
 
 	function closeOpenedItem() {
@@ -39,26 +30,9 @@
 	let addingNewItem = $state(false);
 
 	async function deleteHighlightedItems() {
-		if (
-			!confirm(
-				`Are you sure you want to delete ${highlightedItems.size} selected item(s)? This action is permanent and cannot be undone.`
-			)
-		) {
-			return;
-		}
-
 		highlightedItems.forEach(async (itemId) => {
 			await db.items.update(itemId, { deleted_at: new SvelteDate() });
 		});
-		updateItemsState();
-		clearHighlightsForAllItems();
-	}
-
-	async function restoreHighlightedItems() {
-		highlightedItems.forEach(async (itemId) => {
-			await db.items.update(itemId, { deleted_at: null });
-		});
-		updateItemsState();
 		clearHighlightsForAllItems();
 	}
 
@@ -116,7 +90,7 @@
 		const rect = el.getBoundingClientRect();
 		const dropAfter = event.clientY > rect.top + rect.height / 2;
 
-		const idx = items.findIndex((i) => i.id === targetId);
+		const idx = $items.findIndex((i: Item) => i.id === targetId);
 		if (idx === -1) {
 			dragInsertIndex = null;
 			return;
@@ -138,7 +112,7 @@
 		// Determine if we are moving a group: move all highlighted items together
 		const isGroupMove = highlightedItems.size > 0 && highlightedItems.has(sourceId);
 		const groupIds: number[] = isGroupMove
-			? items.filter((i) => i.id != null && highlightedItems.has(i.id!)).map((i) => i.id!)
+			? $items.filter((i) => i.id != null && highlightedItems.has(i.id!)).map((i) => i.id!)
 			: [sourceId];
 
 		// No-op if target is inside the group being moved
@@ -147,7 +121,7 @@
 			return;
 		}
 
-		const currentItems = [...items];
+		const currentItems = [...$items];
 
 		// Remove all items being moved, preserving their original relative order
 		const movedItems: Item[] = [];
@@ -174,8 +148,6 @@
 		// Insert the moved items as a contiguous block
 		currentItems.splice(insertionIndex, 0, ...movedItems);
 
-		items = currentItems;
-
 		await Promise.all(
 			currentItems.map((item, index) => {
 				if (item.id == null) return Promise.resolve();
@@ -201,7 +173,7 @@
 	function clearHighlightsForAllItems() {
 		highlightedItems = new SvelteSet();
 
-		items.forEach((item: Item) => {
+		$items.forEach((item: Item) => {
 			const itemId = item.id;
 
 			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
@@ -215,26 +187,7 @@
 		highlightedItems.clear();
 	}
 
-	function loggedStatusChanged() {
-		updateItemsState();
-	}
-
-	$effect(() => {
-		tags;
-
-		updateItemsState();
-	});
-
 	function processKeydownEvent(event: KeyboardEvent) {
-		if (event.code === 'Space' && !openedItem && !addingNewItem) {
-			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
-			if (input) {
-				event.preventDefault();
-				input.focus();
-			}
-			return;
-		}
-
 		if (event.key === 'Escape' && openedItem) {
 			closeOpenedItem();
 			return;
@@ -250,6 +203,13 @@
 			return;
 		}
 	}
+
+	async function restoreHighlightedItems() {
+		highlightedItems.forEach(async (itemId) => {
+			await db.items.update(itemId, { deleted_at: null });
+		});
+		clearHighlightsForAllItems();
+	}
 </script>
 
 <svelte:head>
@@ -258,15 +218,14 @@
 
 <svelte:window onkeydown={processKeydownEvent} />
 
-{#if items?.length > 0}
+{#if $items?.length > 0}
 	<ul class="mt-4 space-y-2">
-		{#each items as item, index (item.id)}
+		{#each $items as item, index (item.id)}
 			<li
-				animate:flip
 				data-id={item.id}
 				class={dragInsertIndex === index
 					? 'relative -my-2 border-t-2 border-blue-400'
-					: dragInsertIndex === items.length && index === items.length - 1
+					: dragInsertIndex === $items.length && index === $items.length - 1
 						? 'relative -my-2 border-b-2 border-blue-400'
 						: ''}
 			>
@@ -279,7 +238,7 @@
 					handleDragOver={(event: DragEvent) => handleDragOver(event)}
 					handleDrop={(event: DragEvent) => handleDrop(event, item.id!)}
 					{handleDragEnd}
-					{loggedStatusChanged}
+					tags={$tags}
 				/>
 			</li>
 		{/each}

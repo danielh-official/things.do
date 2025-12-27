@@ -13,7 +13,7 @@
 		handleDragEnd,
 		openItem,
 		highlightItem,
-		loggedStatusChanged
+		tags = $bindable<Tag[]>(),
 	}: {
 		item: Item;
 		openedItem: Item | null;
@@ -23,10 +23,9 @@
 		handleDragEnd?: (event: DragEvent) => void;
 		openItem: (event: MouseEvent) => void;
 		highlightItem: (event: MouseEvent) => void;
-		loggedStatusChanged: () => void;
+		tags: Tag[];
 	} = $props();
 
-	let tags = $state<Tag[]>([]);
 	let tagsForItem: Tag[] = $state([]);
 
 	$effect(() => {
@@ -99,14 +98,9 @@
 				if (pendingRemovalTaskId === id) {
 					pendingRemovalTaskId = null;
 				}
-
-				loggedStatusChanged();
 			}, 2000);
 		} else if (newStatus === null) {
 			pendingRemovalTaskId = null;
-			setTimeout(() => {
-				loggedStatusChanged();
-			}, 2000);
 		}
 	}
 
