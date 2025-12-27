@@ -2,7 +2,6 @@
 	import { db, type Tag, type Item } from '$lib/db';
 	import { onMount } from 'svelte';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import { flip } from 'svelte/animate';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import MultiselectOptionBox from '$lib/components/MultiselectOptionBoxComponent.svelte';
 	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
@@ -73,14 +72,6 @@
 	let addingNewItem = $state(false);
 
 	async function deleteHighlightedItems() {
-		if (
-			!confirm(
-				`Are you sure you want to delete ${highlightedItems.size} selected item(s)? This action cannot be undone.`
-			)
-		) {
-			return;
-		}
-
 		highlightedItems.forEach(async (itemId) => {
 			await db.items.update(itemId, { deleted_at: new SvelteDate() });
 		});
@@ -294,7 +285,6 @@
 	<ul class="mt-4 space-y-2">
 		{#each items as item, index (item.id)}
 			<li
-				animate:flip
 				data-id={item.id}
 				class={dragInsertIndex === index
 					? 'relative -my-2 border-t-2 border-blue-400'
@@ -317,4 +307,8 @@
 		{/each}
 	</ul>
 {/if}
-<MultiselectOptionBox {highlightedItems} {deleteHighlightedItems} {clearHighlightsForAllItems} />
+<MultiselectOptionBox
+	{highlightedItems}
+	{deleteHighlightedItems}
+	{clearHighlightsForAllItems}
+/>
