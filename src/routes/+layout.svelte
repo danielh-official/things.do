@@ -68,7 +68,10 @@
 					<li>
 						<a
 							href={resolve('/later')}
-							class="text-body rounded-base group flex items-center px-2 py-1.5 hover:bg-gray-300 dark:hover:bg-gray-600"
+							class={{
+								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/later'
+							}}
 						>
 							<svg
 								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
@@ -94,7 +97,10 @@
 					<li>
 						<a
 							href={resolve('/blocked')}
-							class="text-body rounded-base group flex items-center px-2 py-1.5 hover:bg-gray-300 dark:hover:bg-gray-600"
+							class={{
+								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/blocked'
+							}}
 						>
 							<svg
 								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
@@ -120,7 +126,10 @@
 					<li>
 						<a
 							href={resolve('/trash')}
-							class="text-body rounded-base group flex items-center px-2 py-1.5 hover:bg-gray-300 dark:hover:bg-gray-600"
+							class={{
+								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/trash'
+							}}
 						>
 							<svg
 								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
@@ -147,7 +156,10 @@
 					<li>
 						<a
 							href={resolve('/tags')}
-							class="text-body rounded-base group flex items-center px-2 py-1.5 hover:bg-gray-300 dark:hover:bg-gray-600"
+							class={{
+								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/tags'
+							}}
 						>
 							<svg
 								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
