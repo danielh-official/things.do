@@ -2,7 +2,7 @@
 	import { db, type Item } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-	import MultiselectOptionBox from '$lib/components/MultiselectOptionBoxComponent.svelte';
+	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
 	import { getTrashedItems } from '$lib';
 	import { liveQuery } from 'dexie';
 
@@ -244,7 +244,7 @@
 		{/each}
 	</ul>
 {/if}
-<MultiselectOptionBox
+<MultiselectOptionBoxComponent
 	{highlightedItems}
 	{deleteHighlightedItems}
 	{clearHighlightsForAllItems}
