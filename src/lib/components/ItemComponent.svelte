@@ -13,7 +13,7 @@
 		handleDragEnd,
 		openItem,
 		highlightItem,
-		tags = $bindable<Tag[]>(),
+		tags = $bindable<Tag[]>()
 	}: {
 		item: Item;
 		openedItem: Item | null;

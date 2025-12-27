@@ -50,8 +50,9 @@
 		const li = event.currentTarget as HTMLLIElement;
 
 		openedItem =
-			$items.filter((item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
-			null;
+			$items.filter(
+				(item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10)
+			)[0] || null;
 	}
 
 	function closeOpenedItem() {
@@ -283,8 +284,4 @@
 		{/each}
 	</ul>
 {/if}
-<MultiselectOptionBox
-	{highlightedItems}
-	{deleteHighlightedItems}
-	{clearHighlightsForAllItems}
-/>
+<MultiselectOptionBox {highlightedItems} {deleteHighlightedItems} {clearHighlightsForAllItems} />
