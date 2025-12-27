@@ -4,7 +4,16 @@
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
 	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
-	import { getFocusingItems } from '$lib';
+	import {
+		getFocusingItems,
+		highlightItemUtil,
+		clearHighlightsForAllItemsUtil,
+		processKeydownEventUtil,
+		handleDropUtil,
+		handleDragOverUtil,
+		deleteHighlightedItemsUtil,
+		openItemUtil
+	} from '$lib';
 	import { liveQuery } from 'dexie';
 
 	let items = liveQuery(() => getFocusingItems());
@@ -45,14 +54,7 @@
 	let openedItem: Item | null = $state(null);
 
 	function openItem(event: MouseEvent) {
-		clearHighlightsForAllItems();
-
-		const li = event.currentTarget as HTMLLIElement;
-
-		openedItem =
-			$items.filter(
-				(item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10)
-			)[0] || null;
+		openedItem = openItemUtil(event, $items, clearHighlightsForAllItems);
 	}
 
 	function closeOpenedItem() {
@@ -62,36 +64,15 @@
 	let addingNewItem = $state(false);
 
 	async function deleteHighlightedItems() {
-		highlightedItems.forEach(async (itemId) => {
-			await db.items.update(itemId, { deleted_at: new SvelteDate() });
-		});
-		clearHighlightsForAllItems();
+		deleteHighlightedItemsUtil(highlightedItems, clearHighlightsForAllItems);
 	}
 
-	let highlightedItems = $state<Set<number>>(new Set());
+	let highlightedItems = $state<SvelteSet<number>>(new SvelteSet());
 	let draggingItemId = $state<number | null>(null);
 	let dragInsertIndex = $state<number | null>(null);
 
 	function highlightItem(event: MouseEvent) {
-		const button = event.currentTarget as HTMLButtonElement;
-		const itemId = parseInt(button.getAttribute('data-id') || '', 10);
-		const newHighlightedItems = new SvelteSet(highlightedItems);
-
-		if (newHighlightedItems.has(itemId)) {
-			newHighlightedItems.delete(itemId);
-			button.classList.add('bg-white');
-			button.classList.add('hover:bg-gray-50');
-			button.classList.remove('bg-blue-200');
-			button.classList.remove('hover:bg-blue-300');
-		} else {
-			newHighlightedItems.add(itemId);
-			button.classList.remove('bg-white');
-			button.classList.remove('hover:bg-gray-50');
-			button.classList.add('bg-blue-200');
-			button.classList.add('hover:bg-blue-300');
-		}
-
-		highlightedItems = newHighlightedItems;
+		highlightedItems = highlightItemUtil(event, highlightedItems);
 	}
 
 	function handleDragStart(event: DragEvent, itemId: number) {
@@ -101,96 +82,27 @@
 	}
 
 	function handleDragOver(event: DragEvent) {
-		event.preventDefault();
+		let draggables = handleDragOverUtil(
+			event,
+			highlightedItems,
+			$items,
+			draggingItemId,
+			dragInsertIndex
+		);
 
-		const el = event.currentTarget as HTMLElement;
-		const idAttr = el.getAttribute('data-id');
-		if (!idAttr) {
-			dragInsertIndex = null;
-			return;
-		}
-
-		const targetId = parseInt(idAttr, 10);
-		// If dragging a highlighted group and hovering over one of the group items, hide indicator
-		const isGroupMove =
-			draggingItemId != null && highlightedItems.size > 0 && highlightedItems.has(draggingItemId);
-		if (isGroupMove && highlightedItems.has(targetId)) {
-			dragInsertIndex = null;
-			return;
-		}
-
-		const rect = el.getBoundingClientRect();
-		const dropAfter = event.clientY > rect.top + rect.height / 2;
-
-		const idx = $items.findIndex((i: Item) => i.id === targetId);
-		if (idx === -1) {
-			dragInsertIndex = null;
-			return;
-		}
-
-		dragInsertIndex = idx + (dropAfter ? 1 : 0);
+		draggingItemId = draggables?.draggingItemId ?? null;
+		dragInsertIndex = draggables?.dragInsertIndex ?? null;
 	}
 
 	async function handleDrop(event: DragEvent, targetItemId: number) {
-		event.preventDefault();
-
-		const sourceId =
-			draggingItemId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
-		if (!sourceId) {
-			resetDragState();
-			return;
-		}
-
-		// Determine if we are moving a group: move all highlighted items together
-		const isGroupMove = highlightedItems.size > 0 && highlightedItems.has(sourceId);
-		const groupIds: number[] = isGroupMove
-			? $items.filter((i) => i.id != null && highlightedItems.has(i.id!)).map((i) => i.id!)
-			: [sourceId];
-
-		// No-op if target is inside the group being moved
-		if (groupIds.includes(targetItemId)) {
-			resetDragState();
-			return;
-		}
-
-		const currentItems = [...$items];
-
-		// Remove all items being moved, preserving their original relative order
-		const movedItems: Item[] = [];
-		for (const id of groupIds) {
-			const idx = currentItems.findIndex((item) => item.id === id);
-			if (idx !== -1) {
-				const [mi] = currentItems.splice(idx, 1);
-				movedItems.push(mi);
-			}
-		}
-
-		// Determine insertion position (before/after) based on cursor position
-		const el = event.currentTarget as HTMLElement;
-		const rect = el.getBoundingClientRect();
-		const dropAfter = event.clientY > rect.top + rect.height / 2;
-
-		let insertionIndex = currentItems.findIndex((item) => item.id === targetItemId);
-		if (insertionIndex === -1) {
-			resetDragState();
-			return;
-		}
-		if (dropAfter) insertionIndex += 1;
-
-		// Insert the moved items as a contiguous block
-		currentItems.splice(insertionIndex, 0, ...movedItems);
-
-		await Promise.all(
-			currentItems.map((item, index) => {
-				if (item.id == null) return Promise.resolve();
-				return db.items.update(item.id, {
-					order: index + 1,
-					updated_at: new SvelteDate()
-				});
-			})
+		await handleDropUtil(
+			event,
+			targetItemId,
+			highlightedItems,
+			$items,
+			draggingItemId,
+			resetDragState
 		);
-
-		resetDragState();
 	}
 
 	function handleDragEnd() {
@@ -203,51 +115,19 @@
 	}
 
 	function clearHighlightsForAllItems() {
-		highlightedItems = new SvelteSet();
-
-		$items.forEach((item: Item) => {
-			const itemId = item.id;
-
-			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
-			if (button) {
-				button.classList.add('bg-white');
-				button.classList.add('hover:bg-gray-50');
-				button.classList.remove('bg-blue-200');
-				button.classList.remove('hover:bg-blue-300');
-			}
-		});
-		highlightedItems.clear();
+		highlightedItems = clearHighlightsForAllItemsUtil($items, highlightedItems);
 	}
 
 	function processKeydownEvent(event: KeyboardEvent) {
-		if (event.code === 'Enter' && addingNewItem) {
-			addItem(event);
-			return;
-		}
-
-		if (event.code === 'Space' && !openedItem && !addingNewItem) {
-			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
-			if (input) {
-				event.preventDefault();
-				input.focus();
-			}
-			return;
-		}
-
-		if (event.key === 'Escape' && openedItem) {
-			closeOpenedItem();
-			return;
-		}
-
-		if (event.key === 'Escape' && highlightedItems.size > 0) {
-			clearHighlightsForAllItems();
-			return;
-		}
-
-		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
-			deleteHighlightedItems();
-			return;
-		}
+		processKeydownEventUtil(event, {
+			addingNewItem,
+			openedItem,
+			addItem,
+			closeOpenedItem,
+			highlightedItems,
+			clearHighlightsForAllItems,
+			deleteHighlightedItems
+		});
 	}
 </script>
 
@@ -284,4 +164,8 @@
 		{/each}
 	</ul>
 {/if}
-<MultiselectOptionBoxComponent {highlightedItems} {deleteHighlightedItems} {clearHighlightsForAllItems} />
+<MultiselectOptionBoxComponent
+	{highlightedItems}
+	{deleteHighlightedItems}
+	{clearHighlightsForAllItems}
+/>
