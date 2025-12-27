@@ -35,6 +35,10 @@ export async function getFocusingItems() {
 				return false;
 			}
 
+			if (item.later) {
+				return false;
+			}
+
 			return true;
 		})
 		.sort((a, b) => a.order - b.order);
@@ -102,7 +106,10 @@ export async function getTags() {
 	return await db.tags.toArray();
 }
 
-export function highlightItemUtil(event: MouseEvent, highlightedItems: SvelteSet<number>): SvelteSet<number> {
+export function highlightItemUtil(
+	event: MouseEvent,
+	highlightedItems: SvelteSet<number>
+): SvelteSet<number> {
 	const button = event.currentTarget as HTMLButtonElement;
 	const itemId = parseInt(button.getAttribute('data-id') || '', 10);
 	const newHighlightedItems = new SvelteSet(highlightedItems);
@@ -124,10 +131,7 @@ export function highlightItemUtil(event: MouseEvent, highlightedItems: SvelteSet
 	return newHighlightedItems;
 }
 
-export function clearHighlightsForAllItemsUtil(
-	items: Item[],
-	highlightedItems: SvelteSet<number>
-) {
+export function clearHighlightsForAllItemsUtil(items: Item[], highlightedItems: SvelteSet<number>) {
 	items.forEach((item: Item) => {
 		const itemId = item.id;
 
@@ -146,16 +150,24 @@ export function clearHighlightsForAllItemsUtil(
 export function processKeydownEventUtil(
 	event: KeyboardEvent,
 	options: {
-		addingNewItem?: boolean,
-		openedItem: Item | null,
-		addItem?: (event: KeyboardEvent) => void,
-		closeOpenedItem: () => void,
-		highlightedItems: SvelteSet<number>,
-		clearHighlightsForAllItems: () => void,
-		deleteHighlightedItems: () => void,
+		addingNewItem?: boolean;
+		openedItem: Item | null;
+		addItem?: (event: KeyboardEvent) => void;
+		closeOpenedItem: () => void;
+		highlightedItems: SvelteSet<number>;
+		clearHighlightsForAllItems: () => void;
+		deleteHighlightedItems: () => void;
 	}
 ) {
-	const { addingNewItem, openedItem, addItem, closeOpenedItem, highlightedItems, clearHighlightsForAllItems, deleteHighlightedItems } = options;
+	const {
+		addingNewItem,
+		openedItem,
+		addItem,
+		closeOpenedItem,
+		highlightedItems,
+		clearHighlightsForAllItems,
+		deleteHighlightedItems
+	} = options;
 
 	if (event.code === 'Enter' && addingNewItem) {
 		addItem?.(event);
@@ -197,8 +209,7 @@ export async function handleDropUtil(
 ) {
 	event.preventDefault();
 
-	const sourceId =
-		draggingItemId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
+	const sourceId = draggingItemId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
 	if (!sourceId) {
 		resetDragState();
 		return;
@@ -295,7 +306,7 @@ export function handleDragOverUtil(
 	return {
 		draggingItemId,
 		dragInsertIndex
-	}
+	};
 }
 
 export function deleteHighlightedItemsUtil(
@@ -317,7 +328,8 @@ export function openItemUtil(
 
 	const li = event.currentTarget as HTMLLIElement;
 
-	return items.filter(
-		(item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10)
-	)[0] || null;
+	return (
+		items.filter((item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10))[0] ||
+		null
+	);
 }
