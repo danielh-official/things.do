@@ -4,37 +4,21 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { getBlockedItems, getFocusingItems, getLaterItems, getTags, getTrashedItems } from '$lib';
-	import { onMount } from 'svelte';
+	import { liveQuery } from 'dexie';
 
 	let { children } = $props();
 
-	let focusingItemsCount = $state<number>(0);
-	let laterItemsCount = $state<number>(0);
-	let blockedItemsCount = $state<number>(0);
-	let trashItemsCount = $state<number>(0);
-	let tagsCount = $state<number>(0);
+	let focusingItems = liveQuery(() => getFocusingItems());
+	let laterItems = liveQuery(() => getLaterItems());
+	let blockedItems = liveQuery(() => getBlockedItems());
+	let trashedItems = liveQuery(() => getTrashedItems());
+	let tags = liveQuery(() => getTags());
 
-	onMount(() => {
-		getFocusingItems().then((items) => {
-			focusingItemsCount = items.length;
-		});
-
-		getLaterItems().then((items) => {
-			laterItemsCount = items.length;
-		});
-
-		getBlockedItems().then((items) => {
-			blockedItemsCount = items.length;
-		});
-
-		getTrashedItems().then((items) => {
-			trashItemsCount = items.length;
-		});
-
-		getTags().then((tags) => {
-			tagsCount = tags.length;
-		});
-	});
+	let focusingItemsCount = $derived($focusingItems?.length ?? 0);
+	let laterItemsCount = $derived($laterItems?.length ?? 0);
+	let blockedItemsCount = $derived($blockedItems?.length ?? 0);
+	let trashedItemsCount = $derived($trashedItems?.length ?? 0);
+	let tagsCount = $derived($tags?.length ?? 0);
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -132,7 +116,7 @@
 						</a>
 					</li>
 				{/if}
-				{#if trashItemsCount > 0}
+				{#if trashedItemsCount > 0}
 					<li>
 						<a
 							href={resolve('/trash')}
