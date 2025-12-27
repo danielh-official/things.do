@@ -83,7 +83,7 @@ export async function getBlockedItems() {
 		.sort((a, b) => a.order - b.order);
 }
 
-export async function getTrashItems() {
+export async function getTrashedItems() {
 	const allItems = await db.items.toArray();
 
 	return allItems

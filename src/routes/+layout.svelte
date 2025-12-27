@@ -3,7 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { getBlockedItems, getFocusingItems, getLaterItems, getTags, getTrashItems } from '$lib';
+	import { getBlockedItems, getFocusingItems, getLaterItems, getTags, getTrashedItems } from '$lib';
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
@@ -27,7 +27,7 @@
 			blockedItemsCount = items.length;
 		});
 
-		getTrashItems().then((items) => {
+		getTrashedItems().then((items) => {
 			trashItemsCount = items.length;
 		});
 
