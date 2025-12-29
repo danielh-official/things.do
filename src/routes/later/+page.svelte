@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { db, type Item } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
@@ -169,4 +169,4 @@
 	{deleteHighlightedItems}
 	{clearHighlightsForAllItems}
 	isLater
-/>
+/> -->

@@ -1,7 +1,7 @@
-<script lang="ts">
+<!-- <script lang="ts">
 	import { db, type Item } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
 	import {
 		getTrashedItems,
@@ -53,27 +53,96 @@
 	}
 
 	function handleDragOver(event: DragEvent) {
-		let draggables = handleDragOverUtil(
-			event,
-			highlightedItems,
-			$items,
-			draggingItemId,
-			dragInsertIndex
-		);
+		event.preventDefault();
 
-		draggingItemId = draggables?.draggingItemId ?? null;
-		dragInsertIndex = draggables?.dragInsertIndex ?? null;
+		const el = event.currentTarget as HTMLElement;
+		const idAttr = el.getAttribute('data-id');
+		if (!idAttr) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		const targetId = parseInt(idAttr, 10);
+		// If dragging a highlighted group and hovering over one of the group items, hide indicator
+		const isGroupMove =
+			draggingItemId != null && highlightedItems.size > 0 && highlightedItems.has(draggingItemId);
+		if (isGroupMove && highlightedItems.has(targetId)) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		const rect = el.getBoundingClientRect();
+		const dropAfter = event.clientY > rect.top + rect.height / 2;
+
+		const idx = $items.findIndex((i: Item) => i.id === targetId);
+		if (idx === -1) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		dragInsertIndex = idx + (dropAfter ? 1 : 0);
 	}
 
 	async function handleDrop(event: DragEvent, targetItemId: number) {
-		await handleDropUtil(
-			event,
-			targetItemId,
-			highlightedItems,
-			$items,
-			draggingItemId,
-			resetDragState
+		event.preventDefault();
+
+		const sourceId =
+			draggingItemId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
+		if (!sourceId) {
+			resetDragState();
+			return;
+		}
+
+		// Determine if we are moving a group: move all highlighted items together
+		const isGroupMove = highlightedItems.size > 0 && highlightedItems.has(sourceId);
+		const groupIds: number[] = isGroupMove
+			? $items.filter((i) => i.id != null && highlightedItems.has(i.id!)).map((i) => i.id!)
+			: [sourceId];
+
+		// No-op if target is inside the group being moved
+		if (groupIds.includes(targetItemId)) {
+			resetDragState();
+			return;
+		}
+
+		const currentItems = [...$items];
+
+		// Remove all items being moved, preserving their original relative order
+		const movedItems: Item[] = [];
+		for (const id of groupIds) {
+			const idx = currentItems.findIndex((item) => item.id === id);
+			if (idx !== -1) {
+				const [mi] = currentItems.splice(idx, 1);
+				movedItems.push(mi);
+			}
+		}
+
+		// Determine insertion position (before/after) based on cursor position
+		const el = event.currentTarget as HTMLElement;
+		const rect = el.getBoundingClientRect();
+		const dropAfter = event.clientY > rect.top + rect.height / 2;
+
+		let insertionIndex = currentItems.findIndex((item) => item.id === targetItemId);
+		if (insertionIndex === -1) {
+			resetDragState();
+			return;
+		}
+		if (dropAfter) insertionIndex += 1;
+
+		// Insert the moved items as a contiguous block
+		currentItems.splice(insertionIndex, 0, ...movedItems);
+
+		await Promise.all(
+			currentItems.map((item, index) => {
+				if (item.id == null) return Promise.resolve();
+				return db.items.update(item.id, {
+					order: index + 1,
+					updated_at: new SvelteDate()
+				});
+			})
 		);
+
+		resetDragState();
 	}
 
 	function handleDragEnd() {
@@ -86,17 +155,35 @@
 	}
 
 	function clearHighlightsForAllItems() {
-		highlightedItems = clearHighlightsForAllItemsUtil($items, highlightedItems);
+		$items.forEach((item: Item) => {
+			const itemId = item.id;
+
+			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
+			if (button) {
+				button.classList.add('bg-white');
+				button.classList.add('hover:bg-gray-50');
+				button.classList.remove('bg-blue-200');
+				button.classList.remove('hover:bg-blue-300');
+			}
+		});
+		highlightedItems.clear();
 	}
 
 	function processKeydownEvent(event: KeyboardEvent) {
-		processKeydownEventUtil(event, {
-			openedItem,
-			closeOpenedItem,
-			highlightedItems,
-			clearHighlightsForAllItems,
-			deleteHighlightedItems
-		});
+		if (event.key === 'Escape' && openedItem) {
+			closeOpenedItem();
+			return;
+		}
+
+		if (event.key === 'Escape' && highlightedItems.size > 0) {
+			clearHighlightsForAllItems();
+			return;
+		}
+
+		if (event.key === 'Backspace' && highlightedItems.size > 0 && !openedItem) {
+			deleteHighlightedItems();
+			return;
+		}
 	}
 
 	async function restoreHighlightedItems() {
@@ -156,4 +243,4 @@
 	{deleteHighlightedItems}
 	{clearHighlightsForAllItems}
 	{restoreHighlightedItems}
-/>
+/> -->
