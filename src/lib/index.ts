@@ -1,7 +1,6 @@
 // place files you want to import through the `$lib` alias in this folder.
 
-import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-import { db, type Item } from './db';
+import { db } from '$lib/db';
 
 export function clickOutside(node: HTMLElement) {
 	// the node has been mounted in the DOM
@@ -105,3 +104,17 @@ export async function getTrashedItems() {
 export async function getTags() {
 	return await db.tags.toArray();
 }
+
+export async function cleanupTags() {
+	const allTags = await db.tags.toArray();
+	const validTagIds = new Set(allTags.map((tag) => tag.id));
+
+	const allItems = await db.items.toArray();
+	for (const item of allItems) {
+		const originalTagIds = item.tag_ids || [];
+		const filteredTagIds = originalTagIds.filter((tagId) => validTagIds.has(tagId));
+		if (filteredTagIds.length !== originalTagIds.length) {
+			await db.items.update(item.id!, { tag_ids: filteredTagIds });
+		}
+	}
+};

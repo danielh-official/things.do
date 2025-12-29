@@ -2,7 +2,7 @@
 	import { db } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
 	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
-	import { getTrashedItems } from '$lib';
+	import { cleanupTags, getTrashedItems } from '$lib';
 	import { liveQuery } from 'dexie';
 	import useDragAndDrop from '$lib/item.dragndrop.svelte';
 	import useItemOpening from '$lib/item.opening.svelte';
@@ -11,10 +11,15 @@
 	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItemsButtonComponent.svelte';
 	import PermanentlyDeleteSelectedItemsButtonComponent from '$lib/components/PermanentlyDeleteSelectedItemsButtonComponent.svelte';
 	import RestoreSelectedItemsButtonComponent from '$lib/components/RestoreSelectedItemsButtonComponent.svelte';
+	import { onMount } from 'svelte';
 
 	let items = liveQuery(() => getTrashedItems());
 
 	let tags = liveQuery(() => db.tags.toArray());
+
+	onMount(() => {
+		cleanupTags();
+	});
 
 	let itemHighlightingUtility = useItemHighlighting(items);
 

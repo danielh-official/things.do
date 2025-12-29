@@ -2,7 +2,7 @@
 	import { db } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
 	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
-	import { getFocusingItems } from '$lib';
+	import { cleanupTags, getFocusingItems } from '$lib';
 	import { liveQuery } from 'dexie';
 	import useDragAndDrop from '$lib/item.dragndrop.svelte';
 	import useItemOpening from '$lib/item.opening.svelte';
@@ -13,10 +13,15 @@
 	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItemsButtonComponent.svelte';
 	import SetAsideForLaterButtonComponent from '$lib/components/SetAsideForLaterButtonComponent.svelte';
 	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
+	import { onMount } from 'svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 
 	let tags = liveQuery(() => db.tags.toArray());
+
+	onMount(() => {
+		cleanupTags();
+	});
 
 	let itemAddingUtility = useItemAdding(items, {
 		notes: '',
