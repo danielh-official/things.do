@@ -117,4 +117,4 @@ export async function cleanupTags() {
 			await db.items.update(item.id!, { tag_ids: filteredTagIds });
 		}
 	}
-};
+}
