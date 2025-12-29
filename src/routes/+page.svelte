@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { db, type Item } from '$lib/db';
+	import { db } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import { SvelteDate } from 'svelte/reactivity';
 	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
 	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
 	import { getFocusingItems } from '$lib';
 	import { liveQuery } from 'dexie';
 	import useDragAndDrop from '$lib/item.dragndrop.svelte';
 	import useItemOpening from '$lib/item.opening.svelte';
+	import useItemHighlighting from '$lib/item.highlighting.svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 
@@ -44,53 +45,14 @@
 		}
 	}
 
-	let itemOpeningUtility = useItemOpening(items, clearHighlightsForAllItems);
+	let itemHighlightingUtility = useItemHighlighting(items);
+
+	let itemOpeningUtility = useItemOpening(
+		items,
+		itemHighlightingUtility.clearHighlightsForAllItems
+	);
 
 	let addingNewItem = $state(false);
-
-	async function deleteHighlightedItems() {
-		highlightedItems.forEach(async (itemId) => {
-			await db.items.update(itemId, { deleted_at: new SvelteDate() });
-		});
-		clearHighlightsForAllItems();
-	}
-
-	let highlightedItems = new SvelteSet<number>();
-
-	function highlightItem(event: MouseEvent) {
-		const button = event.currentTarget as HTMLButtonElement;
-		const itemId = parseInt(button.getAttribute('data-id') || '', 10);
-		const newHighlightedItems = new SvelteSet(highlightedItems);
-
-		if (newHighlightedItems.has(itemId)) {
-			newHighlightedItems.delete(itemId);
-			button.classList.add('bg-white');
-			button.classList.add('hover:bg-gray-50');
-			button.classList.remove('bg-blue-200');
-			button.classList.remove('hover:bg-blue-300');
-		} else {
-			newHighlightedItems.add(itemId);
-			button.classList.remove('bg-white');
-			button.classList.remove('hover:bg-gray-50');
-			button.classList.add('bg-blue-200');
-			button.classList.add('hover:bg-blue-300');
-		}
-	}
-
-	function clearHighlightsForAllItems() {
-		$items.forEach((item: Item) => {
-			const itemId = item.id;
-
-			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
-			if (button) {
-				button.classList.add('bg-white');
-				button.classList.add('hover:bg-gray-50');
-				button.classList.remove('bg-blue-200');
-				button.classList.remove('hover:bg-blue-300');
-			}
-		});
-		highlightedItems.clear();
-	}
 
 	function processKeydownEvent(event: KeyboardEvent) {
 		if (event.code === 'Enter' && addingNewItem) {
@@ -112,23 +74,23 @@
 			return;
 		}
 
-		if (event.key === 'Escape' && highlightedItems.size > 0) {
-			clearHighlightsForAllItems();
+		if (event.key === 'Escape' && itemHighlightingUtility.highlightedItems.size > 0) {
+			itemHighlightingUtility.clearHighlightsForAllItems();
 			return;
 		}
 
 		if (
 			event.key === 'Backspace' &&
-			highlightedItems.size > 0 &&
+			itemHighlightingUtility.highlightedItems.size > 0 &&
 			!addingNewItem &&
 			!itemOpeningUtility.openedItem
 		) {
-			deleteHighlightedItems();
+			itemHighlightingUtility.deleteHighlightedItems();
 			return;
 		}
 	}
 
-	let dragndropUtility = useDragAndDrop(items, highlightedItems);
+	let dragndropUtility = useDragAndDrop(items, itemHighlightingUtility.highlightedItems);
 </script>
 
 <svelte:head>
@@ -153,7 +115,7 @@
 					{item}
 					bind:openedItem={itemOpeningUtility.openedItem}
 					openItem={itemOpeningUtility.openItem}
-					{highlightItem}
+					highlightItem={itemHighlightingUtility.highlightItem}
 					handleDragStart={(event: DragEvent) => dragndropUtility.handleDragStart(event, item.id!)}
 					handleDragOver={(event: DragEvent) => dragndropUtility.handleDragOver(event, item.id!)}
 					handleDrop={(event: DragEvent) => dragndropUtility.handleDrop(event, item.id!)}
@@ -165,7 +127,7 @@
 	</ul>
 {/if}
 <MultiselectOptionBoxComponent
-	{highlightedItems}
-	{deleteHighlightedItems}
-	{clearHighlightsForAllItems}
+	highlightedItems={itemHighlightingUtility.highlightedItems}
+	deleteHighlightedItems={itemHighlightingUtility.deleteHighlightedItems}
+	clearHighlightsForAllItems={itemHighlightingUtility.clearHighlightsForAllItems}
 />
