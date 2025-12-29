@@ -1,13 +1,13 @@
 <script lang="ts">
-    import { db } from '$lib/db';
-    
-    let {
-        highlightedItems = $bindable(),
-        clearHighlightsForAllItems
-    }: {
-        highlightedItems: Set<number>;
-        clearHighlightsForAllItems: () => void;
-    } = $props();
+	import { db } from '$lib/db';
+
+	let {
+		highlightedItems = $bindable(),
+		clearHighlightsForAllItems
+	}: {
+		highlightedItems: Set<number>;
+		clearHighlightsForAllItems: () => void;
+	} = $props();
 </script>
 
 <button

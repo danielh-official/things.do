@@ -1,9 +1,9 @@
 <script lang="ts">
-    let {
-        clearHighlightsForAllItems
-    }: {
-        clearHighlightsForAllItems: () => void;
-    } = $props();
+	let {
+		clearHighlightsForAllItems
+	}: {
+		clearHighlightsForAllItems: () => void;
+	} = $props();
 </script>
 
 <button

@@ -1,9 +1,9 @@
 <script lang="ts">
-    let {
-        permanentlyDeleteHighlightedItems
-    }: {
-        permanentlyDeleteHighlightedItems: () => Promise<void>;
-    } = $props();
+	let {
+		permanentlyDeleteHighlightedItems
+	}: {
+		permanentlyDeleteHighlightedItems: () => Promise<void>;
+	} = $props();
 </script>
 
 <button

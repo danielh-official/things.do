@@ -1,91 +1,88 @@
-import { db, type Item } from "$lib/db";
-import type { Observable } from "dexie";
-import { onDestroy } from "svelte";
-import { SvelteDate, SvelteSet } from "svelte/reactivity";
+import { db, type Item } from '$lib/db';
+import type { Observable } from 'dexie';
+import { onDestroy } from 'svelte';
+import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 
 export interface UseItemHighlightingReturn {
-    highlightedItems: SvelteSet<number>;
-    highlightItem: (event: MouseEvent) => void;
-    clearHighlightsForAllItems: () => void;
-    deleteHighlightedItems: () => Promise<void>;
-    restoreHighlightedItems: () => Promise<void>;
-    permanentlyDeleteHighlightedItems: () => Promise<void>;
+	highlightedItems: SvelteSet<number>;
+	highlightItem: (event: MouseEvent) => void;
+	clearHighlightsForAllItems: () => void;
+	deleteHighlightedItems: () => Promise<void>;
+	restoreHighlightedItems: () => Promise<void>;
+	permanentlyDeleteHighlightedItems: () => Promise<void>;
 }
 
-export default function useItemHighlighting(
-    items: Observable<Item[]>,
-): UseItemHighlightingReturn {
-    // Keep a reactive snapshot of the current items emitted by the observable
-    let itemsSnapshot: Item[] = $state([]);
-    const subscription = items.subscribe((value) => {
-        itemsSnapshot = value ?? [];
-    });
-    onDestroy(() => subscription?.unsubscribe?.());
+export default function useItemHighlighting(items: Observable<Item[]>): UseItemHighlightingReturn {
+	// Keep a reactive snapshot of the current items emitted by the observable
+	let itemsSnapshot: Item[] = $state([]);
+	const subscription = items.subscribe((value) => {
+		itemsSnapshot = value ?? [];
+	});
+	onDestroy(() => subscription?.unsubscribe?.());
 
-    async function deleteHighlightedItems() {
-        highlightedItems.forEach(async (itemId) => {
-            await db.items.update(itemId, { deleted_at: new SvelteDate() });
-        });
-        clearHighlightsForAllItems();
-    }
+	async function deleteHighlightedItems() {
+		highlightedItems.forEach(async (itemId) => {
+			await db.items.update(itemId, { deleted_at: new SvelteDate() });
+		});
+		clearHighlightsForAllItems();
+	}
 
-    let highlightedItems = $state(new SvelteSet<number>());
+	let highlightedItems = $state(new SvelteSet<number>());
 
-    function highlightItem(event: MouseEvent) {
-        const button = event.currentTarget as HTMLButtonElement;
-        const itemId = parseInt(button.getAttribute('data-id') || '', 10);
+	function highlightItem(event: MouseEvent) {
+		const button = event.currentTarget as HTMLButtonElement;
+		const itemId = parseInt(button.getAttribute('data-id') || '', 10);
 
-        if (highlightedItems.has(itemId)) {
-            highlightedItems.delete(itemId);
-            button.classList.add('bg-white');
-            button.classList.add('hover:bg-gray-50');
-            button.classList.remove('bg-blue-200');
-            button.classList.remove('hover:bg-blue-300');
-        } else {
-            highlightedItems.add(itemId);
-            button.classList.remove('bg-white');
-            button.classList.remove('hover:bg-gray-50');
-            button.classList.add('bg-blue-200');
-            button.classList.add('hover:bg-blue-300');
-        }
-    }
+		if (highlightedItems.has(itemId)) {
+			highlightedItems.delete(itemId);
+			button.classList.add('bg-white');
+			button.classList.add('hover:bg-gray-50');
+			button.classList.remove('bg-blue-200');
+			button.classList.remove('hover:bg-blue-300');
+		} else {
+			highlightedItems.add(itemId);
+			button.classList.remove('bg-white');
+			button.classList.remove('hover:bg-gray-50');
+			button.classList.add('bg-blue-200');
+			button.classList.add('hover:bg-blue-300');
+		}
+	}
 
-    function clearHighlightsForAllItems() {
-        itemsSnapshot.forEach((item: Item) => {
-            const itemId = item.id;
+	function clearHighlightsForAllItems() {
+		itemsSnapshot.forEach((item: Item) => {
+			const itemId = item.id;
 
-            const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
-            if (button) {
-                button.classList.add('bg-white');
-                button.classList.add('hover:bg-gray-50');
-                button.classList.remove('bg-blue-200');
-                button.classList.remove('hover:bg-blue-300');
-            }
-        });
-        highlightedItems.clear();
-    }
+			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
+			if (button) {
+				button.classList.add('bg-white');
+				button.classList.add('hover:bg-gray-50');
+				button.classList.remove('bg-blue-200');
+				button.classList.remove('hover:bg-blue-300');
+			}
+		});
+		highlightedItems.clear();
+	}
 
-    async function restoreHighlightedItems() {
-        highlightedItems.forEach(async (itemId) => {
-            await db.items.update(itemId, { deleted_at: null });
-        });
-        clearHighlightsForAllItems();
-    }
+	async function restoreHighlightedItems() {
+		highlightedItems.forEach(async (itemId) => {
+			await db.items.update(itemId, { deleted_at: null });
+		});
+		clearHighlightsForAllItems();
+	}
 
+	async function permanentlyDeleteHighlightedItems() {
+		highlightedItems.forEach(async (itemId) => {
+			await db.items.delete(itemId);
+		});
+		clearHighlightsForAllItems();
+	}
 
-    async function permanentlyDeleteHighlightedItems() {
-        highlightedItems.forEach(async (itemId) => {
-            await db.items.delete(itemId);
-        });
-        clearHighlightsForAllItems();
-    }
-
-    return {
-        highlightedItems,
-        highlightItem,
-        clearHighlightsForAllItems,
-        deleteHighlightedItems,
-        restoreHighlightedItems,
-        permanentlyDeleteHighlightedItems
-    };
+	return {
+		highlightedItems,
+		highlightItem,
+		clearHighlightsForAllItems,
+		deleteHighlightedItems,
+		restoreHighlightedItems,
+		permanentlyDeleteHighlightedItems
+	};
 }

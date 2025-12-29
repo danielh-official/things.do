@@ -1,9 +1,9 @@
 <script lang="ts">
-    let {
-        deleteHighlightedItems
-    }: {
-        deleteHighlightedItems: () => void;
-    } = $props();
+	let {
+		deleteHighlightedItems
+	}: {
+		deleteHighlightedItems: () => void;
+	} = $props();
 </script>
 
 <button

@@ -1,9 +1,9 @@
 <script lang="ts">
-    let {
-        restoreHighlightedItems
-    }: {
-        restoreHighlightedItems: () => Promise<void>;
-    } = $props();
+	let {
+		restoreHighlightedItems
+	}: {
+		restoreHighlightedItems: () => Promise<void>;
+	} = $props();
 </script>
 
 <button
