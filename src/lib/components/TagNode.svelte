@@ -39,6 +39,27 @@
 	let draft = $derived(nameDrafts.get(tag.id) ?? tag.name);
 	let isEditing = $derived(editingId === tag.id);
 	let dropZone = $state<'none' | 'before' | 'after' | 'inside'>('none');
+	let hasChildren = $derived(children.length > 0);
+	let isCollapsed = $state(false);
+	let collapseInitialized = $state(false);
+
+	$effect(() => {
+		if (!hasChildren) {
+			isCollapsed = false;
+			collapseInitialized = false;
+			return;
+		}
+
+		if (hasChildren && !collapseInitialized) {
+			isCollapsed = true; // default collapsed on first render with children
+			collapseInitialized = true;
+		}
+	});
+
+	function toggleCollapse() {
+		if (!hasChildren) return;
+		isCollapsed = !isCollapsed;
+	}
 
 	function onClick(event: MouseEvent) {
 		const additive = event.metaKey || event.ctrlKey || event.shiftKey;
@@ -142,6 +163,20 @@
 		ondragover={onDragOver}
 		ondrop={onDrop}
 	>
+		{#if hasChildren}
+			<button
+				type="button"
+				class="chevron"
+				onclick={(e: MouseEvent) => {
+					e.stopPropagation();
+					toggleCollapse();
+				}}
+			>
+				{isCollapsed ? '▸' : '▾'}
+			</button>
+		{:else}
+			<span class="chevron-placeholder" aria-hidden="true">•</span>
+		{/if}
 		<button
 			class:selected={isSelected(tag.id)}
 			type="button"
@@ -174,7 +209,7 @@
 			🗑
 		</button>
 	</div>
-	{#if children.length > 0}
+	{#if hasChildren && !isCollapsed}
 		<ul>
 			{#each children as child (child.id)}
 				<Self
@@ -206,10 +241,6 @@
 		cursor: pointer;
 	}
 
-	.node > div:hover {
-		text-decoration: underline;
-	}
-
 	.selected {
 		background: #eef6ff;
 		border-radius: 4px;
@@ -221,13 +252,27 @@
 
 	.node > div {
 		display: flex;
-		gap: 0.5rem;
+		gap: 0.35rem;
 		align-items: center;
 		padding: 0.15rem 0.35rem;
 	}
 
 	.row {
 		cursor: move;
+	}
+
+	.chevron {
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.1rem;
+		line-height: 1;
+		font-size: 0.9rem;
+	}
+
+	.chevron-placeholder {
+		opacity: 0;
+		width: 0.9rem;
 	}
 
 	.row.drop-inside {
