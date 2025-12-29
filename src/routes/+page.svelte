@@ -9,41 +9,29 @@
 	import useDragAndDrop from '$lib/item.dragndrop.svelte';
 	import useItemOpening from '$lib/item.opening.svelte';
 	import useItemHighlighting from '$lib/item.highlighting.svelte';
+	import useItemAdding from '$lib/item.adding.svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 
 	let tags = liveQuery(() => db.tags.toArray());
 
-	async function addItem(event: KeyboardEvent) {
-		const input = event.target as HTMLInputElement;
-		const item = input.value.trim();
-		if (item) {
-			db.items.add({
-				things_id: null,
-				title: item,
-				notes: '',
-				start_date: null,
-				deadline: null,
-				start: null,
-				tag_ids: [],
-				created_at: new SvelteDate(),
-				updated_at: new SvelteDate(),
-				blocked_by: [],
-				evening: false,
-				checklist: [],
-				logged_at: null,
-				logged_status: null,
-				order: $items.length > 0 ? Math.max(...$items.map((t) => t.order)) + 1 : 1,
-				deleted_at: null,
-				type: 'task',
-				later: false,
-				parent_id: null,
-				parent_things_id: null
-			});
-
-			input.value = '';
-		}
-	}
+	let itemAddingUtility = useItemAdding(items, {
+		notes: '',
+		start_date: null,
+		deadline: null,
+		start: null,
+		tag_ids: [],
+		blocked_by: [],
+		evening: false,
+		checklist: [],
+		logged_at: null,
+		logged_status: null,
+		deleted_at: null,
+		type: 'task',
+		later: false,
+		parent_id: null,
+		parent_things_id: null
+	});
 
 	let itemHighlightingUtility = useItemHighlighting(items);
 
@@ -52,15 +40,13 @@
 		itemHighlightingUtility.clearHighlightsForAllItems
 	);
 
-	let addingNewItem = $state(false);
-
 	function processKeydownEvent(event: KeyboardEvent) {
-		if (event.code === 'Enter' && addingNewItem) {
-			addItem?.(event);
+		if (event.code === 'Enter' && itemAddingUtility.addingNewItem) {
+			itemAddingUtility.addItem?.(event);
 			return;
 		}
 
-		if (event.code === 'Space' && !itemOpeningUtility.openedItem && !addingNewItem) {
+		if (event.code === 'Space' && !itemOpeningUtility.openedItem && !itemAddingUtility.addingNewItem) {
 			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
 			if (input) {
 				event.preventDefault();
@@ -82,7 +68,7 @@
 		if (
 			event.key === 'Backspace' &&
 			itemHighlightingUtility.highlightedItems.size > 0 &&
-			!addingNewItem &&
+			!itemAddingUtility.addingNewItem &&
 			!itemOpeningUtility.openedItem
 		) {
 			itemHighlightingUtility.deleteHighlightedItems();
@@ -99,7 +85,7 @@
 
 <svelte:window onkeydown={processKeydownEvent} />
 
-<ItemInputBox bind:addingNewItem />
+<ItemInputBox bind:addingNewItem={itemAddingUtility.addingNewItem} />
 {#if $items?.length > 0}
 	<ul class="mt-4 space-y-2">
 		{#each $items as item, index (item.id)}
