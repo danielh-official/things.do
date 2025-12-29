@@ -4,7 +4,7 @@ import { onDestroy } from "svelte";
 import { SvelteDate, type SvelteSet } from "svelte/reactivity";
 
 export default function useDragAndDrop(
-    items$: Observable<Item[]>,
+    items: Observable<Item[]>,
     highlightedItems: SvelteSet<number>
 ) {
     let draggingItemId: number | null = $state(null);
@@ -12,7 +12,7 @@ export default function useDragAndDrop(
 
     // Keep a reactive snapshot of the current items emitted by the observable
     let itemsSnapshot: Item[] = $state([]);
-    const subscription = items$.subscribe((value) => {
+    const subscription = items.subscribe((value) => {
         itemsSnapshot = value ?? [];
     });
     onDestroy(() => subscription?.unsubscribe?.());
