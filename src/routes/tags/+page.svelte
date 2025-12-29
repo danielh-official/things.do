@@ -14,8 +14,7 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let bulkDeleting = $state(false);
-	let expandVersion = $state(0);
-	let collapseVersion = $state(0);
+	let expandedIds = $state(new SvelteSet<number>());
 
 	onMount(async () => {
 		await refreshTags();
@@ -54,6 +53,8 @@
 		}
 
 		rootTags = mapByParent.get(null) || [];
+
+		expandedIds = pruneExpanded(allTags, expandedIds);
 	}
 
 	function getChildren(parentId: number | null): Tag[] {
@@ -243,6 +244,32 @@
 		bulkDeleting = false;
 	}
 
+	function pruneExpanded(allTags: Tag[], current: SvelteSet<number>) {
+		const validIds = new SvelteSet(allTags.map((t) => t.id));
+		const next = new SvelteSet<number>();
+		for (const id of current) {
+			if (validIds.has(id)) {
+				next.add(id);
+			}
+		}
+		return next;
+	}
+
+	function isExpanded(id: number) {
+		return expandedIds.has(id);
+	}
+
+	function toggleExpanded(id: number, hasChildren: boolean) {
+		if (!hasChildren) return;
+		const next = new SvelteSet(expandedIds);
+		if (next.has(id)) {
+			next.delete(id);
+		} else {
+			next.add(id);
+		}
+		expandedIds = next;
+	}
+
 	async function createNewTag() {
 		const name = prompt('New tag name?')?.trim();
 		if (!name) return;
@@ -261,11 +288,17 @@
 	}
 
 	function expandAll() {
-		expandVersion += 1;
+		const allIds: number[] = [];
+		for (const tags of tagMap.values()) {
+			for (const t of tags) {
+				allIds.push(t.id);
+			}
+		}
+		expandedIds = new SvelteSet(allIds);
 	}
 
 	function collapseAll() {
-		collapseVersion += 1;
+		expandedIds = new SvelteSet();
 	}
 </script>
 
@@ -302,8 +335,8 @@
 				{nameDrafts}
 				{beginRename}
 				{updateDraft}
-				expandVersion={expandVersion}
-				collapseVersion={collapseVersion}
+				expandedIds={expandedIds}
+				toggleExpanded={toggleExpanded}
 				onSaveRename={saveRename}
 				onDeleteTag={deleteTag}
 				onCancelRename={(id: number | undefined) => cancelRename(id)}

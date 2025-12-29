@@ -17,8 +17,8 @@
 		onSaveRename: (id: number) => void;
 		onCancelRename: (id?: number) => void;
 		onDeleteTag: (id: number) => void;
-		expandVersion: number;
-		collapseVersion: number;
+		expandedIds: Set<number>;
+		toggleExpanded: (id: number, hasChildren: boolean) => void;
 	}
 
 	let {
@@ -35,8 +35,8 @@
 		onSaveRename,
 		onCancelRename,
 		onDeleteTag,
-		expandVersion,
-		collapseVersion
+		expandedIds,
+		toggleExpanded
 	}: Props = $props();
 
 	let children = $derived(getChildren(tag.id));
@@ -44,39 +44,10 @@
 	let isEditing = $derived(editingId === tag.id);
 	let dropZone = $state<'none' | 'before' | 'after' | 'inside'>('none');
 	let hasChildren = $derived(children.length > 0);
-	let isCollapsed = $state(false);
-	let collapseInitialized = $state(false);
-	let lastExpandVersion = $state(0);
-	let lastCollapseVersion = $state(0);
-
-	$effect(() => {
-		if (!hasChildren) {
-			isCollapsed = false;
-			collapseInitialized = false;
-			return;
-		}
-
-		if (hasChildren && !collapseInitialized) {
-			isCollapsed = true; // default collapsed on first render with children
-			collapseInitialized = true;
-		}
-
-		if (expandVersion !== lastExpandVersion) {
-			isCollapsed = false;
-			collapseInitialized = true;
-			lastExpandVersion = expandVersion;
-		}
-
-		if (collapseVersion !== lastCollapseVersion) {
-			isCollapsed = hasChildren ? true : false;
-			collapseInitialized = true;
-			lastCollapseVersion = collapseVersion;
-		}
-	});
+	let isCollapsed = $derived(hasChildren ? !expandedIds.has(tag.id) : false);
 
 	function toggleCollapse() {
-		if (!hasChildren) return;
-		isCollapsed = !isCollapsed;
+		toggleExpanded(tag.id, hasChildren);
 	}
 
 	function onClick(event: MouseEvent) {
@@ -244,8 +215,8 @@
 					onSaveRename={onSaveRename}
 					onCancelRename={onCancelRename}
 					onDeleteTag={onDeleteTag}
-					expandVersion={expandVersion}
-					collapseVersion={collapseVersion}
+					expandedIds={expandedIds}
+					toggleExpanded={toggleExpanded}
 				/>
 			{/each}
 		</ul>
