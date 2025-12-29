@@ -133,6 +133,6 @@ export default function useDragAndDrop(
         handleDrop,
         handleDragEnd,
         get dragInsertIndex() { return dragInsertIndex; },
-        setDragIndex: (val: number) => dragInsertIndex = val
+        set dragInsertIndex(value: number | null) { dragInsertIndex = value; }
     };
 }
