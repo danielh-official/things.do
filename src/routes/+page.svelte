@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { db } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
 	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
 	import { getFocusingItems } from '$lib';
 	import { liveQuery } from 'dexie';
@@ -10,6 +9,10 @@
 	import useItemHighlighting from '$lib/item.highlighting.svelte';
 	import useItemAdding from '$lib/item.adding.svelte';
 	import useKeydownHandling from '$lib/keydown.svelte';
+	import DeleteSelectedItemsButtonComponent from '$lib/components/DeleteSelectedItemsButtonComponent.svelte';
+	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItemsButtonComponent.svelte';
+	import SetAsideForLaterButtonComponent from '$lib/components/SetAsideForLaterButtonComponent.svelte';
+	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 
@@ -82,8 +85,17 @@
 		{/each}
 	</ul>
 {/if}
-<MultiselectOptionBoxComponent
-	highlightedItems={itemHighlightingUtility.highlightedItems}
-	deleteHighlightedItems={itemHighlightingUtility.deleteHighlightedItems}
-	clearHighlightsForAllItems={itemHighlightingUtility.clearHighlightsForAllItems}
-/>
+
+<MultiselectOptionBoxComponent highlightedItems={itemHighlightingUtility.highlightedItems}>
+	<DeleteSelectedItemsButtonComponent
+		deleteHighlightedItems={itemHighlightingUtility.deleteHighlightedItems}
+	/>
+
+	<SetAsideForLaterButtonComponent
+		highlightedItems={itemHighlightingUtility.highlightedItems}
+		clearHighlightsForAllItems={itemHighlightingUtility.clearHighlightsForAllItems}
+	/>
+	<ClearSelectedItemsButtonComponent
+		clearHighlightsForAllItems={itemHighlightingUtility.clearHighlightsForAllItems}
+	/>
+</MultiselectOptionBoxComponent>

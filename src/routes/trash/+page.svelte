@@ -8,6 +8,9 @@
 	import useItemOpening from '$lib/item.opening.svelte';
 	import useItemHighlighting from '$lib/item.highlighting.svelte';
 	import useKeydownHandling from '$lib/keydown.svelte';
+	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItemsButtonComponent.svelte';
+	import PermanentlyDeleteSelectedItemsButtonComponent from '$lib/components/PermanentlyDeleteSelectedItemsButtonComponent.svelte';
+	import RestoreSelectedItemsButtonComponent from '$lib/components/RestoreSelectedItemsButtonComponent.svelte';
 
 	let items = liveQuery(() => getTrashedItems());
 
@@ -36,6 +39,23 @@
 <svelte:window onkeydown={keydownHandling.processKeydownEvent} />
 
 {#if $items?.length > 0}
+	<button
+		class="mt-4 cursor-pointer rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+		onclick={() => {
+			if (
+				!confirm(
+					'Are you sure you want to permanently delete all items in the trash? This action cannot be undone.'
+				)
+			) {
+				return;
+			}
+
+			$items.forEach(async (item) => {
+				await db.items.delete(item.id!);
+			});
+		}}>Empty Trash</button
+	>
+
 	<ul class="mt-4 space-y-2">
 		{#each $items as item, index (item.id)}
 			<li
@@ -61,9 +81,17 @@
 		{/each}
 	</ul>
 {/if}
-<MultiselectOptionBoxComponent
-	highlightedItems={itemHighlightingUtility.highlightedItems}
-	restoreHighlightedItems={itemHighlightingUtility.restoreHighlightedItems}
-	deleteHighlightedItems={itemHighlightingUtility.permanentlyDeleteHighlightedItems}
-	clearHighlightsForAllItems={itemHighlightingUtility.clearHighlightsForAllItems}
-/>
+
+<MultiselectOptionBoxComponent highlightedItems={itemHighlightingUtility.highlightedItems}>
+	<RestoreSelectedItemsButtonComponent
+		restoreHighlightedItems={itemHighlightingUtility.restoreHighlightedItems}
+	/>
+
+	<PermanentlyDeleteSelectedItemsButtonComponent
+		permanentlyDeleteHighlightedItems={itemHighlightingUtility.permanentlyDeleteHighlightedItems}
+	/>
+
+	<ClearSelectedItemsButtonComponent
+		clearHighlightsForAllItems={itemHighlightingUtility.clearHighlightsForAllItems}
+	/>
+</MultiselectOptionBoxComponent>
