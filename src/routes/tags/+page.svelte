@@ -14,6 +14,8 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let bulkDeleting = $state(false);
+	let expandVersion = $state(0);
+	let collapseVersion = $state(0);
 
 	onMount(async () => {
 		await refreshTags();
@@ -240,6 +242,31 @@
 		await refreshTags();
 		bulkDeleting = false;
 	}
+
+	async function createNewTag() {
+		const name = prompt('New tag name?')?.trim();
+		if (!name) return;
+
+		const allTags = await db.tags.toArray();
+		const exists = allTags.some((t) => t.name.trim().toLowerCase() === name.toLowerCase());
+		if (exists) {
+			alert('A tag with that name already exists.');
+			return;
+		}
+
+		const order = rootTags.length;
+		const now = new Date() as unknown as Tag['created_at'];
+		await db.tags.add({ name, parent_tag_id: null, order, created_at: now, updated_at: now });
+		await refreshTags();
+	}
+
+	function expandAll() {
+		expandVersion += 1;
+	}
+
+	function collapseAll() {
+		collapseVersion += 1;
+	}
 </script>
 
 <svelte:head>
@@ -253,6 +280,15 @@
 {:else if rootTags.length === 0}
 	<p>No tags yet.</p>
 {:else}
+	<div class="actions-bar">
+		<div class="actions-left">
+			<button type="button" onclick={createNewTag}>Create New Tag</button>
+		</div>
+		<div class="actions-right">
+			<button type="button" onclick={expandAll}>Expand All</button>
+			<button type="button" onclick={collapseAll}>Collapse All</button>
+		</div>
+	</div>
 	<ul class="tree">
 		{#each rootTags as tag (tag.id)}
 			<TagNode
@@ -266,6 +302,8 @@
 				{nameDrafts}
 				{beginRename}
 				{updateDraft}
+				expandVersion={expandVersion}
+				collapseVersion={collapseVersion}
 				onSaveRename={saveRename}
 				onDeleteTag={deleteTag}
 				onCancelRename={(id: number | undefined) => cancelRename(id)}
@@ -331,5 +369,25 @@
 
 	.selection-bar button.danger:hover {
 		background: #fee2e2;
+	}
+
+	.actions-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin: 0 0 0.75rem 0;
+		gap: 0.5rem;
+	}
+
+	.actions-bar button {
+		border: 1px solid #cbd5e1;
+		background: #fff;
+		padding: 0.35rem 0.8rem;
+		border-radius: 6px;
+		cursor: pointer;
+	}
+
+	.actions-bar button:hover {
+		background: #e2e8f0;
 	}
 </style>

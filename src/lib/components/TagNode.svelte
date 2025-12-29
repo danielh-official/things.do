@@ -17,6 +17,8 @@
 		onSaveRename: (id: number) => void;
 		onCancelRename: (id?: number) => void;
 		onDeleteTag: (id: number) => void;
+		expandVersion: number;
+		collapseVersion: number;
 	}
 
 	let {
@@ -32,7 +34,9 @@
 		updateDraft,
 		onSaveRename,
 		onCancelRename,
-		onDeleteTag
+		onDeleteTag,
+		expandVersion,
+		collapseVersion
 	}: Props = $props();
 
 	let children = $derived(getChildren(tag.id));
@@ -42,6 +46,8 @@
 	let hasChildren = $derived(children.length > 0);
 	let isCollapsed = $state(false);
 	let collapseInitialized = $state(false);
+	let lastExpandVersion = $state(0);
+	let lastCollapseVersion = $state(0);
 
 	$effect(() => {
 		if (!hasChildren) {
@@ -53,6 +59,18 @@
 		if (hasChildren && !collapseInitialized) {
 			isCollapsed = true; // default collapsed on first render with children
 			collapseInitialized = true;
+		}
+
+		if (expandVersion !== lastExpandVersion) {
+			isCollapsed = false;
+			collapseInitialized = true;
+			lastExpandVersion = expandVersion;
+		}
+
+		if (collapseVersion !== lastCollapseVersion) {
+			isCollapsed = hasChildren ? true : false;
+			collapseInitialized = true;
+			lastCollapseVersion = collapseVersion;
 		}
 	});
 
@@ -209,8 +227,8 @@
 			🗑
 		</button>
 	</div>
-	{#if hasChildren && !isCollapsed}
-		<ul>
+	{#if hasChildren}
+		<ul class:collapsed={isCollapsed}>
 			{#each children as child (child.id)}
 				<Self
 					tag={child}
@@ -223,9 +241,11 @@
 					{nameDrafts}
 					{beginRename}
 					{updateDraft}
-					{onSaveRename}
-					{onCancelRename}
-					{onDeleteTag}
+					onSaveRename={onSaveRename}
+					onCancelRename={onCancelRename}
+					onDeleteTag={onDeleteTag}
+					expandVersion={expandVersion}
+					collapseVersion={collapseVersion}
 				/>
 			{/each}
 		</ul>
@@ -302,6 +322,10 @@
 
 	.row > .trash {
 		margin-left: auto;
+	}
+
+	ul.collapsed {
+		display: none;
 	}
 
 	ul {

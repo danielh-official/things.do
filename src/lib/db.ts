@@ -49,9 +49,9 @@ const db = new Dexie('ThingsDoDB') as Dexie & {
 };
 
 // Schema declaration:
-db.version(1).stores({
+db.version(2).stores({
 	items: '++id, parent_id, type, order',
-	tags: '++id, parent_tag_id, order'
+	tags: '++id, &name, parent_tag_id, order'
 });
 
 export { db };
