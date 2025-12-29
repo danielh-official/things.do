@@ -14,7 +14,7 @@ export interface UseDragAndDropReturn {
 export default function useDragAndDrop(
     items: Observable<Item[]>,
     highlightedItems: SvelteSet<number>
-) {
+): UseDragAndDropReturn {
     let draggingItemId: number | null = $state(null);
     let dragInsertIndex: number | null = $state(null);
 
