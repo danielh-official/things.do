@@ -8,11 +8,13 @@ export interface UseItemHighlightingReturn {
     highlightItem: (event: MouseEvent) => void;
     clearHighlightsForAllItems: () => void;
     deleteHighlightedItems: () => Promise<void>;
+    restoreHighlightedItems: () => Promise<void>;
+    permanentlyDeleteHighlightedItems: () => Promise<void>;
 }
 
 export default function useItemHighlighting(
     items: Observable<Item[]>,
-) {
+): UseItemHighlightingReturn {
     // Keep a reactive snapshot of the current items emitted by the observable
     let itemsSnapshot: Item[] = $state([]);
     const subscription = items.subscribe((value) => {
@@ -63,10 +65,27 @@ export default function useItemHighlighting(
         highlightedItems.clear();
     }
 
+    async function restoreHighlightedItems() {
+        highlightedItems.forEach(async (itemId) => {
+            await db.items.update(itemId, { deleted_at: null });
+        });
+        clearHighlightsForAllItems();
+    }
+
+
+    async function permanentlyDeleteHighlightedItems() {
+        highlightedItems.forEach(async (itemId) => {
+            await db.items.delete(itemId);
+        });
+        clearHighlightsForAllItems();
+    }
+
     return {
         highlightedItems,
         highlightItem,
         clearHighlightsForAllItems,
-        deleteHighlightedItems
+        deleteHighlightedItems,
+        restoreHighlightedItems,
+        permanentlyDeleteHighlightedItems
     };
 }
