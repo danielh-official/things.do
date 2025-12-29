@@ -36,7 +36,8 @@ export default function useItemAdding(
     }
 
     return {
-        addingNewItem,
+        get addingNewItem() { return addingNewItem; },
+        set addingNewItem(value: boolean) { addingNewItem = value; },
         addItem
     };
 }
