@@ -67,10 +67,11 @@
 		const y = event.clientY - rect.top;
 		const height = rect.height;
 
-		// Top 25%: before, Bottom 25%: after, Middle 50%: inside (parent)
-		if (y < height * 0.25) {
+		// Top 30%: before, Bottom 40%: after, Middle 30%: inside (parent)
+		// Larger "after" zone makes it easier to reorder below tags with children
+		if (y < height * 0.3) {
 			dropZone = 'before';
-		} else if (y > height * 0.75) {
+		} else if (y > height * 0.6) {
 			dropZone = 'after';
 		} else {
 			dropZone = 'inside';
