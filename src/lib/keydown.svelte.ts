@@ -3,12 +3,12 @@ import type { UseItemHighlightingReturn } from "$lib/item.highlighting.svelte";
 import type { UseItemOpeningReturn } from "./item.opening.svelte";
 
 export default function useKeydownHandling(
-    itemAddingUtility: UseItemAddingReturn,
+    itemAddingUtility: UseItemAddingReturn | undefined,
     itemOpeningUtility: UseItemOpeningReturn,
     itemHighlightingUtility: UseItemHighlightingReturn
 ) {
     function processKeydownEvent(event: KeyboardEvent) {
-        if (event.code === 'Enter' && itemAddingUtility.addingNewItem) {
+        if (event.code === 'Enter' && itemAddingUtility?.addingNewItem) {
             itemAddingUtility.addItem?.(event);
             return;
         }
@@ -16,7 +16,7 @@ export default function useKeydownHandling(
         if (
             event.code === 'Space' &&
             !itemOpeningUtility.openedItem &&
-            !itemAddingUtility.addingNewItem
+            !itemAddingUtility?.addingNewItem
         ) {
             const input = document.querySelector('input#new-item-input') as HTMLInputElement;
             if (input) {
@@ -39,7 +39,7 @@ export default function useKeydownHandling(
         if (
             event.key === 'Backspace' &&
             itemHighlightingUtility.highlightedItems.size > 0 &&
-            !itemAddingUtility.addingNewItem &&
+            !itemAddingUtility?.addingNewItem &&
             !itemOpeningUtility.openedItem
         ) {
             itemHighlightingUtility.deleteHighlightedItems();
