@@ -9,7 +9,7 @@
 		isSelected: (id: number) => boolean;
 		toggleSelection: (id: number, additive: boolean) => void;
 		ensureDragSelection: (id: number) => void;
-		handleDrop: (targetId: number) => void;
+		handleDrop: (targetId: number | null, position: 'before' | 'after' | 'inside') => void;
 		editingId: number | null;
 		nameDrafts: Map<number, string>;
 		beginRename: (id: number, currentName: string) => void;
@@ -38,6 +38,7 @@
 	let children = $derived(getChildren(tag.id));
 	let draft = $derived(nameDrafts.get(tag.id) ?? tag.name);
 	let isEditing = $derived(editingId === tag.id);
+	let dropZone = $state<'none' | 'before' | 'after' | 'inside'>('none');
 
 	function onClick(event: MouseEvent) {
 		const additive = event.metaKey || event.ctrlKey || event.shiftKey;
@@ -56,14 +57,54 @@
 
 	function onDragOver(event: DragEvent) {
 		event.preventDefault();
+		event.stopPropagation();
 		if (event.dataTransfer) {
 			event.dataTransfer.dropEffect = 'move';
+		}
+
+		const target = event.currentTarget as HTMLElement;
+		const rect = target.getBoundingClientRect();
+		const y = event.clientY - rect.top;
+		const height = rect.height;
+
+		// Top 25%: before, Bottom 25%: after, Middle 50%: inside (parent)
+		if (y < height * 0.25) {
+			dropZone = 'before';
+		} else if (y > height * 0.75) {
+			dropZone = 'after';
+		} else {
+			dropZone = 'inside';
+		}
+	}
+
+	function onDragEnter(event: DragEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+	}
+
+	function onDragLeave(event: DragEvent) {
+		const target = event.currentTarget as HTMLElement;
+		const related = event.relatedTarget as HTMLElement | null;
+
+		// Only reset if we're actually leaving this element, not just entering a child
+		if (!related || !target.contains(related)) {
+			dropZone = 'none';
 		}
 	}
 
 	function onDrop(event: DragEvent) {
 		event.preventDefault();
-		handleDrop(tag.id);
+		event.stopPropagation();
+		const zone = dropZone;
+		dropZone = 'none';
+
+		if (zone === 'inside') {
+			handleDrop(tag.id, 'inside');
+		} else if (zone === 'before') {
+			handleDrop(tag.id, 'before');
+		} else if (zone === 'after') {
+			handleDrop(tag.id, 'after');
+		}
 	}
 
 	function onDoubleClick() {
@@ -86,14 +127,27 @@
 	}
 </script>
 
-<li class="node" draggable ondragstart={onDragStart}>
-    <div class="row" role="group" ondragover={onDragOver} ondrop={onDrop}>
+<li class="node">
+	<div
+		class="row"
+		role="group"
+		class:drop-inside={dropZone === 'inside'}
+		class:drop-before={dropZone === 'before'}
+		class:drop-after={dropZone === 'after'}
+		draggable={!isEditing}
+		ondragstart={onDragStart}
+		ondragenter={onDragEnter}
+		ondragleave={onDragLeave}
+		ondragover={onDragOver}
+		ondrop={onDrop}
+	>
 		<button
 			class:selected={isSelected(tag.id)}
 			type="button"
 			onclick={onClick}
 			ondblclick={onDoubleClick}
-			draggable={false}
+			draggable={!isEditing}
+			ondragstart={onDragStart}
 		>
 			{#if isEditing}
 				<input
@@ -103,6 +157,7 @@
 					oninput={(e: { target: HTMLInputElement }) =>
 						updateDraft(tag.id, (e.target as HTMLInputElement).value)}
 					onblur={() => onSaveRename(tag.id)}
+					draggable={false}
 				/>
 			{:else}
 				<span>{tag.name}</span>
@@ -168,6 +223,26 @@
 		gap: 0.5rem;
 		align-items: center;
 		padding: 0.15rem 0.35rem;
+	}
+
+	.row {
+		cursor: move;
+	}
+
+	.row.drop-inside {
+		background: #dbeafe;
+		outline: 2px solid #3b82f6;
+		border-radius: 4px;
+	}
+
+	.row.drop-before {
+		border-top: 3px solid #3b82f6;
+		margin-top: -2px;
+	}
+
+	.row.drop-after {
+		border-bottom: 3px solid #3b82f6;
+		margin-bottom: -2px;
 	}
 
 	.trash {

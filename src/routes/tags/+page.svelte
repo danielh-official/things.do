@@ -101,9 +101,11 @@
 		return ids;
 	}
 
-	async function handleDrop(targetId: number) {
+	async function handleDrop(targetId: number | null, position: 'before' | 'after' | 'inside') {
 		if (draggingIds.length === 0) return;
+		if (targetId === null) return;
 
+		// Prevent dropping into self or descendants
 		const invalidTargets = new SvelteSet<number>();
 		for (const id of draggingIds) {
 			collectDescendants(id, tagMap).forEach((desc) => invalidTargets.add(desc));
@@ -113,11 +115,23 @@
 			return;
 		}
 
-		await moveTagsToParent(draggingIds, targetId);
+		if (position === 'inside') {
+			// Move as children of target
+			await moveTagsToParent(draggingIds, targetId);
+		} else {
+			// Reorder as siblings - find target's parent and insert before/after target
+			const allTags = await db.tags.toArray();
+			const targetTag = allTags.find((t) => t.id === targetId);
+			if (!targetTag) return;
+
+			const newParentId = targetTag.parent_tag_id;
+			await reorderTags(draggingIds, newParentId, targetId, position);
+		}
+
 		draggingIds = [];
 	}
 
-	async function moveTagsToParent(ids: number[], newParentId: number) {
+	async function moveTagsToParent(ids: number[], newParentId: number | null) {
 		const siblings = tagMap.get(newParentId) || [];
 		const baseOrder = siblings.length;
 		await Promise.all(
@@ -127,7 +141,44 @@
 		);
 		await refreshTags();
 	}
+	async function reorderTags(
+		ids: number[],
+		newParentId: number | null,
+		targetId: number,
+		position: 'before' | 'after'
+	) {
+		// Get all current siblings, excluding the ones being moved
+		const allTags = await db.tags.toArray();
+		const currentSiblings = allTags.filter(
+			(tag) => tag.parent_tag_id === newParentId && !ids.includes(tag.id)
+		);
+		currentSiblings.sort((a, b) => a.order - b.order);
 
+		// Find where to insert
+		const targetIndex = currentSiblings.findIndex((t) => t.id === targetId);
+		if (targetIndex === -1) return;
+
+		const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+
+		// Get the tags being moved
+		const movedTags = allTags.filter((tag) => ids.includes(tag.id));
+
+		// Build new sibling order: siblings before insert point + moved tags + siblings after
+		const newOrder = [
+			...currentSiblings.slice(0, insertIndex),
+			...movedTags,
+			...currentSiblings.slice(insertIndex)
+		];
+
+		// Update all tags with their new parent and sequential order
+		await Promise.all(
+			newOrder.map((tag, index) =>
+				db.tags.update(tag.id, { parent_tag_id: newParentId, order: index })
+			)
+		);
+
+		await refreshTags();
+	}
 	function beginRename(id: number, currentName: string) {
 		editingId = id;
 		nameDrafts.set(id, currentName);
