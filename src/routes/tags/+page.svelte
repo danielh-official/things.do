@@ -13,6 +13,7 @@
 	let nameDrafts = new SvelteMap<number, string>();
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let bulkDeleting = $state(false);
 
 	onMount(async () => {
 		await refreshTags();
@@ -79,6 +80,11 @@
 			selectedIds.add(tagId);
 		}
 		draggingIds = [...selectedIds];
+
+		if (draggingIds.length === 0) {
+			draggingIds = [tagId];
+			selectedIds.add(tagId);
+		}
 	}
 
 	function collectDescendants(id: number, map: SvelteMap<number | null, Tag[]>) {
@@ -134,7 +140,7 @@
 	async function saveRename(id: number) {
 		const draft = nameDrafts.get(id)?.trim();
 		if (!draft) {
-			cancelRename();
+			cancelRename(id);
 			return;
 		}
 		await db.tags.update(id, { name: draft });
@@ -142,7 +148,10 @@
 		await refreshTags();
 	}
 
-	function cancelRename() {
+	function cancelRename(id?: number) {
+		if (id !== undefined) {
+			nameDrafts.delete(id);
+		}
 		editingId = null;
 	}
 
@@ -155,6 +164,30 @@
 		await db.tags.bulkDelete(idsToDelete);
 		selectedIds.clear();
 		await refreshTags();
+	}
+
+	function clearSelections() {
+		selectedIds.clear();
+		draggingIds = [];
+		editingId = null;
+	}
+
+	async function deleteSelectedTags() {
+		if (selectedIds.size < 2) return;
+		const idsToDelete = new SvelteSet<number>();
+		for (const id of selectedIds) {
+			collectDescendants(id, tagMap).forEach((desc) => idsToDelete.add(desc));
+		}
+
+		if (!confirm(`Delete ${idsToDelete.size} selected tags and their sub-tags?`)) {
+			return;
+		}
+
+		bulkDeleting = true;
+		await db.tags.bulkDelete([...idsToDelete]);
+		clearSelections();
+		await refreshTags();
+		bulkDeleting = false;
 	}
 </script>
 
@@ -184,9 +217,24 @@
 				{updateDraft}
 				onSaveRename={saveRename}
 				onDeleteTag={deleteTag}
+				onCancelRename={(id: number | undefined) => cancelRename(id)}
 			/>
 		{/each}
 	</ul>
+
+	{#if selectedIds.size > 1}
+		<div class="selection-bar">
+			<div>{selectedIds.size} tags selected</div>
+			<div class="actions">
+				<button type="button" class="secondary" onclick={clearSelections}>
+					Clear Selections
+				</button>
+				<button type="button" class="danger" onclick={deleteSelectedTags} disabled={bulkDeleting}>
+					{bulkDeleting ? 'Deleting…' : 'Delete Tags'}
+				</button>
+			</div>
+		</div>
+	{/if}
 {/if}
 
 <style>
@@ -194,5 +242,43 @@
 		list-style: none;
 		padding: 0;
 		margin: 0;
+	}
+
+	.selection-bar {
+		position: sticky;
+		bottom: 0;
+		background: #f8fafc;
+		border-top: 1px solid #e2e8f0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1rem;
+		gap: 1rem;
+	}
+
+	.selection-bar .actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.selection-bar button {
+		border: 1px solid #cbd5e1;
+		background: #fff;
+		padding: 0.35rem 0.8rem;
+		border-radius: 6px;
+		cursor: pointer;
+	}
+
+	.selection-bar button.secondary:hover {
+		background: #e2e8f0;
+	}
+
+	.selection-bar button.danger {
+		border-color: #ef4444;
+		color: #b91c1c;
+	}
+
+	.selection-bar button.danger:hover {
+		background: #fee2e2;
 	}
 </style>

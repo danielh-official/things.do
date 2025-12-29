@@ -15,6 +15,7 @@
 		beginRename: (id: number, currentName: string) => void;
 		updateDraft: (id: number, value: string) => void;
 		onSaveRename: (id: number) => void;
+		onCancelRename: (id?: number) => void;
 		onDeleteTag: (id: number) => void;
 	}
 
@@ -30,6 +31,7 @@
 		beginRename,
 		updateDraft,
 		onSaveRename,
+		onCancelRename,
 		onDeleteTag
 	}: Props = $props();
 
@@ -46,11 +48,17 @@
 		ensureDragSelection(tag.id);
 		event.dataTransfer?.setData('text/plain', String(tag.id));
 		event.dataTransfer?.setData('application/x-tag-ids', 'move');
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+		}
 		event.dataTransfer?.setDragImage(event.currentTarget as HTMLElement, 10, 10);
 	}
 
 	function onDragOver(event: DragEvent) {
 		event.preventDefault();
+		if (event.dataTransfer) {
+			event.dataTransfer.dropEffect = 'move';
+		}
 	}
 
 	function onDrop(event: DragEvent) {
@@ -73,21 +81,23 @@
 		}
 		if (event.key === 'Escape') {
 			event.stopPropagation();
+			onCancelRename(tag.id);
 		}
 	}
 </script>
 
-<li class="node" draggable ondragstart={onDragStart} ondragover={onDragOver} ondrop={onDrop}>
-	<div class="row">
+<li class="node" draggable ondragstart={onDragStart}>
+    <div class="row" role="group" ondragover={onDragOver} ondrop={onDrop}>
 		<button
 			class:selected={isSelected(tag.id)}
 			type="button"
 			onclick={onClick}
 			ondblclick={onDoubleClick}
+			draggable={false}
 		>
 			{#if isEditing}
 				<input
-					bind:value={draft}
+					value={draft}
 					data-tag-input={`tag-${tag.id}`}
 					onkeydown={onKeydown}
 					oninput={(e: { target: HTMLInputElement }) =>
@@ -123,6 +133,7 @@
 					{beginRename}
 					{updateDraft}
 					{onSaveRename}
+					{onCancelRename}
 					{onDeleteTag}
 				/>
 			{/each}
@@ -153,7 +164,7 @@
 	}
 
 	.node > div {
-		display: inline-flex;
+		display: flex;
 		gap: 0.5rem;
 		align-items: center;
 		padding: 0.15rem 0.35rem;
@@ -166,6 +177,10 @@
 		font-size: 0.9rem;
 		line-height: 1;
 		padding: 0.1rem;
+	}
+
+	.row > .trash {
+		margin-left: auto;
 	}
 
 	ul {
