@@ -32,7 +32,7 @@ export default function useItemOpening(
 
     return {
         get openedItem() { return openedItem; },
-        setOpenedItem: (val: Item) => openedItem = val,
+        set openedItem(value: Item | null) { openedItem = value; },
         openItem,
         closeOpenedItem
     }
