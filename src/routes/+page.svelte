@@ -7,6 +7,7 @@
 	import { getFocusingItems } from '$lib';
 	import { liveQuery } from 'dexie';
 	import useDragAndDrop from '$lib/item.dragndrop.svelte';
+	import useItemOpening from '$lib/item.opening.svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 
@@ -43,22 +44,7 @@
 		}
 	}
 
-	let openedItem: Item | null = $state(null);
-
-	function openItem(event: MouseEvent) {
-		clearHighlightsForAllItems();
-
-		const li = event.currentTarget as HTMLLIElement;
-
-		openedItem =
-			$items.filter(
-				(item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10)
-			)[0] || null;
-	}
-
-	function closeOpenedItem() {
-		openedItem = null;
-	}
+	let itemOpeningUtility = useItemOpening(items, clearHighlightsForAllItems);
 
 	let addingNewItem = $state(false);
 
@@ -112,7 +98,7 @@
 			return;
 		}
 
-		if (event.code === 'Space' && !openedItem && !addingNewItem) {
+		if (event.code === 'Space' && !itemOpeningUtility.openedItem && !addingNewItem) {
 			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
 			if (input) {
 				event.preventDefault();
@@ -121,8 +107,8 @@
 			return;
 		}
 
-		if (event.key === 'Escape' && openedItem) {
-			closeOpenedItem();
+		if (event.key === 'Escape' && itemOpeningUtility.openedItem) {
+			itemOpeningUtility.closeOpenedItem();
 			return;
 		}
 
@@ -131,7 +117,12 @@
 			return;
 		}
 
-		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
+		if (
+			event.key === 'Backspace' &&
+			highlightedItems.size > 0 &&
+			!addingNewItem &&
+			!itemOpeningUtility.openedItem
+		) {
 			deleteHighlightedItems();
 			return;
 		}
@@ -160,8 +151,8 @@
 			>
 				<ItemComponent
 					{item}
-					bind:openedItem
-					{openItem}
+					bind:openedItem={itemOpeningUtility.openedItem}
+					openItem={itemOpeningUtility.openItem}
 					{highlightItem}
 					handleDragStart={(event: DragEvent) => dnd.handleDragStart(event, item.id!)}
 					handleDragOver={(event: DragEvent) => dnd.handleDragOver(event, item.id!)}
