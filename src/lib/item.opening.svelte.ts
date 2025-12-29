@@ -2,10 +2,16 @@ import { type Item } from "$lib/db";
 import type { Observable } from "dexie";
 import { onDestroy } from "svelte";
 
+export interface UseItemOpeningReturn {
+    openedItem: Item | null;
+    openItem: (event: MouseEvent) => void;
+    closeOpenedItem: () => void;
+}
+
 export default function useItemOpening(
     items: Observable<Item[]>,
     clearHighlightsForAllItems: () => void
-) {
+): UseItemOpeningReturn {
     let openedItem: Item | null = $state(null);
 
     // Keep a reactive snapshot of the current items emitted by the observable

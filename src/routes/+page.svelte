@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { db } from '$lib/db';
 	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import { SvelteDate } from 'svelte/reactivity';
 	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
 	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
 	import { getFocusingItems } from '$lib';
@@ -10,6 +9,7 @@
 	import useItemOpening from '$lib/item.opening.svelte';
 	import useItemHighlighting from '$lib/item.highlighting.svelte';
 	import useItemAdding from '$lib/item.adding.svelte';
+	import useKeydownHandling from '$lib/keydown.svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 
@@ -40,41 +40,11 @@
 		itemHighlightingUtility.clearHighlightsForAllItems
 	);
 
-	function processKeydownEvent(event: KeyboardEvent) {
-		if (event.code === 'Enter' && itemAddingUtility.addingNewItem) {
-			itemAddingUtility.addItem?.(event);
-			return;
-		}
-
-		if (event.code === 'Space' && !itemOpeningUtility.openedItem && !itemAddingUtility.addingNewItem) {
-			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
-			if (input) {
-				event.preventDefault();
-				input.focus();
-			}
-			return;
-		}
-
-		if (event.key === 'Escape' && itemOpeningUtility.openedItem) {
-			itemOpeningUtility.closeOpenedItem();
-			return;
-		}
-
-		if (event.key === 'Escape' && itemHighlightingUtility.highlightedItems.size > 0) {
-			itemHighlightingUtility.clearHighlightsForAllItems();
-			return;
-		}
-
-		if (
-			event.key === 'Backspace' &&
-			itemHighlightingUtility.highlightedItems.size > 0 &&
-			!itemAddingUtility.addingNewItem &&
-			!itemOpeningUtility.openedItem
-		) {
-			itemHighlightingUtility.deleteHighlightedItems();
-			return;
-		}
-	}
+	const keydownHandling = useKeydownHandling(
+		itemAddingUtility,
+		itemOpeningUtility,
+		itemHighlightingUtility
+	);
 
 	let dragndropUtility = useDragAndDrop(items, itemHighlightingUtility.highlightedItems);
 </script>
@@ -83,7 +53,7 @@
 	<title>Focus | Things.do</title>
 </svelte:head>
 
-<svelte:window onkeydown={processKeydownEvent} />
+<svelte:window onkeydown={keydownHandling.processKeydownEvent} />
 
 <ItemInputBox bind:addingNewItem={itemAddingUtility.addingNewItem} />
 {#if $items?.length > 0}

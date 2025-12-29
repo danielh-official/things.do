@@ -3,6 +3,13 @@ import type { Observable } from "dexie";
 import { onDestroy } from "svelte";
 import { SvelteDate, SvelteSet } from "svelte/reactivity";
 
+export interface UseItemHighlightingReturn {
+    highlightedItems: SvelteSet<number>;
+    highlightItem: (event: MouseEvent) => void;
+    clearHighlightsForAllItems: () => void;
+    deleteHighlightedItems: () => Promise<void>;
+}
+
 export default function useItemHighlighting(
     items: Observable<Item[]>,
 ) {

@@ -3,10 +3,15 @@ import type { Observable } from "dexie";
 import { onDestroy } from "svelte";
 import { SvelteDate } from "svelte/reactivity";
 
+export interface UseItemAddingReturn {
+    addingNewItem: boolean;
+    addItem: (event: KeyboardEvent) => Promise<void>;
+}
+
 export default function useItemAdding(
     items: Observable<Item[]>,
     defaultItemParams: Omit<Item, 'id' | 'order' | 'title' | 'created_at' | 'updated_at' | 'things_id'>,
-) {
+): UseItemAddingReturn {
     // Keep a reactive snapshot of the current items emitted by the observable
     let itemsSnapshot: Item[] = $state([]);
     const subscription = items.subscribe((value) => {

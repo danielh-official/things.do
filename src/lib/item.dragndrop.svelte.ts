@@ -3,6 +3,14 @@ import type { Observable } from "dexie";
 import { onDestroy } from "svelte";
 import { SvelteDate, type SvelteSet } from "svelte/reactivity";
 
+export interface UseDragAndDropReturn {
+    handleDragStart: (event: DragEvent, itemId: number) => void;
+    handleDragOver: (event: DragEvent, targetItemId?: number) => void;
+    handleDrop: (event: DragEvent, targetItemId: number) => Promise<void>;
+    handleDragEnd: () => void;
+    dragInsertIndex: number | null;
+}
+
 export default function useDragAndDrop(
     items: Observable<Item[]>,
     highlightedItems: SvelteSet<number>
