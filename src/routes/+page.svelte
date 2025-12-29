@@ -128,7 +128,7 @@
 		}
 	}
 
-	let dnd = useDragAndDrop(items, highlightedItems);
+	let dragndropUtility = useDragAndDrop(items, highlightedItems);
 </script>
 
 <svelte:head>
@@ -143,9 +143,9 @@
 		{#each $items as item, index (item.id)}
 			<li
 				data-id={item.id}
-				class={dnd.dragInsertIndex === index
+				class={dragndropUtility.dragInsertIndex === index
 					? 'relative -my-2 border-t-2 border-blue-400'
-					: dnd.dragInsertIndex === $items.length && index === $items.length - 1
+					: dragndropUtility.dragInsertIndex === $items.length && index === $items.length - 1
 						? 'relative -my-2 border-b-2 border-blue-400'
 						: ''}
 			>
@@ -154,10 +154,10 @@
 					bind:openedItem={itemOpeningUtility.openedItem}
 					openItem={itemOpeningUtility.openItem}
 					{highlightItem}
-					handleDragStart={(event: DragEvent) => dnd.handleDragStart(event, item.id!)}
-					handleDragOver={(event: DragEvent) => dnd.handleDragOver(event, item.id!)}
-					handleDrop={(event: DragEvent) => dnd.handleDrop(event, item.id!)}
-					handleDragEnd={dnd.handleDragEnd}
+					handleDragStart={(event: DragEvent) => dragndropUtility.handleDragStart(event, item.id!)}
+					handleDragOver={(event: DragEvent) => dragndropUtility.handleDragOver(event, item.id!)}
+					handleDrop={(event: DragEvent) => dragndropUtility.handleDrop(event, item.id!)}
+					handleDragEnd={dragndropUtility.handleDragEnd}
 					tags={$tags}
 				/>
 			</li>
