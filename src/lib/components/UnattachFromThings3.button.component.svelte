@@ -13,7 +13,6 @@
 		let itemsAlreadyUnattached = 0;
 
 		for (const itemId of highlightedItems) {
-
 			const item = await db.items.get(itemId);
 
 			if (item) {

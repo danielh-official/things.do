@@ -47,7 +47,7 @@
 
 			<UnattachFromThings3Button {highlightedItems} />
 		</div>
-		
+
 		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
 
 		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
