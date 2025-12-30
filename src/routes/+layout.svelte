@@ -11,7 +11,8 @@
 		CloseCircleSolid,
 		EyeOutline,
 		TagOutline,
-		TrashBinOutline
+		TrashBinOutline,
+		CogOutline
 	} from 'flowbite-svelte-icons';
 
 	let { children } = $props();
@@ -123,6 +124,22 @@
 					</li>
 					<hr class="my-2 border-t border-gray-300 dark:border-gray-600" />
 				{/if}
+			</ul>
+
+			<!-- Show at bottom -->
+			<ul class="absolute bottom-4 w-56 space-y-2 font-medium">
+				<li>
+					<a
+						href={resolve('/settings')}
+						class={{
+							'text-body rounded-base group flex items-center px-2 py-1.5': true,
+							'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/settings'
+						}}
+					>
+						<CogOutline class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
+						<span class="ms-3 flex-1 whitespace-nowrap">Settings</span>
+					</a>
+				</li>
 			</ul>
 		</div>
 	</aside>
