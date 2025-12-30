@@ -406,10 +406,14 @@
 				{#if item.checklist && item.checklist.length > 0}
 					<FileDocSolid class="inline h-4 w-4 text-gray-400" />
 				{/if}
+				<!-- MARK: Tags Preview -->
 				{#if item.tag_ids && item.tag_ids.length > 0}
 					{#each item.tag_ids as tagId}
-						<span class="inline-block text-gray-400 m-1 text-[11px] border rounded px-1">
-							<TagOutline class="inline h-4 w-4" /> {tagNameById[tagId]}
+						<span
+							class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
+						>
+							<TagOutline class="inline h-4 w-4" />
+							{tagNameById[tagId]}
 						</span>
 					{/each}
 				{/if}
