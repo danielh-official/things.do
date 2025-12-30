@@ -210,8 +210,15 @@
 	}
 
 	async function deleteTag(id: number) {
-		if (!confirm('Are you sure you want to delete this tag and all its sub-tags?')) {
-			return;
+		const hasSubtags = (tagMap.get(id) || []).length > 0;
+		if (hasSubtags) {
+			if (!confirm('Are you sure you want to delete this tag and all its sub-tags?')) {
+				return;
+			}
+		} else {
+			if (!confirm('Are you sure you want to delete this tag?')) {
+				return;
+			}
 		}
 
 		const idsToDelete = collectDescendants(id, tagMap);
@@ -233,7 +240,7 @@
 			collectDescendants(id, tagMap).forEach((desc) => idsToDelete.add(desc));
 		}
 
-		if (!confirm(`Delete ${idsToDelete.size} selected tags and their sub-tags?`)) {
+		if (!confirm(`Delete ${idsToDelete.size} selected tags (subtags are included in deletion)?`)) {
 			return;
 		}
 
@@ -302,12 +309,8 @@
 	<title>Tags | Things.do</title>
 </svelte:head>
 
-{#if loading}
-	<p>Loading tags…</p>
-{:else if error}
+{#if error}
 	<p>{error}</p>
-{:else if rootTags.length === 0}
-	<p>No tags yet.</p>
 {:else}
 	<div class="actions-bar">
 		<div class="actions-left">
@@ -331,8 +334,8 @@
 				{nameDrafts}
 				{beginRename}
 				{updateDraft}
-				expandedIds={expandedIds}
-				toggleExpanded={toggleExpanded}
+				{expandedIds}
+				{toggleExpanded}
 				onSaveRename={saveRename}
 				onDeleteTag={deleteTag}
 				onCancelRename={(id: number | undefined) => cancelRename(id)}

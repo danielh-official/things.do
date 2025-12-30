@@ -238,6 +238,12 @@
 		border-radius: 4px;
 	}
 
+	@media (prefers-color-scheme: dark) {
+		.selected {
+			background: #1e40af;
+		}
+	}
+
 	.node {
 		display: block;
 	}
