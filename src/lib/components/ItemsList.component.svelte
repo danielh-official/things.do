@@ -1,8 +1,8 @@
 <script lang="ts">
-	import ItemComponent from '$lib/components/ItemComponent.svelte';
-	import ItemInputBox from '$lib/components/ItemInputBoxComponent.svelte';
+	import ItemComponent from '$lib/components/Item.component.svelte';
+	import ItemInputBox from '$lib/components/ItemInputBox.component.svelte';
 	import { cleanupTags } from '$lib';
-	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBoxComponent.svelte';
+	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBox.component.svelte';
 	import { onMount, type Snippet } from 'svelte';
 	import { db, type Item, type Tag } from '$lib/db';
 	import type { Observable } from 'dexie';

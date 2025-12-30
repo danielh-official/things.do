@@ -3,9 +3,9 @@
 	import { getFocusingItems } from '$lib';
 	import { liveQuery } from 'dexie';
 	import ItemsListComponent from '$lib/components/ItemsList.component.svelte';
-	import DeleteSelectedItemsButtonComponent from '$lib/components/DeleteSelectedItemsButtonComponent.svelte';
-	import SetAsideForLaterButtonComponent from '$lib/components/SetAsideForLaterButtonComponent.svelte';
-	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItemsButtonComponent.svelte';
+	import DeleteSelectedItemsButtonComponent from '$lib/components/DeleteSelectedItems.button.component.svelte';
+	import SetAsideForLaterButtonComponent from '$lib/components/SetAsideForLater.button.component.svelte';
+	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItems.button.component.svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 

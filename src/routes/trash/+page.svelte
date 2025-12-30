@@ -3,9 +3,9 @@
 	import { db } from '$lib/db';
 	import { getTrashedItems } from '$lib';
 	import { liveQuery } from 'dexie';
-	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItemsButtonComponent.svelte';
-	import RestoreSelectedItemsButtonComponent from '$lib/components/RestoreSelectedItemsButtonComponent.svelte';
-	import PermanentlyDeleteSelectedItemsButtonComponent from '$lib/components/PermanentlyDeleteSelectedItemsButtonComponent.svelte';
+	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItems.button.component.svelte';
+	import RestoreSelectedItemsButtonComponent from '$lib/components/RestoreSelectedItems.button.component.svelte';
+	import PermanentlyDeleteSelectedItemsButtonComponent from '$lib/components/PermanentlyDeleteSelectedItems.button.component.svelte';
 
 	let items = liveQuery(() => getTrashedItems());
 
