@@ -52,6 +52,12 @@
 	}
 
 	function onClick(event: MouseEvent) {
+		// If already selected, should unselect it
+		if (isSelected(tag.id)) {
+			toggleSelection(tag.id, true);
+			return;
+		}
+
 		const additive = event.metaKey || event.ctrlKey || event.shiftKey;
 		toggleSelection(tag.id, additive);
 	}
