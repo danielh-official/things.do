@@ -39,6 +39,9 @@
 				sent_to_things_at: sentAtDate
 			});
 		}
+
+		// After processing, close the tab
+		window.close();
 	});
 </script>
 

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { db, type Item } from '$lib/db';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-	import { resolve } from '$app/paths';
 
 	let {
 		highlightedItems = $bindable()
@@ -125,7 +124,7 @@
 
 		path += `&sent-at=${SvelteDate.now()}`;
 
-		const callbackUrlParam = encodeURIComponent(window.location.href + path);
+		const callbackUrlParam = encodeURIComponent(window.location.origin + '/' + path);
 
 		const dataParam = encodeURIComponent(JSON.stringify(data));
 

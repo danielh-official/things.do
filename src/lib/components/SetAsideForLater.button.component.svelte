@@ -11,7 +11,7 @@
 </script>
 
 <button
-	class="cursor-pointer rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+	class="cursor-pointer rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
 	onclick={() => {
 		highlightedItems.forEach(async (itemId) => {
 			const item = await db.items.get(itemId);
