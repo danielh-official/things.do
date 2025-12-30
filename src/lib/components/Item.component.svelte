@@ -126,9 +126,9 @@
 	let tagInputText = $state('');
 	import type { Tag } from '$lib/db';
 	import {
-		BookOutline,
 		FileDocSolid,
 		FilePenSolid,
+		LinkOutline,
 		TagOutline,
 		TagSolid
 	} from 'flowbite-svelte-icons';
@@ -416,6 +416,9 @@
 				{/if}
 				{#if item.checklist && item.checklist.length > 0}
 					<FileDocSolid class="inline h-4 w-4 text-gray-400" />
+				{/if}
+				{#if item.things_id}
+					<LinkOutline class="inline h-4 w-4 text-gray-400" />
 				{/if}
 				<!-- MARK: Tags Preview -->
 				{#if item.tag_ids && item.tag_ids.length > 0}
