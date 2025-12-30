@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { db, type Item, type LogStatus } from '$lib/db';
-	import { clickOutside } from '$lib';
 	import { SvelteDate } from 'svelte/reactivity';
 	import { tick } from 'svelte';
 
@@ -249,7 +248,6 @@
 	<div
 		class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
 		data-id={item.id}
-		use:clickOutside
 		onoutsideclick={() => !tagInputOpen && (openedItem = null)}
 	>
 		<input

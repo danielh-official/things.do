@@ -7,6 +7,8 @@
 	import { db, type Item, type Tag } from '$lib/db';
 	import type { Observable } from 'dexie';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 
 	let {
 		items = $bindable(),
@@ -29,6 +31,24 @@
 
 	onMount(() => {
 		cleanupTags();
+
+		// Check if URL has an item parameter and open that item
+		const itemIdParam = page.url.searchParams.get('item');
+		if (itemIdParam) {
+			const itemId = parseInt(itemIdParam, 10);
+			if (!isNaN(itemId)) {
+				// Wait for items to be loaded, then open the item
+				const subscription = items.subscribe((itemsList) => {
+					if (itemsList && itemsList.length > 0) {
+						const itemToOpen = itemsList.find((item: Item) => item.id === itemId);
+						if (itemToOpen) {
+							openedItem = itemToOpen;
+						}
+						subscription.unsubscribe();
+					}
+				});
+			}
+		}
 	});
 
 	let addingNewItem = $state(false);
@@ -100,14 +120,28 @@
 
 		const li = event.currentTarget as HTMLLIElement;
 
-		openedItem =
+		const item =
 			$items.filter(
 				(item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10)
 			)[0] || null;
+
+		openedItem = item;
+
+		// Update URL with item parameter
+		if (item) {
+			const url = new URL(window.location.href);
+			url.searchParams.set('item', String(item.id));
+			goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+		}
 	}
 
 	function closeOpenedItem() {
 		openedItem = null;
+
+		// Remove item parameter from URL
+		const url = new URL(window.location.href);
+		url.searchParams.delete('item');
+		goto(url.pathname + url.search, { replaceState: true, noScroll: true });
 	}
 
 	let draggingItemId: number | null = $state(null);
