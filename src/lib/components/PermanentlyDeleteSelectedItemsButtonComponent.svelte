@@ -1,9 +1,21 @@
 <script lang="ts">
+	import { db } from '$lib/db';
+	import type { SvelteSet } from 'svelte/reactivity';
+
 	let {
-		permanentlyDeleteHighlightedItems
+		highlightedItems,
+		clearHighlightsForAllItems
 	}: {
-		permanentlyDeleteHighlightedItems: () => Promise<void>;
+		highlightedItems: SvelteSet<number>;
+		clearHighlightsForAllItems: () => void;
 	} = $props();
+
+	async function permanentlyDeleteHighlightedItems() {
+		highlightedItems.forEach(async (itemId) => {
+			await db.items.delete(itemId);
+		});
+		clearHighlightsForAllItems();
+	}
 </script>
 
 <button
