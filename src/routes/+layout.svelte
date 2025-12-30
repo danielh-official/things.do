@@ -5,6 +5,7 @@
 	import { resolve } from '$app/paths';
 	import { getBlockedItems, getFocusingItems, getLaterItems, getTags, getTrashedItems } from '$lib';
 	import { liveQuery } from 'dexie';
+	import ToastHost from '$lib/components/ToastHost.component.svelte';
 	import {
 		ClockOutline,
 		CloseCircleSolid,
@@ -129,4 +130,6 @@
 	<main class="w-full max-w-xl p-4 md:mx-auto">
 		{@render children()}
 	</main>
+
+	<ToastHost />
 </div>
