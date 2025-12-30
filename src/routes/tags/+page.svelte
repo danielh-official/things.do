@@ -2,7 +2,7 @@
 	import { db } from '$lib/db';
 	import type { Tag } from '$lib/db';
 	import { onMount } from 'svelte';
-	import TagNode from '$lib/components/TagNode.svelte';
+	import TagNode from '$lib/components/TagNode.component.svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	let rootTags = $state<Tag[]>([]);

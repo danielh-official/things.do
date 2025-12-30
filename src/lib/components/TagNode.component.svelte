@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Tag } from '$lib/db';
 	import { TrashBinOutline } from 'flowbite-svelte-icons';
-	import Self from './TagNode.svelte';
+	import Self from './TagNode.component.svelte';
 	import { tick } from 'svelte';
 
 	interface Props {
