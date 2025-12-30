@@ -1,9 +1,21 @@
 <script lang="ts">
+	import { db } from '$lib/db';
+	import { SvelteDate } from 'svelte/reactivity';
+
 	let {
-		deleteHighlightedItems
+		highlightedItems = $bindable(),
+		clearHighlightsForAllItems
 	}: {
-		deleteHighlightedItems: () => void;
+		highlightedItems: Set<number>;
+		clearHighlightsForAllItems: () => void;
 	} = $props();
+
+	async function deleteHighlightedItems() {
+		highlightedItems.forEach(async (itemId) => {
+			await db.items.update(itemId, { deleted_at: new SvelteDate() });
+		});
+		clearHighlightsForAllItems();
+	}
 </script>
 
 <button
