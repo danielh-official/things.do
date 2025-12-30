@@ -271,14 +271,19 @@
 {#if $items?.length > 0}
 	<ul class="mt-4 space-y-2">
 		{#each $items as item, index (item.id)}
-			<li
-				data-id={item.id}
-				class={dragInsertIndex === index
-					? 'relative -my-2 border-t-2 border-blue-400'
-					: dragInsertIndex === $items.length && index === $items.length - 1
-						? 'relative -my-2 border-b-2 border-blue-400'
-						: ''}
-			>
+			<li data-id={item.id} class="relative">
+				{#if dragInsertIndex === index}
+					<div
+						class="absolute -top-1 right-0 left-0 h-0.5 bg-blue-500 shadow-lg"
+						style="z-index: 50;"
+					></div>
+				{/if}
+				{#if dragInsertIndex === $items.length && index === $items.length - 1}
+					<div
+						class="absolute right-0 -bottom-1 left-0 h-0.5 bg-blue-500 shadow-lg"
+						style="z-index: 50;"
+					></div>
+				{/if}
 				<ItemComponent
 					{item}
 					bind:openedItem
