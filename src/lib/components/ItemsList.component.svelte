@@ -270,9 +270,7 @@
 				(item: Item) => item.id != null && highlightedItems.has(item.id)
 			);
 			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
-				const markdown = selectedItems
-					.map((item) => `- ${item.title}`)
-					.join('\n');
+				const markdown = selectedItems.map((item) => `- ${item.title}`).join('\n');
 				navigator.clipboard.writeText(markdown);
 			}
 			return;
