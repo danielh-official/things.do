@@ -213,11 +213,11 @@
 					{nameDrafts}
 					{beginRename}
 					{updateDraft}
-					onSaveRename={onSaveRename}
-					onCancelRename={onCancelRename}
-					onDeleteTag={onDeleteTag}
-					expandedIds={expandedIds}
-					toggleExpanded={toggleExpanded}
+					{onSaveRename}
+					{onCancelRename}
+					{onDeleteTag}
+					{expandedIds}
+					{toggleExpanded}
 				/>
 			{/each}
 		</ul>
