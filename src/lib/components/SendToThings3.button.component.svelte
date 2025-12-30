@@ -10,6 +10,8 @@
 
 	interface ThingsObject {
 		type: string;
+		operation?: 'update';
+		id?: string;
 		attributes: ThingsObjectAttributes;
 	}
 
@@ -49,6 +51,11 @@
 			}
 		};
 
+		if (item.things_id) {
+			obj.id = item.things_id;
+			obj.operation = 'update';
+		}
+
 		if (item.notes) {
 			obj.attributes.notes = item.notes;
 		}
@@ -79,11 +86,14 @@
 		if (item.logged_at) {
 			if (item.logged_status === 'completed') {
 				obj.attributes.completed = true;
-				obj.attributes['completion-date'] = item.logged_at.toDateString() || null;
+				// To ISO8601 string
+				obj.attributes['completion-date'] = item.logged_at.toISOString() || null;
 			} else if (item.logged_status === 'canceled') {
 				obj.attributes.canceled = true;
-				obj.attributes['completion-date'] = item.logged_at.toDateString() || null;
+				obj.attributes['completion-date'] = item.logged_at.toISOString() || null;
 			}
+		} else {
+			obj.attributes.completed = false;
 		}
 
 		return {
@@ -92,28 +102,10 @@
 		};
 	}
 
-	async function addAllSelectedItemsToThings3() {
-		let items: Item[] = [];
-
-		let data: any[] = [];
-
-		for (let itemId of highlightedItems) {
-			let { item, obj } = await getJsonForItemId(itemId);
-
-			if (obj) {
-				data.push(obj);
-			}
-
-			if (item) {
-				items.push(item);
-			}
+	function buildXSuccessUrl(itemIds: number[]): string {
+		if (itemIds.length === 0) {
+			return '';
 		}
-
-		if (data.length === 0) {
-			return;
-		}
-
-		const itemIds = items.map((item) => item.id);
 
 		let path = 'success';
 
@@ -126,9 +118,45 @@
 
 		const callbackUrlParam = encodeURIComponent(window.location.origin + '/' + path);
 
+		return callbackUrlParam;
+	}
+
+	async function syncAllSelectedItemsToThings3() {
+		let items: Item[] = [];
+
+		let data: any[] = [];
+
+		for (let itemId of highlightedItems) {
+			let { item, obj } = await getJsonForItemId(itemId);
+
+			if (obj) {
+				data.push(obj);
+			}
+
+			if (item && !item.things_id) {
+				items.push(item);
+			}
+		}
+
+		if (data.length === 0) {
+			return;
+		}
+
 		const dataParam = encodeURIComponent(JSON.stringify(data));
 
-		const thingsUrl = `things:///json?data=${dataParam}&x-success=${callbackUrlParam}`;
+		const callbackUrlParam = buildXSuccessUrl(items.map((item) => item.id));
+
+		let thingsUrl = `things:///json?data=${dataParam}`;
+
+		if (callbackUrlParam) {
+			thingsUrl += `&x-success=${callbackUrlParam}`;
+		}
+
+		const authToken = localStorage.getItem('things3_auth_token');
+
+		if (authToken) {
+			thingsUrl += `&auth-token=${encodeURIComponent(authToken)}`;
+		}
 
 		window.open(thingsUrl, '_blank');
 	}
@@ -136,8 +164,8 @@
 
 <button
 	class="cursor-pointer rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-	onclick={addAllSelectedItemsToThings3}
+	onclick={syncAllSelectedItemsToThings3}
 	disabled={highlightedItems.size > 200}
 >
-	Add To Things 3
+	Sync To Things 3
 </button>
