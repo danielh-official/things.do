@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Tag } from '$lib/db';
+	import { TrashBinOutline } from 'flowbite-svelte-icons';
 	import Self from './TagNode.svelte';
 	import { tick } from 'svelte';
 
@@ -190,12 +191,12 @@
 		</button>
 
 		<button
-			class="trash"
+			class="trash text-red-500 hover:text-red-600"
 			aria-label={`Delete ${tag.name}`}
 			type="button"
 			onclick={() => onDeleteTag(tag.id)}
 		>
-			🗑
+			<TrashBinOutline />
 		</button>
 	</div>
 	{#if hasChildren}
