@@ -5,7 +5,13 @@
 	import { resolve } from '$app/paths';
 	import { getBlockedItems, getFocusingItems, getLaterItems, getTags, getTrashedItems } from '$lib';
 	import { liveQuery } from 'dexie';
-	import { ClockOutline, CloseCircleSolid, EyeOutline, TagOutline, TrashBinOutline } from 'flowbite-svelte-icons';
+	import {
+		ClockOutline,
+		CloseCircleSolid,
+		EyeOutline,
+		TagOutline,
+		TrashBinOutline
+	} from 'flowbite-svelte-icons';
 
 	let { children } = $props();
 
@@ -59,7 +65,9 @@
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/later'
 							}}
 						>
-							<ClockOutline class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
+							<ClockOutline
+								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
+							/>
 							<span class="ms-3 flex-1 whitespace-nowrap">Later</span>
 						</a>
 					</li>
@@ -73,7 +81,9 @@
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/blocked'
 							}}
 						>
-							<CloseCircleSolid class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
+							<CloseCircleSolid
+								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
+							/>
 							<span class="ms-3 flex-1 whitespace-nowrap">Blocked</span>
 						</a>
 					</li>
@@ -87,7 +97,9 @@
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/trash'
 							}}
 						>
-							<TrashBinOutline class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
+							<TrashBinOutline
+								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
+							/>
 							<span class="ms-3 flex-1 whitespace-nowrap">Trash</span>
 						</a>
 					</li>
@@ -102,7 +114,9 @@
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/tags'
 							}}
 						>
-							<TagOutline class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
+							<TagOutline
+								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
+							/>
 							<span class="ms-3 flex-1 whitespace-nowrap">Tags</span>
 						</a>
 					</li>
