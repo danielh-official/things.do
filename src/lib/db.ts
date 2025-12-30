@@ -20,6 +20,7 @@ export interface Item {
 	parent_id: number | null; // The ID of the parent item in our DB (not Things ID). This should only be valid if the parent is a project or area. Furthermore, a project can only have a parent area. And an area cannot have a parent.
 	parent_things_id: string | null; // The Things ID of the parent project or area.
 	things_id: string | null; // The unique identifier from Things app.
+	sent_to_things_at?: SvelteDate | null; // Timestamp of when the item was last sent to Things app.
 	type: 'task' | 'project' | 'area';
 	title: string;
 	notes: string | null;
@@ -49,8 +50,9 @@ const db = new Dexie('ThingsDoDB') as Dexie & {
 };
 
 // Schema declaration:
-db.version(2).stores({
-	items: '++id, parent_id, type, order',
+db.version(3).stores({
+	items:
+		'++id, parent_id, type, order, things_id, parent_things_id, start_date, deadline, deleted_at, sent_to_things_at',
 	tags: '++id, &name, parent_tag_id, order'
 });
 
