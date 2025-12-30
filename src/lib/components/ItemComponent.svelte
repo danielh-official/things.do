@@ -126,7 +126,13 @@
 	let tagInputOpen = $state(false);
 	let tagInputText = $state('');
 	import type { Tag } from '$lib/db';
-	import { TagSolid } from 'flowbite-svelte-icons';
+	import {
+		BookOutline,
+		FileDocSolid,
+		FilePenSolid,
+		TagOutline,
+		TagSolid
+	} from 'flowbite-svelte-icons';
 	let allTagOptions = $state<Tag[]>([]);
 	let filteredTagOptions = $state<Tag[]>([]);
 	let tagNameById: Record<number, string> = $state({});
@@ -395,10 +401,17 @@
 			<div>
 				{item.title}
 				{#if item.notes && item.notes.length > 0}
-					<span class="ml-2 text-gray-400">📝</span>
+					<FilePenSolid class="inline h-4 w-4 text-gray-400" />
+				{/if}
+				{#if item.checklist && item.checklist.length > 0}
+					<FileDocSolid class="inline h-4 w-4 text-gray-400" />
 				{/if}
 				{#if item.tag_ids && item.tag_ids.length > 0}
-					<span class="ml-2 text-gray-400">🏷️</span>
+					{#each item.tag_ids as tagId}
+						<span class="inline-block text-gray-400 m-1 text-[11px] border rounded px-1">
+							<TagOutline class="inline h-4 w-4" /> {tagNameById[tagId]}
+						</span>
+					{/each}
 				{/if}
 			</div>
 			<div>
