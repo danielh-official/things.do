@@ -264,6 +264,19 @@
 					title: openedItem.title
 				})}
 		/>
+
+		<!-- MARK: Things ID Link -->
+		{#if item.things_id}
+			<div class="my-4 text-sm text-gray-500">
+				<span>Things ID: </span>
+				<a
+					href={`things:///show?id=${item.things_id}`}
+					target="_blank"
+					class="text-blue-600 hover:underline">{item.things_id}</a
+				>
+			</div>
+		{/if}
+
 		<textarea
 			id={`item-notes-input-${item.id}`}
 			class="mb-2 w-full rounded border border-gray-300 p-2"
