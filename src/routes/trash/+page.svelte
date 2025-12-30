@@ -1,11 +1,11 @@
 <script lang="ts">
-	import ItemsListComponent from '$lib/components/ItemsList.component.svelte';
+	import ItemsList from '$lib/components/ItemsList.component.svelte';
 	import { db } from '$lib/db';
 	import { getTrashedItems } from '$lib';
 	import { liveQuery } from 'dexie';
-	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItems.button.component.svelte';
-	import RestoreSelectedItemsButtonComponent from '$lib/components/RestoreSelectedItems.button.component.svelte';
-	import PermanentlyDeleteSelectedItemsButtonComponent from '$lib/components/PermanentlyDeleteSelectedItems.button.component.svelte';
+	import ClearSelectedItemsButton from '$lib/components/ClearSelectedItems.button.component.svelte';
+	import RestoreSelectedItemsButton from '$lib/components/RestoreSelectedItems.button.component.svelte';
+	import PermanentlyDeleteSelectedItemsButton from '$lib/components/PermanentlyDeleteSelectedItems.button.component.svelte';
 
 	let items = liveQuery(() => getTrashedItems());
 
@@ -35,15 +35,12 @@
 	>
 {/if}
 
-<ItemsListComponent {items} {tags}>
+<ItemsList {items} {tags}>
 	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-		<RestoreSelectedItemsButtonComponent {highlightedItems} {clearHighlightsForAllItems} />
+		<RestoreSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
 
-		<PermanentlyDeleteSelectedItemsButtonComponent
-			{highlightedItems}
-			{clearHighlightsForAllItems}
-		/>
+		<PermanentlyDeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
 
-		<ClearSelectedItemsButtonComponent {clearHighlightsForAllItems} />
+		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
 	{/snippet}
-</ItemsListComponent>
+</ItemsList>

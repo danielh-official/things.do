@@ -2,10 +2,10 @@
 	import { db } from '$lib/db';
 	import { getLaterItems } from '$lib';
 	import { liveQuery } from 'dexie';
-	import ItemsListComponent from '$lib/components/ItemsList.component.svelte';
-	import DeleteSelectedItemsButtonComponent from '$lib/components/DeleteSelectedItems.button.component.svelte';
-	import ClearSelectedItemsButtonComponent from '$lib/components/ClearSelectedItems.button.component.svelte';
-	import FocusOnNowButtonComponent from '$lib/components/FocusOnNow.button.component.svelte';
+	import ItemsList from '$lib/components/ItemsList.component.svelte';
+	import DeleteSelectedItemsButton from '$lib/components/DeleteSelectedItems.button.component.svelte';
+	import ClearSelectedItemsButton from '$lib/components/ClearSelectedItems.button.component.svelte';
+	import FocusOnNowButton from '$lib/components/FocusOnNow.button.component.svelte';
 
 	let items = liveQuery(() => getLaterItems());
 
@@ -16,7 +16,7 @@
 	<title>Later | Things.do</title>
 </svelte:head>
 
-<ItemsListComponent
+<ItemsList
 	{items}
 	{tags}
 	defaultItemAdditionParams={{
@@ -38,10 +38,10 @@
 	}}
 >
 	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-		<DeleteSelectedItemsButtonComponent {highlightedItems} {clearHighlightsForAllItems} />
+		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
 
-		<FocusOnNowButtonComponent {highlightedItems} {clearHighlightsForAllItems} />
+		<FocusOnNowButton {highlightedItems} {clearHighlightsForAllItems} />
 
-		<ClearSelectedItemsButtonComponent {clearHighlightsForAllItems} />
+		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
 	{/snippet}
-</ItemsListComponent>
+</ItemsList>
