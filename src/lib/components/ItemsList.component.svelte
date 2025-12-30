@@ -264,6 +264,20 @@
 	}
 
 	function processKeydownEvent(event: KeyboardEvent) {
+		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
+			event.preventDefault();
+			const selectedItems = $items.filter(
+				(item: Item) => item.id != null && highlightedItems.has(item.id)
+			);
+			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
+				const markdown = selectedItems
+					.map((item) => `- ${item.title}`)
+					.join('\n');
+				navigator.clipboard.writeText(markdown);
+			}
+			return;
+		}
+
 		if (event.code === 'Enter' && addingNewItem) {
 			addItem?.(event);
 			return;
