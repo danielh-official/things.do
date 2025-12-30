@@ -6,6 +6,7 @@
 	import DeleteSelectedItemsButton from '$lib/components/DeleteSelectedItems.button.component.svelte';
 	import SetAsideForLaterButton from '$lib/components/SetAsideForLater.button.component.svelte';
 	import ClearSelectedItemsButton from '$lib/components/ClearSelectedItems.button.component.svelte';
+	import SendToThings3Button from '$lib/components/SendToThings3.button.component.svelte';
 
 	let items = liveQuery(() => getFocusingItems());
 
@@ -41,6 +42,8 @@
 		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
 
 		<SetAsideForLaterButton {highlightedItems} {clearHighlightsForAllItems} />
+
+		<SendToThings3Button {highlightedItems} />
 
 		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
 	{/snippet}
