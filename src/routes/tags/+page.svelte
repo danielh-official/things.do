@@ -255,10 +255,6 @@
 		return next;
 	}
 
-	function isExpanded(id: number) {
-		return expandedIds.has(id);
-	}
-
 	function toggleExpanded(id: number, hasChildren: boolean) {
 		if (!hasChildren) return;
 		const next = new SvelteSet(expandedIds);
