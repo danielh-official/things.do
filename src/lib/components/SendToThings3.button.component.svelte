@@ -109,14 +109,15 @@
 
 		let path = 'success';
 
+		const query = new URLSearchParams();
+
+		query.set('sent-at', SvelteDate.now().toString());
+
 		itemIds.forEach((id) => {
-			// Add id=[id] to the path for each instance
-			path += (path.includes('?') ? '&' : '?') + `id=${id}`;
+			query.append('id', id.toString());
 		});
 
-		path += `&sent-at=${SvelteDate.now()}`;
-
-		const callbackUrlParam = encodeURIComponent(window.location.origin + '/' + path);
+		const callbackUrlParam = encodeURIComponent(window.location.origin + '/' + path + '?' + query.toString());
 
 		return callbackUrlParam;
 	}
