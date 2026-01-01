@@ -6,6 +6,8 @@
 	import DeleteSelectedItemsButton from '$lib/components/DeleteSelectedItems.button.component.svelte';
 	import ClearSelectedItemsButton from '$lib/components/ClearSelectedItems.button.component.svelte';
 	import FocusOnNowButton from '$lib/components/FocusOnNow.button.component.svelte';
+	import SendToThings3Button from '$lib/components/SendToThings3.button.component.svelte';
+	import UnattachFromThings3Button from '$lib/components/UnattachFromThings3.button.component.svelte';
 
 	let items = liveQuery(() => getLaterItems());
 
@@ -38,9 +40,15 @@
 	}}
 >
 	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
-
 		<FocusOnNowButton {highlightedItems} {clearHighlightsForAllItems} />
+
+		<div class="flex gap-2">
+			<SendToThings3Button {highlightedItems} />
+
+			<UnattachFromThings3Button {highlightedItems} />
+		</div>
+
+		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
 
 		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
 	{/snippet}
