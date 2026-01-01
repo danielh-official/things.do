@@ -1,4 +1,3 @@
-
 # Things.do
 
 A web app for doing a few extra things and then sending the rest to Things.

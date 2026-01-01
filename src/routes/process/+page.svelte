@@ -131,9 +131,9 @@
 								? newModifiedAt
 								: existingModifiedAt,
 
-			            parent_id: null,
-			            parent_things_id: item.parent_id,
-                        tag_ids: tagIdsToAssignToItem
+						parent_id: null,
+						parent_things_id: item.parent_id,
+						tag_ids: tagIdsToAssignToItem
 					});
 				continue;
 			}
