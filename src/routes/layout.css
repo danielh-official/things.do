@@ -3,3 +3,27 @@
 @plugin '@tailwindcss/typography';
 
 @source '../../node_modules/flowbite-svelte-icons/dist';
+
+.keyboard-shortcut {
+    display: inline-block;
+    padding: 0.3em 0.4em;
+    margin: 0 0.05em;
+    min-width: 1em;
+    font-family:
+        ui-sans-serif,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Apple Symbols',
+        Roboto,
+        sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    font-style: normal;
+    line-height: 1;
+    text-align: center;
+    vertical-align: 1px;
+    color: rgba(0, 1, 2, 0.85);
+    background: #fcfcfd;
+    border-radius: 0.4em;
+    box-shadow: 0 0 0 1px rgba(0, 20, 49, 0.18) inset;
+}

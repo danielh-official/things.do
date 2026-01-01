@@ -306,6 +306,26 @@
 				: deleteHighlightedItems();
 			return;
 		}
+
+		if (event.key === 'f' && highlightedItems.size > 0) {
+			event.preventDefault();
+			// Get highlighted items and set all 'later' to false
+			highlightedItems.forEach(async (itemId) => {
+				await db.items.update(itemId, { later: false, updated_at: new SvelteDate() });
+			});
+			clearHighlightsForAllItems();
+			return;
+		}
+
+		if (event.key === 'l' && highlightedItems.size > 0) {
+			event.preventDefault();
+			// Get highlighted items and set all 'later' to true
+			highlightedItems.forEach(async (itemId) => {
+				await db.items.update(itemId, { later: true, updated_at: new SvelteDate() });
+			});
+			clearHighlightsForAllItems();
+			return;
+		}
 	}
 </script>
 

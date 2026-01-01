@@ -20,5 +20,5 @@
 			}
 		});
 		clearHighlightsForAllItems();
-	}}>Focus On Now</button
+	}}>Focus On Now <span class="keyboard-shortcut">F</span></button
 >
