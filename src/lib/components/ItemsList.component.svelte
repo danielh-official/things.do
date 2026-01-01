@@ -78,16 +78,10 @@
 
 		if (highlightedItems.has(itemId)) {
 			highlightedItems.delete(itemId);
-			button.classList.add('bg-white');
-			button.classList.add('hover:bg-gray-50');
-			button.classList.remove('bg-blue-200');
-			button.classList.remove('hover:bg-blue-300');
+			button.classList.remove('highlighted');
 		} else {
 			highlightedItems.add(itemId);
-			button.classList.remove('bg-white');
-			button.classList.remove('hover:bg-gray-50');
-			button.classList.add('bg-blue-200');
-			button.classList.add('hover:bg-blue-300');
+			button.classList.add('highlighted');
 		}
 	}
 
@@ -97,10 +91,7 @@
 
 			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
 			if (button) {
-				button.classList.add('bg-white');
-				button.classList.add('hover:bg-gray-50');
-				button.classList.remove('bg-blue-200');
-				button.classList.remove('hover:bg-blue-300');
+				button.classList.remove('highlighted');
 			}
 		});
 		highlightedItems.clear();

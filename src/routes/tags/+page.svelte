@@ -307,6 +307,114 @@
 
 <svelte:head>
 	<title>Tags | Things.do</title>
+
+	<style>
+		.tree {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+
+		.selection-bar {
+			position: sticky;
+			bottom: 0;
+			background: #f8fafc;
+			border-top: 1px solid #e2e8f0;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0.75rem 1rem;
+			gap: 1rem;
+		}
+
+		.selection-bar .actions {
+			display: flex;
+			gap: 0.5rem;
+		}
+
+		.selection-bar button {
+			border: 1px solid #cbd5e1;
+			background: #fff;
+			padding: 0.35rem 0.8rem;
+			border-radius: 6px;
+			cursor: pointer;
+		}
+
+		.selection-bar button.secondary:hover {
+			background: #e2e8f0;
+		}
+
+		.selection-bar button.danger {
+			border-color: #ef4444;
+			color: #b91c1c;
+		}
+
+		.selection-bar button.danger:hover {
+			background: #fee2e2;
+		}
+
+		.actions-bar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin: 0 0 0.75rem 0;
+			gap: 0.5rem;
+		}
+
+		.actions-bar button {
+			border: 1px solid #cbd5e1;
+			background: #fff;
+			padding: 0.35rem 0.8rem;
+			border-radius: 6px;
+			cursor: pointer;
+		}
+
+		.actions-bar button:hover {
+			background: #e2e8f0;
+		}
+
+		@media (prefers-color-scheme: dark) {
+			.selection-bar {
+				background: #1e293b;
+				border-top-color: #334155;
+			}
+
+			.selection-bar button {
+				background: #0f172a;
+				border-color: #475569;
+				color: #f1f5f9;
+			}
+
+			.selection-bar button.secondary:hover {
+				background: #334155;
+			}
+
+			.selection-bar button.danger {
+				color: #fca5a5;
+				border-color: #f87171;
+			}
+
+			.selection-bar button.danger:hover {
+				background: #7f1d1d;
+			}
+
+			.actions-bar button {
+				background: #0f172a;
+				border-color: #475569;
+				color: #f1f5f9;
+			}
+
+			.actions-bar button:hover {
+				background: #334155;
+			}
+
+			input {
+				background: #0f172a;
+				border-color: #475569;
+				color: #f1f5f9;
+			}
+		}
+	</style>
 </svelte:head>
 
 {#if error}
@@ -357,69 +465,3 @@
 		</div>
 	{/if}
 {/if}
-
-<style>
-	.tree {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	.selection-bar {
-		position: sticky;
-		bottom: 0;
-		background: #f8fafc;
-		border-top: 1px solid #e2e8f0;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.75rem 1rem;
-		gap: 1rem;
-	}
-
-	.selection-bar .actions {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.selection-bar button {
-		border: 1px solid #cbd5e1;
-		background: #fff;
-		padding: 0.35rem 0.8rem;
-		border-radius: 6px;
-		cursor: pointer;
-	}
-
-	.selection-bar button.secondary:hover {
-		background: #e2e8f0;
-	}
-
-	.selection-bar button.danger {
-		border-color: #ef4444;
-		color: #b91c1c;
-	}
-
-	.selection-bar button.danger:hover {
-		background: #fee2e2;
-	}
-
-	.actions-bar {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin: 0 0 0.75rem 0;
-		gap: 0.5rem;
-	}
-
-	.actions-bar button {
-		border: 1px solid #cbd5e1;
-		background: #fff;
-		padding: 0.35rem 0.8rem;
-		border-radius: 6px;
-		cursor: pointer;
-	}
-
-	.actions-bar button:hover {
-		background: #e2e8f0;
-	}
-</style>

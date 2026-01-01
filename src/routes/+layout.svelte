@@ -32,7 +32,7 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<div class="flex">
+<div class="flex dark:bg-slate-800 dark:text-white">
 	<aside
 		id="default-sidebar"
 		class="min-h-screen w-64 bg-gray-100 transition-transform sm:translate-x-0 dark:bg-gray-800"
@@ -42,10 +42,10 @@
 			<ul class="space-y-2 font-medium">
 				<li>
 					<a
-						href={resolve('/')}
+						href={resolve('/focusing')}
 						class={{
-							'text-body rounded-base group flex items-center px-2 py-1.5': true,
-							'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/'
+							'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
+							'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/focusing'
 						}}
 					>
 						<EyeOutline class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
@@ -63,7 +63,7 @@
 						<a
 							href={resolve('/later')}
 							class={{
-								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/later'
 							}}
 						>
@@ -79,7 +79,7 @@
 						<a
 							href={resolve('/blocked')}
 							class={{
-								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/blocked'
 							}}
 						>
@@ -95,7 +95,7 @@
 						<a
 							href={resolve('/trash')}
 							class={{
-								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/trash'
 							}}
 						>
@@ -112,7 +112,7 @@
 						<a
 							href={resolve('/tags')}
 							class={{
-								'text-body rounded-base group flex items-center px-2 py-1.5': true,
+								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
 								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/tags'
 							}}
 						>
@@ -132,7 +132,7 @@
 					<a
 						href={resolve('/settings')}
 						class={{
-							'text-body rounded-base group flex items-center px-2 py-1.5': true,
+							'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
 							'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/settings'
 						}}
 					>

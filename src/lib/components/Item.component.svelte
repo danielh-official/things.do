@@ -246,14 +246,14 @@
 
 {#if openedItem && openedItem.id === item.id}
 	<div
-		class="cursor-pointer rounded border border-blue-500 bg-blue-50 p-4"
+		class="cursor-pointer rounded border border-blue-500 p-4 shadow-lg"
 		data-id={item.id}
 		onoutsideclick={() => !tagInputOpen && (openedItem = null)}
 	>
 		<input
 			id={`item-title-input-${item.id}`}
 			type="text"
-			class="mb-2 w-full rounded border border-gray-300 p-2"
+			class="mb-2 w-full rounded border border-gray-300 p-2 dark:bg-gray-700"
 			bind:value={openedItem.title}
 			placeholder="New To-Do"
 			oninput={() =>
@@ -277,7 +277,7 @@
 
 		<textarea
 			id={`item-notes-input-${item.id}`}
-			class="mb-2 w-full rounded border border-gray-300 p-2"
+			class="mb-2 w-full rounded border border-gray-300 p-2 dark:bg-gray-700"
 			placeholder="Notes"
 			rows="4"
 			bind:value={openedItem.notes}
@@ -300,7 +300,7 @@
 			<div class="mt-3 flex flex-wrap gap-2">
 				{#each tagsForItem as tag}
 					<button
-						class="cursor-pointer rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:line-through"
+						class="cursor-pointer rounded px-2 py-1 text-xs hover:line-through"
 						onclick={() => {
 							const existingIds = Array.isArray(item.tag_ids) ? (item.tag_ids as number[]) : [];
 							const nextTags = existingIds.filter((id) => id !== tag.id);
@@ -325,18 +325,17 @@
 			<div class="relative mt-2">
 				<input
 					id={`tag-input-${item.id}`}
-					class="w-full rounded border border-gray-300 p-2"
+					class="w-full rounded border border-gray-300 p-2 dark:bg-gray-700"
 					placeholder="Type a tag and press Enter"
 					bind:value={tagInputText}
 					onkeydown={onTagInputKeydown}
 				/>
 				{#if filteredTagOptions.length}
-					<ul class="absolute z-40 mt-1 w-full rounded border bg-white shadow">
+					<ul class="absolute z-40 mt-1 w-full rounded border shadow">
 						{#each filteredTagOptions as opt}
 							<li>
-								<button
-									class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
-									onclick={() => addTagId(opt.id)}>{opt.name}</button
+								<button class="w-full px-3 py-2 text-left" onclick={() => addTagId(opt.id)}
+									>{opt.name}</button
 								>
 							</li>
 						{/each}
@@ -370,7 +369,7 @@
 					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
 					aria-label="Completed"
 				>
-					<svg viewBox="0 0 20 20" class="h-3 w-3 text-white" aria-hidden="true">
+					<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
 						<path
 							d="M5 10l3 3 7-7"
 							fill="none"
@@ -386,7 +385,7 @@
 					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
 					aria-label="Canceled"
 				>
-					<svg viewBox="0 0 20 20" class="h-3 w-3 text-white" aria-hidden="true">
+					<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
 						<path
 							d="M5 5l10 10M15 5l-10 10"
 							fill="none"
@@ -404,7 +403,7 @@
 		</button>
 
 		<button
-			class="flex w-full cursor-pointer justify-between rounded bg-white p-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+			class="flex w-full cursor-pointer justify-between rounded p-2 text-left"
 			ondblclick={openItem}
 			data-id={item.id}
 			onclick={highlightItem}
@@ -412,13 +411,13 @@
 			<div>
 				{item.title}
 				{#if item.notes && item.notes.length > 0}
-					<FilePenSolid class="inline h-4 w-4 text-gray-400" />
+					<FilePenSolid class="inline h-4 w-4 text-gray-400 dark:text-gray-600" />
 				{/if}
 				{#if item.checklist && item.checklist.length > 0}
-					<FileDocSolid class="inline h-4 w-4 text-gray-400" />
+					<FileDocSolid class="inline h-4 w-4 text-gray-400 dark:text-gray-600" />
 				{/if}
 				{#if item.things_id}
-					<LinkOutline class="inline h-4 w-4 text-gray-400" />
+					<LinkOutline class="inline h-4 w-4 text-gray-400 dark:text-gray-600" />
 				{/if}
 				<!-- MARK: Tags Preview -->
 				{#if item.tag_ids && item.tag_ids.length > 0}
