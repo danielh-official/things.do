@@ -285,10 +285,12 @@
 		<div class="my-4 flex justify-end text-sm text-gray-500">
 			<select
 				class="rounded border border-gray-300 p-2 dark:bg-gray-700"
-				bind:value={item.parent_id}
+				bind:value={openedItem.parent_id}
 				onchange={async () => {
+					if (!openedItem) return;
+
 					await db.todos.update(item.id!, {
-						parent_id: item.parent_id,
+						parent_id: openedItem.parent_id,
 						updated_at: new SvelteDate()
 					});
 
@@ -297,7 +299,7 @@
 			>
 				<option value={null}>No Parent Project</option>
 				{#each $projects as project}
-					<option value={project.id} selected={item.parent_id === project.id}>
+					<option value={project.id} selected={openedItem.parent_id === project.id}>
 						{project.title}
 					</option>
 				{/each}
