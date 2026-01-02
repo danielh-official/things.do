@@ -1,13 +1,13 @@
 <script lang="ts">
-	import ItemsList from '$lib/components/ItemsList.component.svelte';
+	import TodosList from '$lib/components/TodoList.component.svelte';
 	import { db } from '$lib/db';
-	import { getTrashedItems } from '$lib';
+	import { getTrashedTodos } from '$lib';
 	import { liveQuery } from 'dexie';
-	import ClearSelectedItemsButton from '$lib/components/ClearSelectedItems.button.component.svelte';
-	import RestoreSelectedItemsButton from '$lib/components/RestoreSelectedItems.button.component.svelte';
-	import PermanentlyDeleteSelectedItemsButton from '$lib/components/PermanentlyDeleteSelectedItems.button.component.svelte';
+	import ClearSelected from '$lib/components/ClearSelected.button.component.svelte';
+	import RestoreSelected from '$lib/components/RestoreSelected.button.component.svelte';
+	import PermanentlyDeletedSelected from '$lib/components/PermanentlyDeleteSelected.button.component.svelte';
 
-	let items = liveQuery(() => getTrashedItems());
+	let todos = liveQuery(() => getTrashedTodos());
 
 	let tags = liveQuery(() => db.tags.toArray());
 </script>
@@ -16,7 +16,7 @@
 	<title>Trash | Things.do</title>
 </svelte:head>
 
-{#if $items?.length > 0}
+{#if $todos?.length > 0}
 	<button
 		class="mt-4 cursor-pointer rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
 		onclick={() => {
@@ -28,19 +28,19 @@
 				return;
 			}
 
-			$items.forEach(async (item) => {
-				await db.items.delete(item.id!);
+			$todos.forEach(async (todo) => {
+				await db.todos.delete(todo.id!);
 			});
 		}}>Empty Trash</button
 	>
 {/if}
 
-<ItemsList {items} {tags}>
+<TodosList {todos} {tags}>
 	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-		<RestoreSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
+		<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-		<PermanentlyDeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
+		<PermanentlyDeletedSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
+		<ClearSelected {clearHighlightsForAllItems} />
 	{/snippet}
-</ItemsList>
+</TodosList>

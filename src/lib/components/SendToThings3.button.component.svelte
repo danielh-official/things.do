@@ -31,7 +31,7 @@
 	async function getJsonForItemId(
 		itemId: number
 	): Promise<{ item: Item | undefined; obj: ThingsObject | undefined }> {
-		const item = await db.items.get(itemId);
+		const item = await db.todos.get(itemId);
 
 		if (!item) {
 			return { item: undefined, obj: undefined };
@@ -117,7 +117,9 @@
 			query.append('id', id.toString());
 		});
 
-		const callbackUrlParam = encodeURIComponent(window.location.origin + '/' + path + '?' + query.toString());
+		const callbackUrlParam = encodeURIComponent(
+			window.location.origin + '/' + path + '?' + query.toString()
+		);
 
 		return callbackUrlParam;
 	}

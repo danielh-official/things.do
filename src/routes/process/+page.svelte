@@ -62,15 +62,15 @@
 			return;
 		}
 
-		for (const item of initialParse) {
+		for (const todo of initialParse) {
 			// Before working on the item, let's parse the tags
 
-			const tags = item.tags
+			const tags = todo.tags
 				.split('\n')
 				.map((tag: string) => tag.trim())
 				.filter((tag: string) => tag.length > 0);
 
-			let tagIdsToAssignToItem: number[] = [];
+			let tagIdsToAssignToTodo: number[] = [];
 
 			for (const tagName of tags) {
 				// Check if tag already exists
@@ -86,45 +86,45 @@
 						parent_tag_id: null
 					});
 
-					tagIdsToAssignToItem.push(newTagId);
+					tagIdsToAssignToTodo.push(newTagId);
 				}
 
 				// Now we have the tag in existingTag
-				// We can associate this tag with the item later when adding/updating the item
+				// We can associate this tag with the todo later when adding/updating the todo
 				if (existingTag) {
-					tagIdsToAssignToItem.push(existingTag.id);
+					tagIdsToAssignToTodo.push(existingTag.id);
 				}
 			}
 
-			const newModifiedAt = parseDateStringToSvelteDate(item.updated_at);
+			const newModifiedAt = parseDateStringToSvelteDate(todo.updated_at);
 
-			// If item.id already exists in the table as things_id, we need to compare the modification dates to ensure we're not overwriting newer data with older data.
-			const existingItem = await db.items.where('things_id').equals(item.id).first();
+			// If todo.id already exists in the table as things_id, we need to compare the modification dates to ensure we're not overwriting newer data with older data.
+			const existingTodo = await db.todos.where('things_id').equals(todo.id).first();
 
-			if (existingItem && isInitialParsedDataObject(item)) {
-				const existingModifiedAt = existingItem.updated_at;
+			if (existingTodo && isInitialParsedDataObject(todo)) {
+				const existingModifiedAt = existingTodo.updated_at;
 
-				// Update existing item
-				db.items
+				// Update existing todo
+				db.todos
 					.where('things_id')
-					.equals(item.id)
+					.equals(todo.id)
 					.modify({
-						title: item.title,
-						notes: item.notes,
+						title: todo.title,
+						notes: todo.notes,
 						type:
-							item.type === 'task' || item.type === 'project' || item.type === 'area'
-								? item.type
+							todo.type === 'task' || todo.type === 'project' || todo.type === 'area'
+								? todo.type
 								: 'task',
 						logged_status:
-							item.status === 'Completed'
+							todo.status === 'Completed'
 								? 'completed'
-								: item.status === 'Canceled'
+								: todo.status === 'Canceled'
 									? 'canceled'
 									: null,
-						start_date: parseDateStringToSvelteDate(item.start_date),
-						start: item.start === 'anytime' || item.start === 'someday' ? item.start : null,
-						deadline: parseDateStringToSvelteDate(item.deadline),
-						logged_at: parseDateStringToSvelteDate(item.completed_at),
+						start_date: parseDateStringToSvelteDate(todo.start_date),
+						start: todo.start === 'anytime' || todo.start === 'someday' ? todo.start : null,
+						deadline: parseDateStringToSvelteDate(todo.deadline),
+						logged_at: parseDateStringToSvelteDate(todo.completed_at),
 						// Only update updated_at if the newModifiedAt is more recent than existingModifiedAt
 						updated_at:
 							newModifiedAt && existingModifiedAt < newModifiedAt
@@ -132,39 +132,39 @@
 								: existingModifiedAt,
 
 						parent_id: null,
-						parent_things_id: item.parent_id,
-						tag_ids: tagIdsToAssignToItem
+						parent_things_id: todo.parent_id,
+						tag_ids: tagIdsToAssignToTodo
 					});
 				continue;
 			}
 
-			if (isInitialParsedDataObject(item)) {
-				await db.items.add({
-					things_id: item.id,
-					title: item.title,
-					notes: item.notes,
+			if (isInitialParsedDataObject(todo)) {
+				await db.todos.add({
+					things_id: todo.id,
+					title: todo.title,
+					notes: todo.notes,
 					// If type is not a valid string of "task", "project", or "area", use "task" as default
 					type:
-						item.type === 'task' || item.type === 'project' || item.type === 'area'
-							? item.type
+						todo.type === 'task' || todo.type === 'project' || todo.type === 'area'
+							? todo.type
 							: 'task',
 					// If not 'completed' or 'canceled', use null as default
 					logged_status:
-						item.status === 'Completed'
+						todo.status === 'Completed'
 							? 'completed'
-							: item.status === 'Canceled'
+							: todo.status === 'Canceled'
 								? 'canceled'
 								: null,
-					start_date: parseDateStringToSvelteDate(item.start_date),
+					start_date: parseDateStringToSvelteDate(todo.start_date),
 					// If start is not a valid string of "anytime" or "someday", use null as default
-					start: item.start === 'anytime' || item.start === 'someday' ? item.start : null,
-					deadline: parseDateStringToSvelteDate(item.deadline),
-					logged_at: parseDateStringToSvelteDate(item.completed_at),
-					created_at: parseDateStringToSvelteDate(item.created_at) || new SvelteDate(),
+					start: todo.start === 'anytime' || todo.start === 'someday' ? todo.start : null,
+					deadline: parseDateStringToSvelteDate(todo.deadline),
+					logged_at: parseDateStringToSvelteDate(todo.completed_at),
+					created_at: parseDateStringToSvelteDate(todo.created_at) || new SvelteDate(),
 					updated_at: newModifiedAt || new SvelteDate(),
-					tag_ids: tagIdsToAssignToItem,
+					tag_ids: tagIdsToAssignToTodo,
 					parent_id: null,
-					parent_things_id: item.parent_id,
+					parent_things_id: todo.parent_id,
 					later: false,
 					order: 0,
 					evening: false,

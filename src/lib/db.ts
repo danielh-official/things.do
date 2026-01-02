@@ -21,7 +21,6 @@ export interface Item {
 	parent_things_id: string | null; // The Things ID of the parent project or area.
 	things_id: string | null; // The unique identifier from Things app.
 	sent_to_things_at?: SvelteDate | null; // Timestamp of when the item was last sent to Things app.
-	type: 'task' | 'project' | 'area';
 	title: string;
 	notes: string | null;
 	// If it's null without a start date, it's inbox. If it has a start date, that takes precedence.
@@ -44,14 +43,21 @@ export interface Item {
 	later: boolean; // Indicates if the item is postponed to a later time. Not native to Things 3.
 }
 
+export type Project = Omit<Item, 'checklist'>;
+
+export type Todo = Item;
+
 const db = new Dexie('ThingsDoDB') as Dexie & {
-	items: EntityTable<Item, 'id'>;
 	tags: EntityTable<Tag, 'id'>;
+	projects: EntityTable<Project, 'id'>;
+	todos: EntityTable<Todo, 'id'>;
 };
 
 // Schema declaration:
-db.version(3).stores({
-	items:
+db.version(4).stores({
+	projects:
+		'++id, parent_id, type, order, things_id, parent_things_id, start_date, deadline, deleted_at, sent_to_things_at',
+	todos:
 		'++id, parent_id, type, order, things_id, parent_things_id, start_date, deadline, deleted_at, sent_to_things_at',
 	tags: '++id, &name, parent_tag_id, order'
 });

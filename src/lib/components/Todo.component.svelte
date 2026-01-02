@@ -52,7 +52,7 @@
 			notes?: string | null;
 		}
 	) {
-		db.items.update(taskId, {
+		db.todos.update(taskId, {
 			...task,
 			updated_at: new SvelteDate()
 		});
@@ -84,7 +84,7 @@
 			updated_at: new SvelteDate()
 		};
 
-		db.items.update(id, {
+		db.todos.update(id, {
 			logged_status: newStatus,
 			logged_at: newLoggedAt,
 			updated_at: new SvelteDate()
@@ -197,7 +197,7 @@
 		const nextTags = [...existingIds, tagId];
 		item = { ...item, tag_ids: nextTags, updated_at: new SvelteDate() };
 		if (item.id != null) {
-			await db.items.update(item.id, { tag_ids: nextTags, updated_at: new SvelteDate() });
+			await db.todos.update(item.id, { tag_ids: nextTags, updated_at: new SvelteDate() });
 		}
 		tagInputText = '';
 	}
@@ -306,7 +306,7 @@
 							const nextTags = existingIds.filter((id) => id !== tag.id);
 							item = { ...item, tag_ids: nextTags, updated_at: new SvelteDate() };
 							if (item.id != null) {
-								db.items.update(item.id, {
+								db.todos.update(item.id, {
 									tag_ids: nextTags,
 									updated_at: new SvelteDate()
 								});

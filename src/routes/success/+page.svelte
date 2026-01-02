@@ -26,15 +26,15 @@
 		thingsIds = JSON.parse(idsParam);
 
 		for (const [index, id] of ids.entries()) {
-			const item = await db.items.where('id').equals(Number(id)).first();
+			const todo = await db.todos.where('id').equals(Number(id)).first();
 
-			if (!item) {
+			if (!todo) {
 				continue;
 			}
 
 			const thingsId = thingsIds[index];
 
-			await db.items.update(item.id, {
+			await db.todos.update(todo.id, {
 				things_id: thingsId,
 				sent_to_things_at: sentAtDate
 			});

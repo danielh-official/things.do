@@ -10,17 +10,17 @@
 		clearHighlightsForAllItems: () => void;
 	} = $props();
 
-	async function restoreHighlightedItems() {
+	async function permanentlyDeleteHighlightedItems() {
 		highlightedItems.forEach(async (itemId) => {
-			await db.items.update(itemId, { deleted_at: null });
+			await db.todos.delete(itemId);
 		});
 		clearHighlightsForAllItems();
 	}
 </script>
 
 <button
-	class="cursor-pointer rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-	onclick={restoreHighlightedItems}
+	class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+	onclick={permanentlyDeleteHighlightedItems}
 >
-	Restore Selected Items
+	Permanently Delete Selected Items
 </button>

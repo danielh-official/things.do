@@ -12,7 +12,7 @@
 
 	async function deleteHighlightedItems() {
 		highlightedItems.forEach(async (itemId) => {
-			await db.items.update(itemId, { deleted_at: new SvelteDate() });
+			await db.todos.update(itemId, { deleted_at: new SvelteDate() });
 		});
 		clearHighlightsForAllItems();
 	}

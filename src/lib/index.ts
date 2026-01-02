@@ -2,20 +2,20 @@
 
 import { db } from '$lib/db';
 
-export async function getFocusingItems() {
-	const allItems = await db.items.toArray();
+export async function getFocusingTodos() {
+	const result = await db.todos.toArray();
 
-	return allItems
-		.filter((item) => {
-			if (item.type === 'area' || item.type === 'project') {
+	return result
+		.filter((todo) => {
+			if (todo.type === 'area' || todo.type === 'project') {
 				return false;
 			}
 
-			if (item.deleted_at && item.deleted_at !== null) {
+			if (todo.deleted_at && todo.deleted_at !== null) {
 				return false;
 			}
 
-			if (item.later) {
+			if (todo.later) {
 				return false;
 			}
 
@@ -24,20 +24,20 @@ export async function getFocusingItems() {
 		.sort((a, b) => a.order - b.order);
 }
 
-export async function getLaterItems() {
-	const allItems = await db.items.toArray();
+export async function getLaterTodos() {
+	const result = await db.todos.toArray();
 
-	return allItems
-		.filter((item) => {
-			if (item.type === 'area' || item.type === 'project') {
+	return result
+		.filter((todo) => {
+			if (todo.type === 'area' || todo.type === 'project') {
 				return false;
 			}
 
-			if (item.deleted_at && item.deleted_at !== null) {
+			if (todo.deleted_at && todo.deleted_at !== null) {
 				return false;
 			}
 
-			if (item.later) {
+			if (todo.later) {
 				return true;
 			}
 
@@ -46,20 +46,20 @@ export async function getLaterItems() {
 		.sort((a, b) => a.order - b.order);
 }
 
-export async function getBlockedItems() {
-	const allItems = await db.items.toArray();
+export async function getBlockedTodos() {
+	const result = await db.todos.toArray();
 
-	return allItems
-		.filter((item) => {
-			if (item.type === 'area' || item.type === 'project') {
+	return result
+		.filter((todo) => {
+			if (todo.type === 'area' || todo.type === 'project') {
 				return false;
 			}
 
-			if (item.deleted_at && item.deleted_at !== null) {
+			if (todo.deleted_at && todo.deleted_at !== null) {
 				return false;
 			}
 
-			if (item.blocked_by && item.blocked_by.length > 0) {
+			if (todo.blocked_by && todo.blocked_by.length > 0) {
 				return true;
 			}
 
@@ -68,12 +68,12 @@ export async function getBlockedItems() {
 		.sort((a, b) => a.order - b.order);
 }
 
-export async function getTrashedItems() {
-	const allItems = await db.items.toArray();
+export async function getTrashedTodos() {
+	const result = await db.todos.toArray();
 
-	return allItems
-		.filter((item) => {
-			if (item.deleted_at && item.deleted_at !== null) {
+	return result
+		.filter((todo) => {
+			if (todo.deleted_at && todo.deleted_at !== null) {
 				return true;
 			}
 
@@ -90,12 +90,12 @@ export async function cleanupTags() {
 	const allTags = await db.tags.toArray();
 	const validTagIds = new Set(allTags.map((tag) => tag.id));
 
-	const allItems = await db.items.toArray();
-	for (const item of allItems) {
-		const originalTagIds = item.tag_ids || [];
+	const result = await db.todos.toArray();
+	for (const todo of result) {
+		const originalTagIds = todo.tag_ids || [];
 		const filteredTagIds = originalTagIds.filter((tagId) => validTagIds.has(tagId));
 		if (filteredTagIds.length !== originalTagIds.length) {
-			await db.items.update(item.id!, { tag_ids: filteredTagIds });
+			await db.todos.update(todo.id!, { tag_ids: filteredTagIds });
 		}
 	}
 }

@@ -13,13 +13,13 @@
 		let itemsAlreadyUnattached = 0;
 
 		for (const itemId of highlightedItems) {
-			const item = await db.items.get(itemId);
+			const item = await db.todos.get(itemId);
 
 			if (item) {
 				if (item.things_id === null) {
 					itemsAlreadyUnattached += 1;
 				} else {
-					await db.items.update(itemId, { things_id: null, sent_to_things_at: null });
+					await db.todos.update(itemId, { things_id: null, sent_to_things_at: null });
 				}
 			}
 		}

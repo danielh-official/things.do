@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { db } from '$lib/db';
-	import { getLaterItems } from '$lib';
+	import { getLaterTodos } from '$lib';
 	import { liveQuery } from 'dexie';
-	import ItemsList from '$lib/components/ItemsList.component.svelte';
-	import DeleteSelectedItemsButton from '$lib/components/DeleteSelectedItems.button.component.svelte';
-	import ClearSelectedItemsButton from '$lib/components/ClearSelectedItems.button.component.svelte';
+	import ItemsList from '$lib/components/TodoList.component.svelte';
+	import DeleteSelectedItemsButton from '$lib/components/DeleteSelected.button.component.svelte';
+	import ClearSelectedItemsButton from '$lib/components/ClearSelected.button.component.svelte';
 	import FocusOnNowButton from '$lib/components/FocusOnNow.button.component.svelte';
 	import SendToThings3Button from '$lib/components/SendToThings3.button.component.svelte';
 	import UnattachFromThings3Button from '$lib/components/UnattachFromThings3.button.component.svelte';
 
-	let items = liveQuery(() => getLaterItems());
+	let todos = liveQuery(() => getLaterTodos());
 
 	let tags = liveQuery(() => db.tags.toArray());
 </script>
@@ -19,9 +19,9 @@
 </svelte:head>
 
 <ItemsList
-	{items}
+	{todos}
 	{tags}
-	defaultItemAdditionParams={{
+	defaultTodoAdditionParams={{
 		notes: '',
 		start_date: null,
 		deadline: null,

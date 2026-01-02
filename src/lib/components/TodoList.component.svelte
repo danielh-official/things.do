@@ -1,6 +1,6 @@
 <script lang="ts">
-	import ItemComponent from '$lib/components/Item.component.svelte';
-	import ItemInputBox from '$lib/components/ItemInputBox.component.svelte';
+	import ItemComponent from '$lib/components/Todo.component.svelte';
+	import ItemInputBox from '$lib/components/TodoInputBox.component.svelte';
 	import { cleanupTags } from '$lib';
 	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBox.component.svelte';
 	import { onMount, type Snippet } from 'svelte';
@@ -11,15 +11,15 @@
 	import { goto } from '$app/navigation';
 
 	let {
-		items = $bindable(),
+		todos = $bindable(),
 		tags = $bindable(),
-		defaultItemAdditionParams = $bindable(),
+		defaultTodoAdditionParams = $bindable(),
 		multiselectButtons = $bindable(),
 		shouldPermanentlyDeleteHighlightedItemsOnEscape: shouldPermanentlyDeleteHighlightedItems = false
 	}: {
-		items: Observable<Item[]>;
+		todos: Observable<Item[]>;
 		tags: Observable<Tag[]>;
-		defaultItemAdditionParams?: Omit<
+		defaultTodoAdditionParams?: Omit<
 			Item,
 			'id' | 'order' | 'title' | 'created_at' | 'updated_at' | 'things_id'
 		>;
@@ -38,9 +38,9 @@
 			const itemId = parseInt(itemIdParam, 10);
 			if (!isNaN(itemId)) {
 				// Wait for items to be loaded, then open the item
-				const subscription = items.subscribe((itemsList) => {
-					if (itemsList && itemsList.length > 0) {
-						const itemToOpen = itemsList.find((item: Item) => item.id === itemId);
+				const subscription = todos.subscribe((todosList) => {
+					if (todosList && todosList.length > 0) {
+						const itemToOpen = todosList.find((item: Item) => item.id === itemId);
 						if (itemToOpen) {
 							openedItem = itemToOpen;
 						}
@@ -55,12 +55,12 @@
 
 	async function addItem(event: KeyboardEvent) {
 		const input = event.target as HTMLInputElement;
-		const item = input.value.trim();
-		if (item && defaultItemAdditionParams) {
-			db.items.add({
-				...defaultItemAdditionParams,
-				title: item,
-				order: $items.length > 0 ? Math.max(...$items.map((t) => t.order)) + 1 : 1,
+		const todo = input.value.trim();
+		if (todo && defaultTodoAdditionParams) {
+			db.todos.add({
+				...defaultTodoAdditionParams,
+				title: todo,
+				order: $todos.length > 0 ? Math.max(...$todos.map((t) => t.order)) + 1 : 1,
 				created_at: new SvelteDate(),
 				updated_at: new SvelteDate(),
 				things_id: null
@@ -86,7 +86,7 @@
 	}
 
 	function clearHighlightsForAllItems() {
-		$items.forEach((item: Item) => {
+		$todos.forEach((item: Item) => {
 			const itemId = item.id;
 
 			const button = document.querySelector(`button[data-id='${itemId}']`) as HTMLButtonElement;
@@ -99,7 +99,7 @@
 
 	async function permanentlyDeleteHighlightedItems() {
 		highlightedItems.forEach(async (itemId) => {
-			await db.items.delete(itemId);
+			await db.todos.delete(itemId);
 		});
 		clearHighlightsForAllItems();
 	}
@@ -112,7 +112,7 @@
 		const li = event.currentTarget as HTMLLIElement;
 
 		const item =
-			$items.filter(
+			$todos.filter(
 				(item: Item) => item.id === parseInt(li.getAttribute('data-id') || '', 10)
 			)[0] || null;
 
@@ -167,7 +167,7 @@
 		const rect = el.getBoundingClientRect();
 		const dropAfter = event.clientY > rect.top + rect.height / 2;
 
-		const idx = $items.findIndex((i: Item) => i.id === targetId);
+		const idx = $todos.findIndex((i: Item) => i.id === targetId);
 		if (idx === -1) {
 			dragInsertIndex = null;
 			return;
@@ -189,7 +189,7 @@
 		// Determine if we are moving a group: move all highlighted items together
 		const isGroupMove = highlightedItems.size > 0 && highlightedItems.has(sourceId);
 		const groupIds: number[] = isGroupMove
-			? $items.filter((i) => i.id != null && highlightedItems.has(i.id!)).map((i) => i.id!)
+			? $todos.filter((i) => i.id != null && highlightedItems.has(i.id!)).map((i) => i.id!)
 			: [sourceId];
 
 		// No-op if target is inside the group being moved
@@ -198,7 +198,7 @@
 			return;
 		}
 
-		const currentItems = [...$items];
+		const currentItems = [...$todos];
 
 		// Remove all items being moved, preserving their original relative order
 		const movedItems: Item[] = [];
@@ -228,7 +228,7 @@
 		await Promise.all(
 			currentItems.map((item, index) => {
 				if (item.id == null) return Promise.resolve();
-				return db.items.update(item.id, {
+				return db.todos.update(item.id, {
 					order: index + 1,
 					updated_at: new SvelteDate()
 				});
@@ -249,7 +249,7 @@
 
 	async function deleteHighlightedItems() {
 		highlightedItems.forEach(async (itemId) => {
-			await db.items.update(itemId, { deleted_at: new SvelteDate() });
+			await db.todos.update(itemId, { deleted_at: new SvelteDate() });
 		});
 		clearHighlightsForAllItems();
 	}
@@ -257,7 +257,7 @@
 	function processKeydownEvent(event: KeyboardEvent) {
 		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
 			event.preventDefault();
-			const selectedItems = $items.filter(
+			const selectedItems = $todos.filter(
 				(item: Item) => item.id != null && highlightedItems.has(item.id)
 			);
 			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
@@ -272,7 +272,7 @@
 			return;
 		}
 
-		if (event.code === 'Space' && !openedItem && !addingNewItem && defaultItemAdditionParams) {
+		if (event.code === 'Space' && !openedItem && !addingNewItem && defaultTodoAdditionParams) {
 			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
 			if (input) {
 				event.preventDefault();
@@ -302,7 +302,7 @@
 			event.preventDefault();
 			// Get highlighted items and set all 'later' to false
 			highlightedItems.forEach(async (itemId) => {
-				await db.items.update(itemId, { later: false, updated_at: new SvelteDate() });
+				await db.todos.update(itemId, { later: false, updated_at: new SvelteDate() });
 			});
 			clearHighlightsForAllItems();
 			return;
@@ -312,7 +312,7 @@
 			event.preventDefault();
 			// Get highlighted items and set all 'later' to true
 			highlightedItems.forEach(async (itemId) => {
-				await db.items.update(itemId, { later: true, updated_at: new SvelteDate() });
+				await db.todos.update(itemId, { later: true, updated_at: new SvelteDate() });
 			});
 			clearHighlightsForAllItems();
 			return;
@@ -322,12 +322,12 @@
 
 <svelte:window onkeydown={processKeydownEvent} />
 
-{#if defaultItemAdditionParams}
+{#if defaultTodoAdditionParams}
 	<ItemInputBox bind:addingNewItem />
 {/if}
-{#if $items?.length > 0}
+{#if $todos?.length > 0}
 	<ul class="mt-4 space-y-2">
-		{#each $items as item, index (item.id)}
+		{#each $todos as item, index (item.id)}
 			<li data-id={item.id} class="relative">
 				{#if dragInsertIndex === index}
 					<div
@@ -335,7 +335,7 @@
 						style="z-index: 50;"
 					></div>
 				{/if}
-				{#if dragInsertIndex === $items.length && index === $items.length - 1}
+				{#if dragInsertIndex === $todos.length && index === $todos.length - 1}
 					<div
 						class="absolute right-0 -bottom-1 left-0 h-0.5 bg-blue-500 shadow-lg"
 						style="z-index: 50;"

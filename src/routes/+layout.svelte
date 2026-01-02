@@ -3,7 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
-	import { getBlockedItems, getFocusingItems, getLaterItems, getTags, getTrashedItems } from '$lib';
+	import { getBlockedTodos, getFocusingTodos, getLaterTodos, getTags, getTrashedTodos } from '$lib';
 	import { liveQuery } from 'dexie';
 	import ToastHost from '$lib/components/ToastHost.component.svelte';
 	import {
@@ -17,16 +17,16 @@
 
 	let { children } = $props();
 
-	let focusingItems = liveQuery(() => getFocusingItems());
-	let laterItems = liveQuery(() => getLaterItems());
-	let blockedItems = liveQuery(() => getBlockedItems());
-	let trashedItems = liveQuery(() => getTrashedItems());
+	let focusingTodos = liveQuery(() => getFocusingTodos());
+	let laterTodos = liveQuery(() => getLaterTodos());
+	let blockedTodos = liveQuery(() => getBlockedTodos());
+	let trashedTodos = liveQuery(() => getTrashedTodos());
 	let tags = liveQuery(() => getTags());
 
-	let focusingItemsCount = $derived($focusingItems?.length ?? 0);
-	let laterItemsCount = $derived($laterItems?.length ?? 0);
-	let blockedItemsCount = $derived($blockedItems?.length ?? 0);
-	let trashedItemsCount = $derived($trashedItems?.length ?? 0);
+	let focusingTodosCount = $derived($focusingTodos?.length ?? 0);
+	let laterTodosCount = $derived($laterTodos?.length ?? 0);
+	let blockedTodosCount = $derived($blockedTodos?.length ?? 0);
+	let trashedTodosCount = $derived($trashedTodos?.length ?? 0);
 	let tagsCount = $derived($tags?.length ?? 0);
 </script>
 
@@ -50,15 +50,15 @@
 					>
 						<EyeOutline class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
 						<span class="ms-3 flex-1 whitespace-nowrap">Focusing</span>
-						{#if focusingItemsCount > 0}
+						{#if focusingTodosCount > 0}
 							<span
 								class="ms-2 inline-flex h-4.5 w-4.5 items-center justify-center text-xs font-medium"
-								>{focusingItemsCount}</span
+								>{focusingTodosCount}</span
 							>
 						{/if}
 					</a>
 				</li>
-				{#if laterItemsCount > 0}
+				{#if laterTodosCount > 0}
 					<li>
 						<a
 							href={resolve('/later')}
@@ -74,7 +74,7 @@
 						</a>
 					</li>
 				{/if}
-				{#if blockedItemsCount > 0}
+				{#if blockedTodosCount > 0}
 					<li>
 						<a
 							href={resolve('/blocked')}
@@ -90,7 +90,7 @@
 						</a>
 					</li>
 				{/if}
-				{#if trashedItemsCount > 0}
+				{#if trashedTodosCount > 0}
 					<li>
 						<a
 							href={resolve('/trash')}
