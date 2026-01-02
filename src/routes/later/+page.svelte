@@ -3,11 +3,12 @@
 	import { getLaterTodos } from '$lib';
 	import { liveQuery } from 'dexie';
 	import ItemsList from '$lib/components/TodoList.component.svelte';
-	import DeleteSelectedItemsButton from '$lib/components/DeleteSelected.button.component.svelte';
-	import ClearSelectedItemsButton from '$lib/components/ClearSelected.button.component.svelte';
+	import DeleteSelected from '$lib/components/DeleteSelected.button.component.svelte';
+	import ClearSelected from '$lib/components/ClearSelected.button.component.svelte';
 	import FocusOnNowButton from '$lib/components/FocusOnNow.button.component.svelte';
-	import SendToThings3Button from '$lib/components/SendToThings3.button.component.svelte';
-	import UnattachFromThings3Button from '$lib/components/UnattachFromThings3.button.component.svelte';
+	import SendToThings3 from '$lib/components/SendToThings3.button.component.svelte';
+	import UnattachFromThings3 from '$lib/components/UnattachFromThings3.button.component.svelte';
+	import ContextMenu from '$lib/components/ContextMenu.svelte';
 
 	let todos = liveQuery(() => getLaterTodos());
 
@@ -38,17 +39,19 @@
 		parent_things_id: null
 	}}
 >
-	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-		<FocusOnNowButton {highlightedItems} {clearHighlightsForAllItems} />
+	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
+		<ContextMenu show={showMenu} x={menuX} y={menuY}>
+			{#snippet children()}
+				<FocusOnNowButton {highlightedItems} {clearHighlightsForAllItems} />
 
-		<div class="flex gap-2">
-			<SendToThings3Button {highlightedItems} />
+				<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-			<UnattachFromThings3Button {highlightedItems} />
-		</div>
+				<ClearSelected {clearHighlightsForAllItems} />
 
-		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
+				<SendToThings3 {highlightedItems} />
 
-		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
+				<UnattachFromThings3 {highlightedItems} />
+			{/snippet}
+		</ContextMenu>
 	{/snippet}
 </ItemsList>

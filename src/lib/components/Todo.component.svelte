@@ -12,6 +12,7 @@
 		handleDragEnd,
 		openItem,
 		highlightItem,
+		oneWayHighlightItem,
 		tags = $bindable<Tag[]>()
 	}: {
 		item: Item;
@@ -22,6 +23,7 @@
 		handleDragEnd?: (event: DragEvent) => void;
 		openItem: (event: MouseEvent) => void;
 		highlightItem: (event: MouseEvent) => void;
+		oneWayHighlightItem: (event: MouseEvent) => void;
 		tags: Tag[];
 	} = $props();
 
@@ -256,6 +258,8 @@
 	}
 </script>
 
+<!-- MARK: Is Open -->
+
 {#if openedItem && openedItem.id === item.id}
 	<div
 		class="cursor-pointer rounded border border-blue-500 p-4 shadow-lg"
@@ -378,6 +382,8 @@
 		{/if}
 	</div>
 {:else}
+	<!-- MARK: Not Open -->
+
 	<div
 		class="flex items-center"
 		data-id={item.id}
@@ -441,9 +447,21 @@
 			ondblclick={openItem}
 			data-id={item.id}
 			onclick={highlightItem}
+			oncontextmenu={oneWayHighlightItem}
 		>
 			<div>
-				{item.title}
+				<div class="flex flex-col">
+					{item.title}
+					{#if item.parent_id}
+						<span class="mt-1 text-sm text-gray-400">
+							{#if $projects}
+								<span>{getParentForTodo(item)?.title}</span>
+							{:else}
+								<span>Loading...</span>
+							{/if}
+						</span>
+					{/if}
+				</div>
 				{#if item.notes && item.notes.length > 0}
 					<FilePenSolid class="inline h-4 w-4 text-gray-400 dark:text-gray-600" />
 				{/if}
@@ -474,13 +492,4 @@
 			</div>
 		</button>
 	</div>
-	{#if item.parent_id}
-		<div class="mt-1 ml-8 text-sm text-gray-400">
-			{#if $projects}
-				<span>{getParentForTodo(item)?.title}</span>
-			{:else}
-				<span>Loading...</span>
-			{/if}
-		</div>
-	{/if}
 {/if}

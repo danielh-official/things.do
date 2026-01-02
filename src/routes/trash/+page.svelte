@@ -5,7 +5,8 @@
 	import { liveQuery } from 'dexie';
 	import ClearSelected from '$lib/components/ClearSelected.button.component.svelte';
 	import RestoreSelected from '$lib/components/RestoreSelected.button.component.svelte';
-	import PermanentlyDeletedSelected from '$lib/components/PermanentlyDeleteSelected.button.component.svelte';
+	import PermanentlyDeleteSelected from '$lib/components/PermanentlyDeleteSelected.button.component.svelte';
+	import ContextMenu from '$lib/components/ContextMenu.svelte';
 
 	let todos = liveQuery(() => getTrashedTodos());
 
@@ -36,11 +37,15 @@
 {/if}
 
 <TodosList {todos} {tags}>
-	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-		<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
+	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
+		<ContextMenu show={showMenu} x={menuX} y={menuY}>
+			{#snippet children()}
+				<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-		<PermanentlyDeletedSelected {highlightedItems} {clearHighlightsForAllItems} />
+				<PermanentlyDeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-		<ClearSelected {clearHighlightsForAllItems} />
+				<ClearSelected {clearHighlightsForAllItems} />
+			{/snippet}
+		</ContextMenu>
 	{/snippet}
 </TodosList>

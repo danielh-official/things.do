@@ -1,8 +1,7 @@
 <script lang="ts">
-	import ItemComponent from '$lib/components/Todo.component.svelte';
-	import ItemInputBox from '$lib/components/TodoInputBox.component.svelte';
+	import Todo from '$lib/components/Todo.component.svelte';
+	import TodoInputBox from '$lib/components/TodoInputBox.component.svelte';
 	import { cleanupTags } from '$lib';
-	import MultiselectOptionBoxComponent from '$lib/components/MultiselectOptionBox.component.svelte';
 	import { onMount, type Snippet } from 'svelte';
 	import { db, type Item, type Tag } from '$lib/db';
 	import type { Observable } from 'dexie';
@@ -14,19 +13,16 @@
 		todos = $bindable(),
 		tags = $bindable(),
 		defaultTodoAdditionParams = $bindable(),
-		multiselectButtons = $bindable(),
 		shouldPermanentlyDeleteHighlightedItemsOnEscape:
 			shouldPermanentlyDeleteHighlightedItems = false,
-		customKeydownBehavior
+		customKeydownBehavior,
+		contextMenu
 	}: {
 		todos: Observable<Item[]>;
 		tags: Observable<Tag[]>;
 		defaultTodoAdditionParams?: Omit<
 			Item,
 			'id' | 'order' | 'title' | 'created_at' | 'updated_at' | 'things_id'
-		>;
-		multiselectButtons: Snippet<
-			[highlightedItems: SvelteSet<number>, clearHighlightsForAllItems: () => void]
 		>;
 		shouldPermanentlyDeleteHighlightedItemsOnEscape?: boolean;
 		customKeydownBehavior?: (
@@ -44,6 +40,15 @@
 			deleteHighlightedItems: () => void,
 			addItem: ((event: KeyboardEvent) => void) | null
 		) => void;
+		contextMenu?: Snippet<
+			[
+				highlightedItems: SvelteSet<number>,
+				clearHighlightsForAllItems: () => void,
+				show: boolean,
+				x: number,
+				y: number
+			]
+		>;
 	} = $props();
 
 	onMount(() => {
@@ -97,6 +102,16 @@
 			highlightedItems.delete(itemId);
 			button.classList.remove('highlighted');
 		} else {
+			highlightedItems.add(itemId);
+			button.classList.add('highlighted');
+		}
+	}
+
+	function oneWayHighlightItem(event: MouseEvent) {
+		const button = event.currentTarget as HTMLButtonElement;
+		const itemId = parseInt(button.getAttribute('data-id') || '', 10);
+
+		if (!highlightedItems.has(itemId)) {
 			highlightedItems.add(itemId);
 			button.classList.add('highlighted');
 		}
@@ -337,6 +352,31 @@
 			return;
 		}
 	}
+
+	let showMenu = $state(false);
+	let menuX = $state(0);
+	let menuY = $state(0);
+
+	function handleContextMenu(event: MouseEvent, highlightedItems: SvelteSet<number>) {
+		// Only show custom menu if it is over a todo item
+		const path = event.composedPath() as HTMLElement[];
+		const isOverTodoItem = path.some((el) => el.classList && el.classList.contains('todo-item'));
+
+		if (!isOverTodoItem || highlightedItems.size === 0) {
+			// Allow default browser context menu for non-todo areas
+			return;
+		}
+
+		event.preventDefault(); // Prevent the default browser context menu only for todo items
+
+		showMenu = false; // Hide briefly to re-render and ensure correct positioning
+
+		// Position the custom menu at the cursor's location
+		menuX = event.clientX;
+		menuY = event.clientY;
+
+		showMenu = true;
+	}
 </script>
 
 <!-- MARK: On Keydown -->
@@ -361,15 +401,19 @@
 			processKeydownEvent(event);
 		}
 	}}
+	oncontextmenu={(event) => handleContextMenu(event, highlightedItems)}
 />
 
+<!-- MARK: Todo Input Box -->
 {#if defaultTodoAdditionParams}
-	<ItemInputBox bind:addingNewItem />
+	<TodoInputBox bind:addingNewItem />
 {/if}
+
+<!-- MARK: List of Todos -->
 {#if $todos?.length > 0}
 	<ul class="mt-4 space-y-2">
 		{#each $todos as item, index (item.id)}
-			<li data-id={item.id} class="relative">
+			<li data-id={item.id} class="todo-item relative">
 				{#if dragInsertIndex === index}
 					<div
 						class="absolute -top-1 right-0 left-0 h-0.5 bg-blue-500 shadow-lg"
@@ -382,7 +426,8 @@
 						style="z-index: 50;"
 					></div>
 				{/if}
-				<ItemComponent
+				<!-- MARK: Individual Todo -->
+				<Todo
 					{item}
 					bind:openedItem
 					{openItem}
@@ -392,12 +437,14 @@
 					handleDrop={(event: DragEvent) => handleDrop(event, item.id!)}
 					{handleDragEnd}
 					tags={$tags}
+					{oneWayHighlightItem}
 				/>
 			</li>
 		{/each}
 	</ul>
 {/if}
 
-<MultiselectOptionBoxComponent {highlightedItems}>
-	{@render multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-</MultiselectOptionBoxComponent>
+<!-- MARK: Context Menu -->
+{#if contextMenu}
+	{@render contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
+{/if}

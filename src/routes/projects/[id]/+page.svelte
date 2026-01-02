@@ -2,16 +2,16 @@
 	import { db, type Item, type Project } from '$lib/db';
 	import { getTodosForProject } from '$lib';
 	import { liveQuery, type Observable } from 'dexie';
-	import ItemsList from '$lib/components/TodoList.component.svelte';
-	import DeleteSelectedItemsButton from '$lib/components/DeleteSelected.button.component.svelte';
-	import SetAsideForLaterButton from '$lib/components/SetAsideForLater.button.component.svelte';
-	import ClearSelectedItemsButton from '$lib/components/ClearSelected.button.component.svelte';
-	import SendToThings3Button from '$lib/components/SendToThings3.button.component.svelte';
-	import UnattachFromThings3Button from '$lib/components/UnattachFromThings3.button.component.svelte';
+	import Todos from '$lib/components/TodoList.component.svelte';
 	import { page } from '$app/state';
 	import { PenNibOutline } from 'flowbite-svelte-icons';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { marked } from 'marked';
+	import ContextMenu from '$lib/components/ContextMenu.svelte';
+	import DeleteSelected from '$lib/components/DeleteSelected.button.component.svelte';
+	import SetAsideForLater from '$lib/components/SetAsideForLater.button.component.svelte';
+	import FocusOnNow from '$lib/components/FocusOnNow.button.component.svelte';
+	import ClearSelected from '$lib/components/ClearSelected.button.component.svelte';
 
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
@@ -213,9 +213,13 @@
 	}
 </script>
 
+<!-- MARK: Head -->
+
 <svelte:head>
 	<title>{project ? project.title : 'Project'} | Things.do</title>
 </svelte:head>
+
+<!-- MARK: Sync Project To Things -->
 
 <div class="mb-4 flex justify-end">
 	<button class="cursor-pointer rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
@@ -226,6 +230,8 @@
 <div>
 	{#if project}
 		<div class="flex items-center gap-2">
+			<!-- MARK: Editing Title -->
+
 			{#if editingTitle}
 				<input
 					id="project-title-input"
@@ -249,6 +255,8 @@
 		</div>
 
 		<hr class="my-4" />
+
+		<!-- MARK: Editing Notes -->
 
 		{#if editingNotes}
 			<textarea
@@ -293,8 +301,10 @@
 
 <hr class="my-4 mb-40" />
 
+<!-- MARK: Project To-Dos -->
+
 {#if todos}
-	<ItemsList
+	<Todos
 		{todos}
 		{tags}
 		defaultTodoAdditionParams={{
@@ -340,21 +350,23 @@
 				addItem
 			)}
 	>
-		{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-			<SetAsideForLaterButton {highlightedItems} {clearHighlightsForAllItems} />
+		{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
+			<ContextMenu show={showMenu} x={menuX} y={menuY}>
+				{#snippet children()}
+					<FocusOnNow {highlightedItems} {clearHighlightsForAllItems} />
 
-			<div class="flex gap-2">
-				<SendToThings3Button {highlightedItems} />
+					<SetAsideForLater {highlightedItems} {clearHighlightsForAllItems} />
 
-				<UnattachFromThings3Button {highlightedItems} />
-			</div>
+					<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-			<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
-
-			<ClearSelectedItemsButton {clearHighlightsForAllItems} />
+					<ClearSelected {clearHighlightsForAllItems} />
+				{/snippet}
+			</ContextMenu>
 		{/snippet}
-	</ItemsList>
+	</Todos>
 {/if}
+
+<!-- MARK: Styles -->
 
 <style>
 	.prose :global(h1) {

@@ -20,5 +20,5 @@
 			}
 		});
 		clearHighlightsForAllItems();
-	}}>Set Aside For Later <span class="keyboard-shortcut">L</span></button
+	}}>Later <span class="keyboard-shortcut">L</span></button
 >
