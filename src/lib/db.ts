@@ -54,11 +54,11 @@ const db = new Dexie('ThingsDoDB') as Dexie & {
 };
 
 // Schema declaration:
-db.version(4).stores({
+db.version(5).stores({
 	projects:
-		'++id, parent_id, type, order, things_id, parent_things_id, start_date, deadline, deleted_at, sent_to_things_at',
+		'++id, parent_id, order, things_id, parent_things_id, start_date, deadline, deleted_at, sent_to_things_at',
 	todos:
-		'++id, parent_id, type, order, things_id, parent_things_id, start_date, deadline, deleted_at, sent_to_things_at',
+		'++id, parent_id, order, things_id, parent_things_id, start_date, deadline, deleted_at, sent_to_things_at',
 	tags: '++id, &name, parent_tag_id, order'
 });
 
