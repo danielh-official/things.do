@@ -24,7 +24,6 @@
 	} from 'flowbite-svelte-icons';
 	import { db } from '$lib/db';
 	import { SvelteDate } from 'svelte/reactivity';
-	import { PUBLIC_NOTICE_BANNER_TEXT, PUBLIC_SHOW_NOTICE_BANNER } from '$env/static/public';
 
 	let { children } = $props();
 
@@ -75,17 +74,30 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-{#if PUBLIC_SHOW_NOTICE_BANNER === 'true' && PUBLIC_NOTICE_BANNER_TEXT}
-	<div class="bg-white dark:bg-slate-900">
-		<div
-			class="border-default border-b bg-yellow-100 p-2 text-center text-sm dark:bg-yellow-900 dark:text-yellow-300"
-		>
-			<span>
-				{@html PUBLIC_NOTICE_BANNER_TEXT}
-			</span>
-		</div>
+<!-- MARK: Banner for notice of unstable demo -->
+<div class="bg-white dark:bg-slate-900">
+	<div
+		class="border-default border-b bg-yellow-100 p-2 text-center text-sm dark:bg-yellow-900 dark:text-yellow-300"
+	>
+		<p><strong>⚠️ NOTICE</strong></p>
+		<p>
+			This project is in active development and in the beginning stages. Features and
+			functionality may change frequently and bugs are to be expected.
+		</p>
+		<p>
+			Also, data may periodically reset. All data is currently stored locally on your browser and
+			any clearing of storage or usage of another browser will result in a fresh state.
+		</p>
+		<p><b>Use at your own risk!</b></p>
+		<p>
+			For issues or feedback, please visit our <a
+				href="https://github.com/danielh-official/things.do/issues"
+				target="_blank"
+				class="text-blue-600 hover:underline dark:text-white">GitHub repository</a
+			>.
+		</p>
 	</div>
-{/if}
+</div>
 
 <div class="flex dark:bg-slate-800 dark:text-white">
 	<aside
