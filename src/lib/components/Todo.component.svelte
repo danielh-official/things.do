@@ -248,6 +248,12 @@
 	const projects = liveQuery(() => {
 		return getProjects();
 	});
+
+	function getParentForTodo(todo: Item) {
+		if (!todo.parent_id) return null;
+
+		return $projects.filter((project) => project.id === todo.parent_id)[0] || null;
+	}
 </script>
 
 {#if openedItem && openedItem.id === item.id}
@@ -383,7 +389,7 @@
 		ondrop={(event: DragEvent) => handleDrop && handleDrop(event, item.id)}
 		ondragend={handleDragEnd && handleDragEnd}
 	>
-		<!-- Status button with cycling functionality -->
+		<!-- MARK: Status button with cycling functionality -->
 		<button
 			class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center"
 			onclick={(event: MouseEvent) => {
@@ -429,6 +435,7 @@
 			{/if}
 		</button>
 
+		<!-- MARK: Item Title and Icons -->
 		<button
 			class="flex w-full cursor-pointer justify-between rounded p-2 text-left"
 			ondblclick={openItem}
@@ -467,4 +474,13 @@
 			</div>
 		</button>
 	</div>
+	{#if item.parent_id}
+		<div class="mt-1 ml-8 text-sm text-gray-400">
+			{#if $projects}
+				<span>{getParentForTodo(item)?.title}</span>
+			{:else}
+				<span>Loading...</span>
+			{/if}
+		</div>
+	{/if}
 {/if}
