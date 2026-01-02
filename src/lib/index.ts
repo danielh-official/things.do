@@ -88,7 +88,7 @@ export async function getProjects() {
 		.sort((a, b) => a.order - b.order);
 }
 
-export async function getTodosForProject(projectId: string) {
+export async function getTodosForProject(projectId: number) {
 	const result = await db.todos.toArray();
 
 	return result
@@ -97,9 +97,7 @@ export async function getTodosForProject(projectId: string) {
 				return false;
 			}
 
-			const parsedProjectId = parseInt(projectId, 10);
-
-			if (todo.parent_id === parsedProjectId) {
+			if (todo.parent_id === projectId) {
 				return true;
 			}
 

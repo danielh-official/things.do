@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { db, type Item, type Project } from '$lib/db';
 	import { getTodosForProject } from '$lib';
-	import { liveQuery } from 'dexie';
+	import { liveQuery, type Observable } from 'dexie';
 	import ItemsList from '$lib/components/TodoList.component.svelte';
 	import DeleteSelectedItemsButton from '$lib/components/DeleteSelected.button.component.svelte';
 	import SetAsideForLaterButton from '$lib/components/SetAsideForLater.button.component.svelte';
@@ -10,11 +10,12 @@
 	import UnattachFromThings3Button from '$lib/components/UnattachFromThings3.button.component.svelte';
 	import { page } from '$app/state';
 	import { PenNibOutline } from 'flowbite-svelte-icons';
-	import { onMount } from 'svelte';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { marked } from 'marked';
 
-	let todos = liveQuery(() => (page.params.id ? getTodosForProject(page.params.id) : []));
+	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
+
+	let todos: Observable<Item[]> | undefined = $state();
 
 	let tags = liveQuery(() => db.tags.toArray());
 
@@ -38,9 +39,9 @@
 		later: false
 	});
 
-	onMount(() => {
-		if (page.params.id) {
-			db.projects.get(parseInt(page.params.id, 10)).then((proj) => {
+	$effect(() => {
+		if (projectId) {
+			db.projects.get(projectId).then((proj) => {
 				if (proj) {
 					project = {
 						id: proj.id,
@@ -63,6 +64,10 @@
 					};
 				}
 			});
+
+			todos = liveQuery(() =>
+				getTodosForProject(projectId ?? -1).then((items) => items.sort((a, b) => a.order - b.order))
+			);
 		}
 	});
 
@@ -115,6 +120,10 @@
 		addItem: ((event: KeyboardEvent) => void) | null
 	) {
 		if (editingTitle || editingNotes) {
+			return;
+		}
+
+		if (!$todos) {
 			return;
 		}
 
@@ -284,39 +293,27 @@
 
 <hr class="my-4 mb-40" />
 
-<ItemsList
-	{todos}
-	{tags}
-	defaultTodoAdditionParams={{
-		notes: '',
-		start_date: null,
-		deadline: null,
-		start: null,
-		tag_ids: [],
-		blocked_by: [],
-		evening: false,
-		checklist: [],
-		logged_at: null,
-		logged_status: null,
-		deleted_at: null,
-		later: false,
-		parent_id: page.params.id ? parseInt(page.params.id, 10) : null,
-		parent_things_id: null
-	}}
-	customKeydownBehavior={(
-		event,
-		highlightedItems,
-		openedItem,
-		addingNewItem,
-		defaultTodoAdditionParams,
-		closeOpenedItem,
-		clearHighlightsForAllItems,
-		shouldPermanentlyDeleteHighlightedItems,
-		permanentlyDeleteHighlightedItems,
-		deleteHighlightedItems,
-		addItem
-	) =>
-		customKeydownBehavior(
+{#if todos}
+	<ItemsList
+		{todos}
+		{tags}
+		defaultTodoAdditionParams={{
+			notes: '',
+			start_date: null,
+			deadline: null,
+			start: null,
+			tag_ids: [],
+			blocked_by: [],
+			evening: false,
+			checklist: [],
+			logged_at: null,
+			logged_status: null,
+			deleted_at: null,
+			later: false,
+			parent_id: page.params.id ? parseInt(page.params.id, 10) : null,
+			parent_things_id: null
+		}}
+		customKeydownBehavior={(
 			event,
 			highlightedItems,
 			openedItem,
@@ -328,22 +325,36 @@
 			permanentlyDeleteHighlightedItems,
 			deleteHighlightedItems,
 			addItem
-		)}
->
-	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
-		<SetAsideForLaterButton {highlightedItems} {clearHighlightsForAllItems} />
+		) =>
+			customKeydownBehavior(
+				event,
+				highlightedItems,
+				openedItem,
+				addingNewItem,
+				defaultTodoAdditionParams,
+				closeOpenedItem,
+				clearHighlightsForAllItems,
+				shouldPermanentlyDeleteHighlightedItems,
+				permanentlyDeleteHighlightedItems,
+				deleteHighlightedItems,
+				addItem
+			)}
+	>
+		{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
+			<SetAsideForLaterButton {highlightedItems} {clearHighlightsForAllItems} />
 
-		<div class="flex gap-2">
-			<SendToThings3Button {highlightedItems} />
+			<div class="flex gap-2">
+				<SendToThings3Button {highlightedItems} />
 
-			<UnattachFromThings3Button {highlightedItems} />
-		</div>
+				<UnattachFromThings3Button {highlightedItems} />
+			</div>
 
-		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
+			<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
 
-		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
-	{/snippet}
-</ItemsList>
+			<ClearSelectedItemsButton {clearHighlightsForAllItems} />
+		{/snippet}
+	</ItemsList>
+{/if}
 
 <style>
 	.prose :global(h1) {
