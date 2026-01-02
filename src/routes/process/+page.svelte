@@ -167,8 +167,6 @@
 				});
 			}
 		}
-
-		window.close();
 	});
 </script>
 
