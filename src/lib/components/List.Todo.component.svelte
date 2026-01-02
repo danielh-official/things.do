@@ -16,7 +16,8 @@
 		shouldPermanentlyDeleteHighlightedItemsOnEscape:
 			shouldPermanentlyDeleteHighlightedItems = false,
 		customKeydownBehavior,
-		contextMenu
+		contextMenu,
+		hideParentForTodosInList = false
 	}: {
 		todos: Observable<Item[]>;
 		tags: Observable<Tag[]>;
@@ -49,6 +50,7 @@
 				y: number
 			]
 		>;
+		hideParentForTodosInList?: boolean;
 	} = $props();
 
 	onMount(() => {
@@ -438,6 +440,7 @@
 					{handleDragEnd}
 					tags={$tags}
 					{oneWayHighlightItem}
+					hideParent={hideParentForTodosInList}
 				/>
 			</li>
 		{/each}

@@ -13,7 +13,8 @@
 		openItem,
 		highlightItem,
 		oneWayHighlightItem,
-		tags = $bindable<Tag[]>()
+		tags = $bindable<Tag[]>(),
+		hideParent = false
 	}: {
 		item: Item;
 		openedItem: Item | null;
@@ -25,6 +26,7 @@
 		highlightItem: (event: MouseEvent) => void;
 		oneWayHighlightItem: (event: MouseEvent) => void;
 		tags: Tag[];
+		hideParent: boolean;
 	} = $props();
 
 	let tagsForItem: Tag[] = $state([]);
@@ -449,10 +451,10 @@
 			onclick={highlightItem}
 			oncontextmenu={oneWayHighlightItem}
 		>
-			<div>
+			<div class="flex items-center gap-2">
 				<div class="flex flex-col">
 					{item.title}
-					{#if item.parent_id}
+					{#if !hideParent && item.parent_id}
 						<span class="mt-1 text-sm text-gray-400">
 							{#if $projects}
 								<span>{getParentForTodo(item)?.title}</span>

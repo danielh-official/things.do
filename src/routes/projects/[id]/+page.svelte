@@ -307,6 +307,7 @@
 	<Todos
 		{todos}
 		{tags}
+		hideParentForTodosInList
 		defaultTodoAdditionParams={{
 			notes: '',
 			start_date: null,
