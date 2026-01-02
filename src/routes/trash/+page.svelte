@@ -1,11 +1,11 @@
 <script lang="ts">
-	import TodosList from '$lib/components/TodoList.component.svelte';
+	import TodosList from '$lib/components/List.Todo.component.svelte';
 	import { db } from '$lib/db';
 	import { getTrashedTodos } from '$lib';
 	import { liveQuery } from 'dexie';
-	import ClearSelected from '$lib/components/ClearSelected.button.component.svelte';
-	import RestoreSelected from '$lib/components/RestoreSelected.button.component.svelte';
-	import PermanentlyDeleteSelected from '$lib/components/PermanentlyDeleteSelected.button.component.svelte';
+	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
+	import RestoreSelected from '$lib/components/Buttons/RestoreSelected.button.component.svelte';
+	import PermanentlyDeleteSelected from '$lib/components/Buttons/PermanentlyDeleteSelected.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 
 	let todos = liveQuery(() => getTrashedTodos());

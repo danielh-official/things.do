@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Todo from '$lib/components/Todo.component.svelte';
-	import TodoInputBox from '$lib/components/TodoInputBox.component.svelte';
+	import TodoInputBox from '$lib/components/InputBox.Todo.component.svelte';
 	import { cleanupTags } from '$lib';
 	import { onMount, type Snippet } from 'svelte';
 	import { db, type Item, type Tag } from '$lib/db';

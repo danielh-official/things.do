@@ -37,7 +37,7 @@ In this [video](https://www.youtube.com/watch?v=dz38ET7uqqM):
 5. When I make an update to "Test" by renaming it to "Test 2" and then click "Sync To Things 3" again, the title is updated on its equivalent in my Things 3 app.
 6. I then make a change to the title on my Things 3 app by renaming it to "Test 3", select it, and then call this [Apple Shortcut](https://www.icloud.com/shortcuts/c41e4c26697243f78ea9d25d79301876) to open a URL on Google Chrome that takes the selected Things todo and updates the data back on its equivalent Things.do todo.
 
-And this is one such way that two-way sync can be achieved between Things 3 and a web application. 
+And this is one such way that two-way sync can be achieved between Things 3 and a web application.
 
 > [!IMPORTANT]
 > Since this is client-side, I would not transfer especially sensitive Things 3 tasks back to Things.do, using this method, because the URL usage is captured in my browser's history and can expose such information to lunchtime attacks within public spaces.

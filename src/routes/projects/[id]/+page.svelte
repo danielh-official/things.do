@@ -2,16 +2,16 @@
 	import { db, type Item, type Project } from '$lib/db';
 	import { getTodosForProject } from '$lib';
 	import { liveQuery, type Observable } from 'dexie';
-	import Todos from '$lib/components/TodoList.component.svelte';
+	import Todos from '$lib/components/List.Todo.component.svelte';
 	import { page } from '$app/state';
 	import { PenNibOutline } from 'flowbite-svelte-icons';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { marked } from 'marked';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
-	import DeleteSelected from '$lib/components/DeleteSelected.button.component.svelte';
-	import SetAsideForLater from '$lib/components/SetAsideForLater.button.component.svelte';
-	import FocusOnNow from '$lib/components/FocusOnNow.button.component.svelte';
-	import ClearSelected from '$lib/components/ClearSelected.button.component.svelte';
+	import DeleteSelected from '$lib/components/Buttons/DeleteSelected.button.component.svelte';
+	import SetAsideForLater from '$lib/components/Buttons/SetAsideForLater.button.component.svelte';
+	import FocusOnNow from '$lib/components/Buttons/FocusOnNow.button.component.svelte';
+	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
