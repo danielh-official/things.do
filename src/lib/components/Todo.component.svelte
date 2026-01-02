@@ -132,6 +132,8 @@
 		TagOutline,
 		TagSolid
 	} from 'flowbite-svelte-icons';
+	import { liveQuery } from 'dexie';
+	import { getProjects } from '$lib';
 	let allTagOptions = $state<Tag[]>([]);
 	let filteredTagOptions = $state<Tag[]>([]);
 	let tagNameById: Record<number, string> = $state({});
@@ -242,6 +244,10 @@
 			closeTagInput();
 		}
 	}
+
+	const projects = liveQuery(() => {
+		return getProjects();
+	});
 </script>
 
 {#if openedItem && openedItem.id === item.id}
@@ -262,6 +268,27 @@
 					title: openedItem.title
 				})}
 		/>
+
+		<!-- MARK: Parent Search Select -->
+		<div class="my-4 flex justify-end text-sm text-gray-500">
+			<select
+				class="rounded border border-gray-300 p-2 dark:bg-gray-700"
+				bind:value={item.parent_id}
+				onchange={async () => {
+					await db.todos.update(item.id!, {
+						parent_id: item.parent_id,
+						updated_at: new SvelteDate()
+					});
+				}}
+			>
+				<option value={null}>No Parent Project</option>
+				{#each $projects as project}
+					<option value={project.id} selected={item.parent_id === project.id}>
+						{project.title}
+					</option>
+				{/each}
+			</select>
+		</div>
 
 		<!-- MARK: Things ID Link -->
 		{#if item.things_id}

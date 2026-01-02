@@ -15,7 +15,9 @@
 		tags = $bindable(),
 		defaultTodoAdditionParams = $bindable(),
 		multiselectButtons = $bindable(),
-		shouldPermanentlyDeleteHighlightedItemsOnEscape: shouldPermanentlyDeleteHighlightedItems = false
+		shouldPermanentlyDeleteHighlightedItemsOnEscape:
+			shouldPermanentlyDeleteHighlightedItems = false,
+		customKeydownBehavior
 	}: {
 		todos: Observable<Item[]>;
 		tags: Observable<Tag[]>;
@@ -27,6 +29,21 @@
 			[highlightedItems: SvelteSet<number>, clearHighlightsForAllItems: () => void]
 		>;
 		shouldPermanentlyDeleteHighlightedItemsOnEscape?: boolean;
+		customKeydownBehavior?: (
+			event: KeyboardEvent,
+			highlightedItems: SvelteSet<number>,
+			openedItem: Item | null,
+			addingNewItem: boolean,
+			defaultTodoAdditionParams:
+				| Omit<Item, 'id' | 'order' | 'title' | 'created_at' | 'updated_at' | 'things_id'>
+				| undefined,
+			closeOpenedItem: () => void,
+			clearHighlightsForAllItems: () => void,
+			shouldPermanentlyDeleteHighlightedItems: boolean,
+			permanentlyDeleteHighlightedItems: () => void,
+			deleteHighlightedItems: () => void,
+			addItem: ((event: KeyboardEvent) => void) | null
+		) => void;
 	} = $props();
 
 	onMount(() => {
@@ -254,6 +271,8 @@
 		clearHighlightsForAllItems();
 	}
 
+	// MARK: Keydown Handling
+
 	function processKeydownEvent(event: KeyboardEvent) {
 		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
 			event.preventDefault();
@@ -320,7 +339,29 @@
 	}
 </script>
 
-<svelte:window onkeydown={processKeydownEvent} />
+<!-- MARK: On Keydown -->
+
+<svelte:window
+	onkeydown={(event: KeyboardEvent) => {
+		if (customKeydownBehavior) {
+			customKeydownBehavior(
+				event,
+				highlightedItems,
+				openedItem,
+				addingNewItem,
+				defaultTodoAdditionParams,
+				closeOpenedItem,
+				clearHighlightsForAllItems,
+				shouldPermanentlyDeleteHighlightedItems,
+				permanentlyDeleteHighlightedItems,
+				deleteHighlightedItems,
+				addItem
+			);
+		} else {
+			processKeydownEvent(event);
+		}
+	}}
+/>
 
 {#if defaultTodoAdditionParams}
 	<ItemInputBox bind:addingNewItem />

@@ -74,6 +74,40 @@ export async function getTags() {
 	return await db.tags.toArray();
 }
 
+export async function getProjects() {
+	const result = await db.projects.toArray();
+
+	return result
+		.filter((project) => {
+			if (project.deleted_at && project.deleted_at !== null) {
+				return false;
+			}
+
+			return true;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
+export async function getTodosForProject(projectId: string) {
+	const result = await db.todos.toArray();
+
+	return result
+		.filter((todo) => {
+			if (todo.deleted_at && todo.deleted_at !== null) {
+				return false;
+			}
+
+			const parsedProjectId = parseInt(projectId, 10);
+
+			if (todo.parent_id === parsedProjectId) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
 export async function cleanupTags() {
 	const allTags = await db.tags.toArray();
 	const validTagIds = new Set(allTags.map((tag) => tag.id));

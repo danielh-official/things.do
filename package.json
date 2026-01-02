@@ -51,6 +51,7 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
-		"dexie": "^4.2.1"
+		"dexie": "^4.2.1",
+		"marked": "^17.0.1"
 	}
 }

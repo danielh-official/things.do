@@ -1,0 +1,384 @@
+<script lang="ts">
+	import { db, type Item, type Project } from '$lib/db';
+	import { getTodosForProject } from '$lib';
+	import { liveQuery } from 'dexie';
+	import ItemsList from '$lib/components/TodoList.component.svelte';
+	import DeleteSelectedItemsButton from '$lib/components/DeleteSelected.button.component.svelte';
+	import SetAsideForLaterButton from '$lib/components/SetAsideForLater.button.component.svelte';
+	import ClearSelectedItemsButton from '$lib/components/ClearSelected.button.component.svelte';
+	import SendToThings3Button from '$lib/components/SendToThings3.button.component.svelte';
+	import UnattachFromThings3Button from '$lib/components/UnattachFromThings3.button.component.svelte';
+	import { page } from '$app/state';
+	import { PenNibOutline } from 'flowbite-svelte-icons';
+	import { onMount } from 'svelte';
+	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import { marked } from 'marked';
+
+	let todos = liveQuery(() => (page.params.id ? getTodosForProject(page.params.id) : []));
+
+	let tags = liveQuery(() => db.tags.toArray());
+
+	let project: Omit<Project, 'created_at' | 'updated_at'> = $state({
+		id: 1,
+		title: '',
+		notes: '',
+		start: null,
+		start_date: null,
+		deadline: null,
+		order: 0,
+		tag_ids: [],
+		evening: false,
+		things_id: null,
+		parent_id: null,
+		parent_things_id: null,
+		deleted_at: null,
+		logged_at: null,
+		logged_status: null,
+		blocked_by: [],
+		later: false
+	});
+
+	onMount(() => {
+		if (page.params.id) {
+			db.projects.get(parseInt(page.params.id, 10)).then((proj) => {
+				if (proj) {
+					project = {
+						id: proj.id,
+						title: proj.title,
+						notes: proj.notes,
+						start: proj.start,
+						start_date: proj.start_date,
+						deadline: proj.deadline,
+						order: proj.order,
+						tag_ids: proj.tag_ids,
+						evening: proj.evening,
+						things_id: proj.things_id,
+						parent_id: proj.parent_id,
+						parent_things_id: proj.parent_things_id,
+						deleted_at: proj.deleted_at,
+						logged_at: proj.logged_at,
+						logged_status: proj.logged_status,
+						blocked_by: proj.blocked_by,
+						later: proj.later
+					};
+				}
+			});
+		}
+	});
+
+	let editingTitle = $state(false);
+
+	function startEditingTitle() {
+		editingTitle = true;
+		const input = document.getElementById('project-title-input') as HTMLInputElement;
+		if (input) {
+			input.focus();
+			input.select();
+		}
+	}
+
+	function updateProjectTitle(newTitle: string) {
+		if (page.params.id) {
+			db.projects.update(parseInt(page.params.id, 10), {
+				title: newTitle,
+				updated_at: new SvelteDate()
+			});
+		}
+	}
+
+	function updateProjectTitleOnKeydown(e: KeyboardEvent, newTitle: string) {
+		if (e.key === 'Enter' || e.key === 'Escape') {
+			e.preventDefault();
+			editingTitle = false;
+			updateProjectTitle(newTitle);
+		}
+	}
+
+	function updateProjectTitleOnBlur(newTitle: string) {
+		editingTitle = false;
+		updateProjectTitle(newTitle);
+	}
+
+	function customKeydownBehavior(
+		event: KeyboardEvent,
+		highlightedItems: SvelteSet<number>,
+		openedItem: Item | null,
+		addingNewItem: boolean,
+		defaultTodoAdditionParams:
+			| Omit<Item, 'id' | 'order' | 'title' | 'created_at' | 'updated_at' | 'things_id'>
+			| undefined,
+		closeOpenedItem: () => void,
+		clearHighlightsForAllItems: () => void,
+		shouldPermanentlyDeleteHighlightedItems: boolean,
+		permanentlyDeleteHighlightedItems: () => void,
+		deleteHighlightedItems: () => void,
+		addItem: ((event: KeyboardEvent) => void) | null
+	) {
+		if (editingTitle || editingNotes) {
+			return;
+		}
+
+		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
+			event.preventDefault();
+			const selectedItems = $todos.filter(
+				(item: Item) => item.id != null && highlightedItems.has(item.id)
+			);
+			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
+				const markdown = selectedItems.map((item) => `- ${item.title}`).join('\n');
+				navigator.clipboard.writeText(markdown);
+			}
+			return;
+		}
+
+		if (event.code === 'Enter' && addingNewItem) {
+			addItem?.(event);
+			return;
+		}
+
+		if (event.code === 'Space' && !openedItem && !addingNewItem && defaultTodoAdditionParams) {
+			const input = document.querySelector('input#new-item-input') as HTMLInputElement;
+			if (input) {
+				event.preventDefault();
+				input.focus();
+			}
+			return;
+		}
+
+		if (event.key === 'Escape' && openedItem) {
+			closeOpenedItem();
+			return;
+		}
+
+		if (event.key === 'Escape' && highlightedItems.size > 0) {
+			clearHighlightsForAllItems();
+			return;
+		}
+
+		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
+			shouldPermanentlyDeleteHighlightedItems
+				? permanentlyDeleteHighlightedItems()
+				: deleteHighlightedItems();
+			return;
+		}
+
+		if (event.key === 'f' && highlightedItems.size > 0) {
+			event.preventDefault();
+			// Get highlighted items and set all 'later' to false
+			highlightedItems.forEach(async (itemId) => {
+				await db.todos.update(itemId, { later: false, updated_at: new SvelteDate() });
+			});
+			clearHighlightsForAllItems();
+			return;
+		}
+
+		if (event.key === 'l' && highlightedItems.size > 0) {
+			event.preventDefault();
+			// Get highlighted items and set all 'later' to true
+			highlightedItems.forEach(async (itemId) => {
+				await db.todos.update(itemId, { later: true, updated_at: new SvelteDate() });
+			});
+			clearHighlightsForAllItems();
+			return;
+		}
+	}
+
+	let notesTextarea: HTMLTextAreaElement | undefined = $state();
+
+	let editingNotes = $state(false);
+
+	function startEditingNotes() {
+		editingNotes = true;
+		setTimeout(() => {
+			if (notesTextarea) {
+				notesTextarea.style.height = 'auto';
+				notesTextarea.style.height = notesTextarea.scrollHeight + 'px';
+				notesTextarea.focus();
+			}
+		}, 0);
+	}
+
+	function autoResizeTextarea(e: Event) {
+		const textarea = e.target as HTMLTextAreaElement;
+		textarea.style.height = 'auto';
+		textarea.style.height = textarea.scrollHeight + 'px';
+	}
+</script>
+
+<svelte:head>
+	<title>{project ? project.title : 'Project'} | Things.do</title>
+</svelte:head>
+
+<div class="mb-4 flex justify-end">
+	<button class="cursor-pointer rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+		>Sync Project To Things</button
+	>
+</div>
+
+<div>
+	{#if project}
+		<div class="flex items-center gap-2">
+			{#if editingTitle}
+				<input
+					id="project-title-input"
+					type="text"
+					class="mb-2 w-full border-b border-gray-300 p-1 text-2xl font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+					bind:value={project.title}
+					onblur={() => updateProjectTitleOnBlur(project.title)}
+					onkeydown={(e: KeyboardEvent) => updateProjectTitleOnKeydown(e, project.title)}
+				/>
+			{:else}
+				<h1 class="mb-2 w-full text-2xl font-bold">{project.title}</h1>
+			{/if}
+
+			{#if !editingTitle}
+				<button class="text-left" onclick={startEditingTitle}>
+					<PenNibOutline
+						class="me-2 inline h-5 w-5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+					/>
+				</button>
+			{/if}
+		</div>
+
+		<hr class="my-4" />
+
+		{#if editingNotes}
+			<textarea
+				bind:this={notesTextarea}
+				oninput={autoResizeTextarea}
+				rows="4"
+				class="w-full rounded border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+				bind:value={project.notes}
+				onblur={() => {
+					editingNotes = false;
+					db.projects.update(project.id, {
+						notes: project.notes,
+						updated_at: new SvelteDate()
+					});
+				}}
+				onkeydown={(e: KeyboardEvent) => {
+					if (e.key === 'Escape') {
+						e.preventDefault();
+						editingNotes = false;
+						db.projects.update(project.id, {
+							notes: project.notes,
+							updated_at: new SvelteDate()
+						});
+					}
+				}}
+			></textarea>
+		{:else}
+			<div class="flex justify-between gap-2">
+				<div class="prose dark:prose-invert">
+					{@html project.notes ? marked.parse(project.notes) : '<em>No notes added.</em>'}
+				</div>
+
+				<button class="mb-auto text-left" onclick={startEditingNotes}>
+					<PenNibOutline
+						class="me-2 inline h-5 w-5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+					/>
+				</button>
+			</div>
+		{/if}
+	{/if}
+</div>
+
+<hr class="my-4 mb-40" />
+
+<ItemsList
+	{todos}
+	{tags}
+	defaultTodoAdditionParams={{
+		notes: '',
+		start_date: null,
+		deadline: null,
+		start: null,
+		tag_ids: [],
+		blocked_by: [],
+		evening: false,
+		checklist: [],
+		logged_at: null,
+		logged_status: null,
+		deleted_at: null,
+		later: false,
+		parent_id: page.params.id ? parseInt(page.params.id, 10) : null,
+		parent_things_id: null
+	}}
+	customKeydownBehavior={(
+		event,
+		highlightedItems,
+		openedItem,
+		addingNewItem,
+		defaultTodoAdditionParams,
+		closeOpenedItem,
+		clearHighlightsForAllItems,
+		shouldPermanentlyDeleteHighlightedItems,
+		permanentlyDeleteHighlightedItems,
+		deleteHighlightedItems,
+		addItem
+	) =>
+		customKeydownBehavior(
+			event,
+			highlightedItems,
+			openedItem,
+			addingNewItem,
+			defaultTodoAdditionParams,
+			closeOpenedItem,
+			clearHighlightsForAllItems,
+			shouldPermanentlyDeleteHighlightedItems,
+			permanentlyDeleteHighlightedItems,
+			deleteHighlightedItems,
+			addItem
+		)}
+>
+	{#snippet multiselectButtons(highlightedItems, clearHighlightsForAllItems)}
+		<SetAsideForLaterButton {highlightedItems} {clearHighlightsForAllItems} />
+
+		<div class="flex gap-2">
+			<SendToThings3Button {highlightedItems} />
+
+			<UnattachFromThings3Button {highlightedItems} />
+		</div>
+
+		<DeleteSelectedItemsButton {highlightedItems} {clearHighlightsForAllItems} />
+
+		<ClearSelectedItemsButton {clearHighlightsForAllItems} />
+	{/snippet}
+</ItemsList>
+
+<style>
+	.prose :global(h1) {
+		font-size: 1.5rem; /* Tailwind text-2xl equivalent */
+		font-weight: 700;
+		margin-top: 1.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.prose :global(h2) {
+		font-size: 1.25rem; /* Tailwind text-xl equivalent */
+		font-weight: 600;
+		margin-top: 1.25rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.prose :global(h3) {
+		font-size: 1.125rem; /* Tailwind text-lg equivalent */
+		font-weight: 600;
+		margin-top: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.prose :global(h4) {
+		font-size: 1rem; /* Tailwind text-base equivalent */
+		font-weight: 600;
+		margin-top: 0.75rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.prose :global(h5),
+	.prose :global(h6) {
+		font-size: 0.875rem; /* Tailwind text-sm equivalent */
+		font-weight: 600;
+		margin-top: 0.5rem;
+		margin-bottom: 0.25rem;
+	}
+</style>
