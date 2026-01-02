@@ -45,7 +45,7 @@
 		const tagNames = tagsForItem.map((tag) => tag.name);
 
 		const obj: ThingsObject = {
-			type: item.type === 'project' ? 'project' : 'to-do',
+			type: 'to-do',
 			attributes: {
 				title: item.title
 			}

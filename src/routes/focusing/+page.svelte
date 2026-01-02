@@ -33,7 +33,6 @@
 		logged_at: null,
 		logged_status: null,
 		deleted_at: null,
-		type: 'task',
 		later: false,
 		parent_id: null,
 		parent_things_id: null

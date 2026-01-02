@@ -7,10 +7,6 @@ export async function getFocusingTodos() {
 
 	return result
 		.filter((todo) => {
-			if (todo.type === 'area' || todo.type === 'project') {
-				return false;
-			}
-
 			if (todo.deleted_at && todo.deleted_at !== null) {
 				return false;
 			}
@@ -29,10 +25,6 @@ export async function getLaterTodos() {
 
 	return result
 		.filter((todo) => {
-			if (todo.type === 'area' || todo.type === 'project') {
-				return false;
-			}
-
 			if (todo.deleted_at && todo.deleted_at !== null) {
 				return false;
 			}
@@ -51,10 +43,6 @@ export async function getBlockedTodos() {
 
 	return result
 		.filter((todo) => {
-			if (todo.type === 'area' || todo.type === 'project') {
-				return false;
-			}
-
 			if (todo.deleted_at && todo.deleted_at !== null) {
 				return false;
 			}

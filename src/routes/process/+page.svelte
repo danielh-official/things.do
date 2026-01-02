@@ -111,10 +111,6 @@
 					.modify({
 						title: todo.title,
 						notes: todo.notes,
-						type:
-							todo.type === 'task' || todo.type === 'project' || todo.type === 'area'
-								? todo.type
-								: 'task',
 						logged_status:
 							todo.status === 'Completed'
 								? 'completed'
@@ -143,11 +139,6 @@
 					things_id: todo.id,
 					title: todo.title,
 					notes: todo.notes,
-					// If type is not a valid string of "task", "project", or "area", use "task" as default
-					type:
-						todo.type === 'task' || todo.type === 'project' || todo.type === 'area'
-							? todo.type
-							: 'task',
 					// If not 'completed' or 'canceled', use null as default
 					logged_status:
 						todo.status === 'Completed'
