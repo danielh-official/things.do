@@ -291,6 +291,8 @@
 						parent_id: item.parent_id,
 						updated_at: new SvelteDate()
 					});
+
+					openedItem = null;
 				}}
 			>
 				<option value={null}>No Parent Project</option>
