@@ -75,7 +75,7 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-{#if PUBLIC_SHOW_NOTICE_BANNER && PUBLIC_NOTICE_BANNER_TEXT}
+{#if PUBLIC_SHOW_NOTICE_BANNER === 'true' && PUBLIC_NOTICE_BANNER_TEXT}
 	<div class="bg-white dark:bg-slate-900">
 		<div
 			class="border-default border-b bg-yellow-100 p-2 text-center text-sm dark:bg-yellow-900 dark:text-yellow-300"
