@@ -18,6 +18,7 @@
 		type: string;
 		deadline: string;
 		parent_id: string | null;
+		checklist: string | null;
 	}
 
 	function isInitialParsedDataObject(item: any): item is InitialParsedDataObject {
@@ -36,7 +37,8 @@
 			'title' in item &&
 			'type' in item &&
 			'deadline' in item &&
-			'parent_id' in item
+			'parent_id' in item &&
+			'checklist' in item
 		);
 	}
 
