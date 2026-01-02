@@ -2,6 +2,8 @@
 
 A web app for doing a few extra things and then sending the rest to Things (Cultured Code).
 
+Demo: [https://thingsdotdo.netlify.app/](https://thingsdotdo.netlify.app/)
+
 ## Why?
 
 The purpose of this app is not to replace Things 3 (by Cultured Code) but to extend it for solo desk work tasks.
