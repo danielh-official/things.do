@@ -6,7 +6,7 @@ Demo: [https://thingsdotdo.netlify.app/](https://thingsdotdo.netlify.app/)
 
 ## Why?
 
-The purpose of this app is not to replace Things 3 (by Cultured Code) but to extend it for solo desk work tasks.
+The purpose of this app is not to replace Things 3 (by Cultured Code) but to extend it for solo work tasks at the desk (like coding or writing).
 
 The only intended extra features right now are:
 
