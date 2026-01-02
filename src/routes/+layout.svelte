@@ -163,8 +163,8 @@
 							<span class="ms-3 flex-1 whitespace-nowrap">Tags</span>
 						</a>
 					</li>
-					<hr class="my-2 border-t border-gray-300 dark:border-gray-600" />
 				{/if}
+				<hr class="my-2 border-t border-gray-600 dark:border-gray-300" />
 				<li>
 					<button
 						onclick={createNewProject}
