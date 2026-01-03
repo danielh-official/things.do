@@ -403,7 +403,7 @@
 	>
 		<!-- MARK: Status button with cycling functionality -->
 		<button
-			class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center"
+			class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center text-white"
 			onclick={(event: MouseEvent) => {
 				event.stopPropagation();
 				cycleTaskStatus(item.id);
