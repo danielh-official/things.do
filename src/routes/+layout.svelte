@@ -80,6 +80,28 @@
 	let dropPosition: 'above' | 'below' | null = $state(null);
 	let isDraggingTodo = $state(false);
 
+	// Sidebar resizing
+	let sidebarWidth = $state(256); // 16rem = 256px (w-64)
+	let isResizing = $state(false);
+	const MIN_SIDEBAR_WIDTH = 256; // w-64
+
+	function handleResizeStart(event: MouseEvent) {
+		isResizing = true;
+		event.preventDefault();
+	}
+
+	function handleResizeMove(event: MouseEvent) {
+		if (!isResizing) return;
+
+		const maxWidth = window.innerWidth / 2;
+		const newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(event.clientX, maxWidth));
+		sidebarWidth = newWidth;
+	}
+
+	function handleResizeEnd() {
+		isResizing = false;
+	}
+
 	function handleDragStart(event: DragEvent, projectId: number) {
 		draggedProjectId = projectId;
 		if (event.dataTransfer) {
@@ -191,6 +213,8 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
+<svelte:window onmousemove={handleResizeMove} onmouseup={handleResizeEnd} />
+
 <!-- MARK: Banner for notice of unstable demo -->
 <div
 	class="border-default border-b bg-yellow-100 p-2 text-center text-sm dark:bg-yellow-900 dark:text-yellow-300"
@@ -217,7 +241,8 @@
 <div class="flex">
 	<aside
 		id="default-sidebar"
-		class="min-h-screen w-64 bg-gray-100 transition-transform sm:translate-x-0 dark:bg-gray-800"
+		class="min-h-screen bg-gray-100 transition-transform sm:translate-x-0 dark:bg-gray-800 relative"
+		style="width: {sidebarWidth}px"
 		aria-label="Sidebar"
 	>
 		<div class="border-default h-full overflow-y-auto border-e px-3 py-4">
@@ -360,7 +385,7 @@
 			</ul>
 
 			<!-- Show at bottom -->
-			<ul class="absolute bottom-4 w-56 space-y-2 font-medium">
+			<ul class="absolute bottom-4 space-y-2 font-medium" style="width: calc({sidebarWidth}px - 1.5rem)">
 				<li>
 					<a
 						href={resolve('/settings')}
@@ -375,6 +400,14 @@
 				</li>
 			</ul>
 		</div>
+
+		<!-- Resize handle -->
+		<button
+			class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors"
+			class:bg-blue-500={isResizing}
+			onmousedown={handleResizeStart}
+			aria-label="Resize sidebar"
+		></button>
 	</aside>
 
 	<main class="w-full max-w-xl p-4 md:mx-auto">
