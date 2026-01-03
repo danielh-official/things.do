@@ -34,7 +34,11 @@
 	let tags = liveQuery(() => getTags());
 	let projects = liveQuery(() => getProjects());
 
-	let focusingTodosCount = $derived($focusingTodos?.length ?? 0);
+	let unloggedFocusingTodosCount = $derived(
+		$focusingTodos?.filter((_) => {
+			return !(_.logged_at || _.logged_status);
+		}).length ?? 0
+	);
 	let laterTodosCount = $derived($laterTodos?.length ?? 0);
 	let blockedTodosCount = $derived($blockedTodos?.length ?? 0);
 	let trashedTodosCount = $derived($trashedTodos?.length ?? 0);
@@ -81,8 +85,8 @@
 	>
 		<p><strong>⚠️ NOTICE</strong></p>
 		<p>
-			This project is in active development and in the beginning stages. Features and
-			functionality may change frequently and bugs are to be expected.
+			This project is in active development and in the beginning stages. Features and functionality
+			may change frequently and bugs are to be expected.
 		</p>
 		<p>
 			Also, data may periodically reset. All data is currently stored locally on your browser and
@@ -117,10 +121,10 @@
 					>
 						<EyeOutline class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75" />
 						<span class="ms-3 flex-1 whitespace-nowrap">Focusing</span>
-						{#if focusingTodosCount > 0}
+						{#if unloggedFocusingTodosCount > 0}
 							<span
 								class="ms-2 inline-flex h-4.5 w-4.5 items-center justify-center text-xs font-medium"
-								>{focusingTodosCount}</span
+								>{unloggedFocusingTodosCount}</span
 							>
 						{/if}
 					</a>
