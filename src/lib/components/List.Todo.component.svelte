@@ -398,7 +398,7 @@
 
 		// Position the custom menu at the cursor's location
 		menuX = event.clientX;
-		menuY = event.clientY;
+		menuY = event.clientY - 150;
 
 		showMenu = true;
 	}
