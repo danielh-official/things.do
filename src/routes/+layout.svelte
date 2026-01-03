@@ -78,6 +78,7 @@
 	let draggedProjectId: number | null = $state(null);
 	let dragOverProjectId: number | null = $state(null);
 	let dropPosition: 'above' | 'below' | null = $state(null);
+	let isDraggingTodo = $state(false);
 
 	function handleDragStart(event: DragEvent, projectId: number) {
 		draggedProjectId = projectId;
@@ -88,15 +89,35 @@
 	}
 
 	function handleDrop(event: DragEvent, projectId: number) {
-		// Only handle if dragging a project item
-		if (!event.dataTransfer?.types.includes('application/x-project-item')) {
+		event.preventDefault();
+
+		const isTodoItem = event.dataTransfer?.types.includes('application/x-todo-item');
+		const isProjectItem = event.dataTransfer?.types.includes('application/x-project-item');
+
+		// Handle todo item being dropped on project
+		if (isTodoItem) {
+			const todoId = parseInt(event.dataTransfer?.getData('application/x-todo-item') || '', 10);
+			if (todoId) {
+				db.todos.update(todoId, {
+					parent_id: projectId,
+					updated_at: new SvelteDate()
+				});
+			}
 			dragOverProjectId = null;
 			dropPosition = null;
-			draggedProjectId = null;
+			isDraggingTodo = false;
 			return;
 		}
 
-		event.preventDefault();
+		// Handle project reordering
+		if (!isProjectItem) {
+			dragOverProjectId = null;
+			dropPosition = null;
+			draggedProjectId = null;
+			isDraggingTodo = false;
+			return;
+		}
+
 		dragOverProjectId = null;
 		dropPosition = null;
 
@@ -123,15 +144,29 @@
 	}
 
 	function handleDragOver(event: DragEvent, projectId: number) {
-		// Only handle if dragging a project item
-		if (!event.dataTransfer?.types.includes('application/x-project-item')) {
+		const isTodoItem = event.dataTransfer?.types.includes('application/x-todo-item');
+		const isProjectItem = event.dataTransfer?.types.includes('application/x-project-item');
+
+		// Accept both project items (for reordering) and todo items (for assignment)
+		if (!isTodoItem && !isProjectItem) {
 			dragOverProjectId = null;
 			dropPosition = null;
+			isDraggingTodo = false;
 			return;
 		}
 
 		event.preventDefault();
 		dragOverProjectId = projectId;
+
+		// For todo items, show full highlight (no position)
+		if (isTodoItem) {
+			isDraggingTodo = true;
+			dropPosition = null;
+			return;
+		}
+
+		// For project items, show position indicator
+		isDraggingTodo = false;
 
 		// Determine if dropping above or below based on mouse position
 		const element = event.currentTarget as HTMLElement;
@@ -143,12 +178,14 @@
 	function handleDragLeave() {
 		dragOverProjectId = null;
 		dropPosition = null;
+		isDraggingTodo = false;
 	}
 
 	function handleDragEnd() {
 		draggedProjectId = null;
 		dragOverProjectId = null;
 		dropPosition = null;
+		isDraggingTodo = false;
 	}
 </script>
 
@@ -292,11 +329,15 @@
 								'border-t-2 border-blue-400 dark:border-blue-500':
 									dragOverProjectId === project.id &&
 									draggedProjectId !== project.id &&
-									dropPosition === 'above',
+									dropPosition === 'above' &&
+									!isDraggingTodo,
 								'border-b-2 border-blue-400 dark:border-blue-500':
 									dragOverProjectId === project.id &&
 									draggedProjectId !== project.id &&
-									dropPosition === 'below',
+									dropPosition === 'below' &&
+									!isDraggingTodo,
+								'bg-blue-100 dark:bg-blue-900/50':
+									dragOverProjectId === project.id && isDraggingTodo,
 								'opacity-50': draggedProjectId === project.id,
 								'rounded-base': true
 							}}
