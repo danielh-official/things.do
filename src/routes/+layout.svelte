@@ -74,6 +74,82 @@
 			things_id: null
 		});
 	}
+
+	let draggedProjectId: number | null = $state(null);
+	let dragOverProjectId: number | null = $state(null);
+	let dropPosition: 'above' | 'below' | null = $state(null);
+
+	function handleDragStart(event: DragEvent, projectId: number) {
+		draggedProjectId = projectId;
+		if (event.dataTransfer) {
+			event.dataTransfer.setData('application/x-project-item', projectId.toString());
+			event.dataTransfer.effectAllowed = 'move';
+		}
+	}
+
+	function handleDrop(event: DragEvent, projectId: number) {
+		// Only handle if dragging a project item
+		if (!event.dataTransfer?.types.includes('application/x-project-item')) {
+			dragOverProjectId = null;
+			dropPosition = null;
+			draggedProjectId = null;
+			return;
+		}
+
+		event.preventDefault();
+		dragOverProjectId = null;
+		dropPosition = null;
+
+		if (draggedProjectId) {
+			const draggedProjectIndex = $projects.findIndex((p) => p.id === draggedProjectId);
+			const targetProjectIndex = $projects.findIndex((p) => p.id === projectId);
+
+			if (draggedProjectIndex !== -1 && targetProjectIndex !== -1) {
+				const updatedProjects = [...$projects];
+				const [movedProject] = updatedProjects.splice(draggedProjectIndex, 1);
+				updatedProjects.splice(targetProjectIndex, 0, movedProject);
+				// Update the order property here based on the new positions
+				updatedProjects.forEach((project, index) => {
+					project.order = index;
+				});
+				// Save the updated order to the database
+				updatedProjects.forEach(async (project) => {
+					await db.projects.update(project.id, { order: project.order });
+				});
+			}
+		}
+
+		draggedProjectId = null;
+	}
+
+	function handleDragOver(event: DragEvent, projectId: number) {
+		// Only handle if dragging a project item
+		if (!event.dataTransfer?.types.includes('application/x-project-item')) {
+			dragOverProjectId = null;
+			dropPosition = null;
+			return;
+		}
+
+		event.preventDefault();
+		dragOverProjectId = projectId;
+
+		// Determine if dropping above or below based on mouse position
+		const element = event.currentTarget as HTMLElement;
+		const rect = element.getBoundingClientRect();
+		const midpoint = rect.top + rect.height / 2;
+		dropPosition = event.clientY < midpoint ? 'above' : 'below';
+	}
+
+	function handleDragLeave() {
+		dragOverProjectId = null;
+		dropPosition = null;
+	}
+
+	function handleDragEnd() {
+		draggedProjectId = null;
+		dragOverProjectId = null;
+		dropPosition = null;
+	}
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -204,8 +280,27 @@
 					</button>
 				</li>
 				{#if projectsCount > 0}
-					{#each $projects ?? [] as project}
-						<li>
+					{#each $projects.sort((a, b) => a.order - b.order) ?? [] as project}
+						<li
+							draggable="true"
+							ondragstart={(event: DragEvent) => handleDragStart(event, project.id)}
+							ondrop={(event: DragEvent) => handleDrop(event, project.id)}
+							ondragover={(event: DragEvent) => handleDragOver(event, project.id)}
+							ondragleave={handleDragLeave}
+							ondragend={handleDragEnd}
+							class={{
+								'border-t-2 border-blue-400 dark:border-blue-500':
+									dragOverProjectId === project.id &&
+									draggedProjectId !== project.id &&
+									dropPosition === 'above',
+								'border-b-2 border-blue-400 dark:border-blue-500':
+									dragOverProjectId === project.id &&
+									draggedProjectId !== project.id &&
+									dropPosition === 'below',
+								'opacity-50': draggedProjectId === project.id,
+								'rounded-base': true
+							}}
+						>
 							<a
 								href={resolve(`/projects/${project.id}`)}
 								class={{

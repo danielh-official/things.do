@@ -197,11 +197,20 @@
 
 	function handleDragStart(event: DragEvent, itemId: number) {
 		draggingItemId = itemId;
-		// Keep the source id in dataTransfer for fallback cases
-		event.dataTransfer?.setData('text/plain', String(itemId));
+		// Set a specific type to identify todo items
+		if (event.dataTransfer) {
+			event.dataTransfer.setData('application/x-todo-item', String(itemId));
+			event.dataTransfer.effectAllowed = 'move';
+		}
 	}
 
 	function handleDragOver(event: DragEvent, targetItemId?: number) {
+		// Only handle if dragging a todo item
+		if (!event.dataTransfer?.types.includes('application/x-todo-item')) {
+			dragInsertIndex = null;
+			return;
+		}
+
 		event.preventDefault();
 		const el = event.currentTarget as HTMLElement;
 		let targetId = targetItemId;
@@ -234,10 +243,16 @@
 	}
 
 	async function handleDrop(event: DragEvent, targetItemId: number) {
+		// Only handle if dragging a todo item
+		if (!event.dataTransfer?.types.includes('application/x-todo-item')) {
+			resetDragState();
+			return;
+		}
+
 		event.preventDefault();
 
 		const sourceId =
-			draggingItemId ?? parseInt(event.dataTransfer?.getData('text/plain') || '', 10);
+			draggingItemId ?? parseInt(event.dataTransfer?.getData('application/x-todo-item') || '', 10);
 		if (!sourceId) {
 			resetDragState();
 			return;
