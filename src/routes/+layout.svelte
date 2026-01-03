@@ -352,7 +352,7 @@
 								<FolderOutline
 									class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
 								/>
-								<span class="ms-3 flex-1 whitespace-nowrap">{project.title}</span>
+								<span class="ms-3 flex-1 whitespace-nowrap truncate">{project.title}</span>
 							</a>
 						</li>
 					{/each}
