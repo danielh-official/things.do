@@ -79,31 +79,29 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <!-- MARK: Banner for notice of unstable demo -->
-<div class="bg-white dark:bg-slate-900">
-	<div
-		class="border-default border-b bg-yellow-100 p-2 text-center text-sm dark:bg-yellow-900 dark:text-yellow-300"
-	>
-		<p><strong>⚠️ NOTICE</strong></p>
-		<p>
-			This project is in active development and in the beginning stages. Features and functionality
-			may change frequently and bugs are to be expected.
-		</p>
-		<p>
-			Also, data may periodically reset. All data is currently stored locally on your browser and
-			any clearing of storage or usage of another browser will result in a fresh state.
-		</p>
-		<p><b>Use at your own risk!</b></p>
-		<p>
-			For issues or feedback, please visit our <a
-				href="https://github.com/danielh-official/things.do/issues"
-				target="_blank"
-				class="text-blue-600 hover:underline dark:text-white">GitHub repository</a
-			>.
-		</p>
-	</div>
+<div
+	class="border-default border-b bg-yellow-100 p-2 text-center text-sm dark:bg-yellow-900 dark:text-yellow-300"
+>
+	<p><strong>⚠️ NOTICE</strong></p>
+	<p>
+		This project is in active development and in the beginning stages. Features and functionality
+		may change frequently and bugs are to be expected.
+	</p>
+	<p>
+		Also, data may periodically reset. All data is currently stored locally on your browser and any
+		clearing of storage or usage of another browser will result in a fresh state.
+	</p>
+	<p><b>Use at your own risk!</b></p>
+	<p>
+		For issues or feedback, please visit our <a
+			href="https://github.com/danielh-official/things.do/issues"
+			target="_blank"
+			class="text-blue-600 hover:underline dark:text-white">GitHub repository</a
+		>.
+	</p>
 </div>
 
-<div class="flex dark:bg-slate-800 dark:text-white">
+<div class="flex">
 	<aside
 		id="default-sidebar"
 		class="min-h-screen w-64 bg-gray-100 transition-transform sm:translate-x-0 dark:bg-gray-800"
