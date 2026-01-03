@@ -96,9 +96,32 @@
 
 	let highlightedItems = $state(new SvelteSet<number>());
 
+	function alsoToggleHighlightForAllPreviousItems(itemId: number) {
+		const todosArray = $todos;
+		for (const item of todosArray) {
+			// If not highlighted yet, highlight it
+			if (item.id != null && !highlightedItems.has(item.id)) {
+				highlightedItems.add(item.id);
+				const button = document.querySelector(`button[data-id='${item.id}']`) as HTMLButtonElement;
+				if (button) {
+					button.classList.add('highlighted');
+				}
+			}
+
+			if (item.id === itemId) {
+				break;
+			}
+		}
+	}
+
 	function highlightItem(event: MouseEvent) {
 		const button = event.currentTarget as HTMLButtonElement;
 		const itemId = parseInt(button.getAttribute('data-id') || '', 10);
+
+		if (event.shiftKey) {
+			alsoToggleHighlightForAllPreviousItems(itemId);
+			return;
+		}
 
 		if (highlightedItems.has(itemId)) {
 			highlightedItems.delete(itemId);
