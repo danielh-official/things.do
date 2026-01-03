@@ -335,9 +335,6 @@
 						onclick={createNewProject}
 						class="text-body rounded-base group flex w-full items-center px-2 py-1.5 text-left hover:bg-gray-200 dark:text-white dark:hover:bg-gray-700"
 					>
-						<FolderOutline
-							class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
-						/>
 						<span class="ms-3 flex-1 whitespace-nowrap">+ New Project</span>
 					</button>
 				</li>
