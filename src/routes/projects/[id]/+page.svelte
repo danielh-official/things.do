@@ -227,7 +227,7 @@
 		onclick={() => {
 			if (projectId) {
 				confirm('Are you sure you want to delete this project? This action cannot be undone.') &&
-					db.projects.delete(projectId).then(() => {
+					db.projects.update(projectId, { deleted_at: new SvelteDate() }).then(() => {
 						history.back();
 					});
 			}
