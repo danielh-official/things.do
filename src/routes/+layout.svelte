@@ -241,7 +241,7 @@
 <div class="flex">
 	<aside
 		id="default-sidebar"
-		class="min-h-screen bg-gray-100 transition-transform sm:translate-x-0 dark:bg-gray-800 relative"
+		class="relative min-h-screen bg-gray-100 transition-transform sm:translate-x-0 dark:bg-gray-800"
 		style="width: {sidebarWidth}px"
 		aria-label="Sidebar"
 	>
@@ -313,22 +313,6 @@
 						</a>
 					</li>
 				{/if}
-				{#if tagsCount > 0}
-					<li>
-						<a
-							href={resolve('/tags')}
-							class={{
-								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
-								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/tags'
-							}}
-						>
-							<TagOutline
-								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
-							/>
-							<span class="ms-3 flex-1 whitespace-nowrap">Tags</span>
-						</a>
-					</li>
-				{/if}
 				<hr class="my-2 border-t border-gray-600 dark:border-gray-300" />
 				<li>
 					<button
@@ -339,7 +323,7 @@
 					</button>
 				</li>
 				{#if projectsCount > 0}
-					{#each $projects.sort((a, b) => a.order - b.order) ?? [] as project}
+					{#each $projects.sort((a, b) => a.order - b.order).slice(0, 5) ?? [] as project}
 						<li
 							draggable="true"
 							ondragstart={(event: DragEvent) => handleDragStart(event, project.id)}
@@ -374,15 +358,47 @@
 								<FolderOutline
 									class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
 								/>
-								<span class="ms-3 flex-1 whitespace-nowrap truncate">{project.title}</span>
+								<span class="ms-3 flex-1 truncate whitespace-nowrap">{project.title}</span>
 							</a>
 						</li>
 					{/each}
 				{/if}
+				{#if projectsCount > 0}
+					<li>
+						<a
+							href={resolve('/projects')}
+							class={{
+								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
+								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/projects'
+							}}
+						>
+							<span class="ms-3 flex-1 whitespace-nowrap">View All Projects</span>
+						</a>
+					</li>
+				{/if}
 			</ul>
 
 			<!-- Show at bottom -->
-			<ul class="absolute bottom-4 space-y-2 font-medium" style="width: calc({sidebarWidth}px - 1.5rem)">
+			<ul
+				class="absolute bottom-4 space-y-2 font-medium"
+				style="width: calc({sidebarWidth}px - 1.5rem)"
+			>
+				{#if tagsCount > 0}
+					<li>
+						<a
+							href={resolve('/tags')}
+							class={{
+								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
+								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/tags'
+							}}
+						>
+							<TagOutline
+								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
+							/>
+							<span class="ms-3 flex-1 whitespace-nowrap">Tags</span>
+						</a>
+					</li>
+				{/if}
 				<li>
 					<a
 						href={resolve('/settings')}
@@ -400,7 +416,7 @@
 
 		<!-- Resize handle -->
 		<button
-			class="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors"
+			class="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize transition-colors hover:bg-blue-500"
 			class:bg-blue-500={isResizing}
 			onmousedown={handleResizeStart}
 			aria-label="Resize sidebar"
