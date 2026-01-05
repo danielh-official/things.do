@@ -29,3 +29,5 @@ When making components, don't go out of your way to abstract early. Feel free to
 ## Testing
 
 We use Vitest for testing units, and for browser testing, we use Playwright. Browser testing is more comprehensive but wasted on UI that we haven't solidified yet. Unit tests have higher staying power but do not cover the full user experience. When working with experimental UI, we'll pick out the especially complicated unit logic and write tests for those. For more established UI components and features, we will focus more on writing comprehensive Playwright tests to ensure that the user experience is consistent and that all interactions work as expected. As the project evolves, we can gradually increase our test coverage for both unit tests and browser tests to maintain a high level of quality and reliability in our application. Always consider the balance between testing effort and the stability of the code when deciding which tests to write, especially in the early stages of development.
+
+As this project evolves, I will start listing routes that I consider stable enough to write Playwright tests for here...
