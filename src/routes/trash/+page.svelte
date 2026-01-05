@@ -154,6 +154,14 @@
 	}
 
 	async function permanentlyDeleteHighlightedItems() {
+		if (
+			!confirm(
+				'Are you sure you want to permanently delete the selected items? This action cannot be undone.'
+			)
+		) {
+			return;
+		}
+
 		for (const itemKey of highlightedItems) {
 			const [type, idStr] = itemKey.split('-');
 			const id = parseInt(idStr, 10);
