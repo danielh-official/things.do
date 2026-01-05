@@ -8,9 +8,9 @@
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { marked } from 'marked';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
-	import DeleteSelected from '$lib/components/Buttons/DeleteSelected.button.component.svelte';
-	import SetAsideForLater from '$lib/components/Buttons/SetAsideForLater.button.component.svelte';
-	import FocusOnNow from '$lib/components/Buttons/FocusOnNow.button.component.svelte';
+	import DeleteSelected from '$lib/components/Buttons/Todo/DeleteSelected.todo.button.component.svelte';
+	import SetAsideForLater from '$lib/components/Buttons/Todo/SetAsideForLater.todo.button.component.svelte';
+	import FocusOnNow from '$lib/components/Buttons/Todo/FocusOnNow.todo.button.component.svelte';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);

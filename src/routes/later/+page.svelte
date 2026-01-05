@@ -3,11 +3,11 @@
 	import { getLaterTodos } from '$lib';
 	import { liveQuery } from 'dexie';
 	import TodoList from '$lib/components/List.Todo.component.svelte';
-	import DeleteSelected from '$lib/components/Buttons/DeleteSelected.button.component.svelte';
+	import DeleteSelected from '$lib/components/Buttons/Todo/DeleteSelected.todo.button.component.svelte';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
-	import FocusOnNowButton from '$lib/components/Buttons/FocusOnNow.button.component.svelte';
-	import SendToThings3 from '$lib/components/Buttons/SendToThings3.button.component.svelte';
-	import UnattachFromThings3 from '$lib/components/Buttons/UnattachFromThings3.button.component.svelte';
+	import FocusOnNowButton from '$lib/components/Buttons/Todo/FocusOnNow.todo.button.component.svelte';
+	import SendToThings3 from '$lib/components/Buttons/Todo/SendToThings3.todo.button.component.svelte';
+	import UnattachFromThings3 from '$lib/components/Buttons/Todo/UnattachFromThings3.todo.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 
 	let todos = liveQuery(() => getLaterTodos());
