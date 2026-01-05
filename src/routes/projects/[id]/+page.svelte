@@ -226,10 +226,9 @@
 		class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
 		onclick={() => {
 			if (projectId) {
-				confirm('Are you sure you want to delete this project? This action cannot be undone.') &&
-					db.projects.update(projectId, { deleted_at: new SvelteDate() }).then(() => {
-						history.back();
-					});
+				db.projects.update(projectId, { deleted_at: new SvelteDate() }).then(() => {
+					history.back();
+				});
 			}
 		}}>Delete</button
 	>
