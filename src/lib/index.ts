@@ -70,6 +70,20 @@ export async function getTrashedTodos() {
 		.sort((a, b) => a.order - b.order);
 }
 
+export async function getTrashedProjects() {
+	const result = await db.projects.toArray();
+
+	return result
+		.filter((project) => {
+			if (project.deleted_at && project.deleted_at !== null) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
 export async function getTags() {
 	return await db.tags.toArray();
 }
