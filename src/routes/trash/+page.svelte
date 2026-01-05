@@ -5,6 +5,7 @@
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { browser } from '$app/environment';
 
 	let todos = liveQuery(() => getTrashedTodos());
 	let projects = liveQuery(() => getTrashedProjects());
@@ -17,14 +18,16 @@
 
 	// Load or initialize trash order from localStorage
 	$effect(() => {
-		const stored = localStorage.getItem('trashOrder');
-		if (stored) {
-			trashOrder = JSON.parse(stored);
+		if (browser) {
+			const stored = localStorage.getItem('trashOrder');
+			if (stored) {
+				trashOrder = JSON.parse(stored);
+			}
 		}
 	});
 
-	// Merge and sort items based on cross-table order
-	let mergedItems = $derived.by(() => {
+	// Update trashOrder when items change
+	$effect(() => {
 		const todoItems: UnifiedItem[] = ($todos || []).map((t) => ({
 			...t,
 			itemType: 'todo' as const
@@ -43,30 +46,52 @@
 				type: item.itemType,
 				order: idx
 			}));
-			localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+			if (browser) {
+				localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+			}
+			return;
 		}
 
 		// Remove items from trashOrder that no longer exist
 		const existingIds = new Set(allItems.map((item) => `${item.itemType}-${item.id}`));
-		trashOrder = trashOrder.filter((orderItem) =>
+		const filteredOrder = trashOrder.filter((orderItem) =>
 			existingIds.has(`${orderItem.type}-${orderItem.id}`)
 		);
 
 		// Add new items to trashOrder
-		const orderedIds = new Set(trashOrder.map((o) => `${o.type}-${o.id}`));
+		const orderedIds = new Set(filteredOrder.map((o) => `${o.type}-${o.id}`));
+		const newItems: typeof trashOrder = [];
 		allItems.forEach((item) => {
 			const key = `${item.itemType}-${item.id}`;
 			if (!orderedIds.has(key)) {
-				trashOrder.push({
+				newItems.push({
 					id: item.id!,
 					type: item.itemType,
-					order: trashOrder.length
+					order: filteredOrder.length + newItems.length
 				});
 			}
 		});
 
-		// Save updated order
-		localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+		if (filteredOrder.length !== trashOrder.length || newItems.length > 0) {
+			trashOrder = [...filteredOrder, ...newItems];
+			if (browser) {
+				localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+			}
+		}
+	});
+
+	// Merge and sort items based on cross-table order
+	let mergedItems = $derived.by(() => {
+		const todoItems: UnifiedItem[] = ($todos || []).map((t) => ({
+			...t,
+			itemType: 'todo' as const
+		}));
+		const projectItems: UnifiedItem[] = ($projects || []).map((p) => ({
+			...p,
+			itemType: 'project' as const
+		}));
+
+		const allItems = [...todoItems, ...projectItems];
 
 		// Sort items based on trashOrder
 		const orderMap = new Map(trashOrder.map((o) => [`${o.type}-${o.id}`, o.order]));
@@ -260,7 +285,9 @@
 		});
 
 		trashOrder = currentOrder;
-		localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+		if (browser) {
+			localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+		}
 
 		resetDragState();
 	}
@@ -353,7 +380,9 @@
 
 			// Clear trash order
 			trashOrder = [];
-			localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+			if (browser) {
+				localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+			}
 		}}>Empty Trash</button
 	>
 {/if}
@@ -403,19 +432,21 @@
 
 <!-- Context Menu -->
 <ContextMenu show={showMenu} x={menuX} y={menuY}>
-	<button
-		class="cursor-pointer rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-		onclick={restoreHighlightedItems}
-	>
-		Restore Selected Items
-	</button>
+	{#snippet children()}
+		<button
+			class="cursor-pointer rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+			onclick={restoreHighlightedItems}
+		>
+			Restore Selected Items
+		</button>
 
-	<button
-		class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-		onclick={permanentlyDeleteHighlightedItems}
-	>
-		Permanently Delete Selected Items
-	</button>
+		<button
+			class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+			onclick={permanentlyDeleteHighlightedItems}
+		>
+			Permanently Delete Selected Items
+		</button>
 
-	<ClearSelected {clearHighlightsForAllItems} />
+		<ClearSelected {clearHighlightsForAllItems} />
+	{/snippet}
 </ContextMenu>
