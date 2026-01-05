@@ -9,6 +9,7 @@
 		getLaterTodos,
 		getTags,
 		getTrashedTodos,
+		getTrashedProjects,
 		getProjects
 	} from '$lib';
 	import { liveQuery } from 'dexie';
@@ -31,6 +32,7 @@
 	let laterTodos = liveQuery(() => getLaterTodos());
 	let blockedTodos = liveQuery(() => getBlockedTodos());
 	let trashedTodos = liveQuery(() => getTrashedTodos());
+	let trashedProjects = liveQuery(() => getTrashedProjects());
 	let tags = liveQuery(() => getTags());
 	let projects = liveQuery(() => getProjects());
 
@@ -42,6 +44,7 @@
 	let laterTodosCount = $derived($laterTodos?.length ?? 0);
 	let blockedTodosCount = $derived($blockedTodos?.length ?? 0);
 	let trashedTodosCount = $derived($trashedTodos?.length ?? 0);
+	let trashedProjectsCount = $derived($trashedProjects?.length ?? 0);
 	let tagsCount = $derived($tags?.length ?? 0);
 	let projectsCount = $derived($projects?.length ?? 0);
 
@@ -297,7 +300,7 @@
 						</a>
 					</li>
 				{/if}
-				{#if trashedTodosCount > 0}
+				{#if trashedTodosCount > 0 || trashedProjectsCount > 0}
 					<li>
 						<a
 							href={resolve('/trash')}
