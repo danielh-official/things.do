@@ -1,23 +1,337 @@
 <script lang="ts">
-	import TodosList from '$lib/components/List.Todo.component.svelte';
-	import { db } from '$lib/db';
-	import { getTrashedTodos } from '$lib';
+	import { db, type Item, type Project } from '$lib/db';
+	import { getTrashedTodos, getTrashedProjects } from '$lib';
 	import { liveQuery } from 'dexie';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
-	import RestoreSelected from '$lib/components/Buttons/RestoreSelected.button.component.svelte';
-	import PermanentlyDeleteSelected from '$lib/components/Buttons/PermanentlyDeleteSelected.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let todos = liveQuery(() => getTrashedTodos());
+	let projects = liveQuery(() => getTrashedProjects());
 
-	let tags = liveQuery(() => db.tags.toArray());
+	// Type for unified items with their source table
+	type UnifiedItem = (Item | Project) & { itemType: 'todo' | 'project' };
+
+	// State for managing cross-table order
+	let trashOrder = $state<{ id: number; type: 'todo' | 'project'; order: number }[]>([]);
+
+	// Load or initialize trash order from localStorage
+	$effect(() => {
+		const stored = localStorage.getItem('trashOrder');
+		if (stored) {
+			trashOrder = JSON.parse(stored);
+		}
+	});
+
+	// Merge and sort items based on cross-table order
+	let mergedItems = $derived.by(() => {
+		const todoItems: UnifiedItem[] = ($todos || []).map((t) => ({
+			...t,
+			itemType: 'todo' as const
+		}));
+		const projectItems: UnifiedItem[] = ($projects || []).map((p) => ({
+			...p,
+			itemType: 'project' as const
+		}));
+
+		const allItems = [...todoItems, ...projectItems];
+
+		// If no custom order exists, initialize it with current items
+		if (trashOrder.length === 0 && allItems.length > 0) {
+			trashOrder = allItems.map((item, idx) => ({
+				id: item.id!,
+				type: item.itemType,
+				order: idx
+			}));
+			localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+		}
+
+		// Remove items from trashOrder that no longer exist
+		const existingIds = new Set(allItems.map((item) => `${item.itemType}-${item.id}`));
+		trashOrder = trashOrder.filter((orderItem) =>
+			existingIds.has(`${orderItem.type}-${orderItem.id}`)
+		);
+
+		// Add new items to trashOrder
+		const orderedIds = new Set(trashOrder.map((o) => `${o.type}-${o.id}`));
+		allItems.forEach((item) => {
+			const key = `${item.itemType}-${item.id}`;
+			if (!orderedIds.has(key)) {
+				trashOrder.push({
+					id: item.id!,
+					type: item.itemType,
+					order: trashOrder.length
+				});
+			}
+		});
+
+		// Save updated order
+		localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+
+		// Sort items based on trashOrder
+		const orderMap = new Map(trashOrder.map((o) => [`${o.type}-${o.id}`, o.order]));
+		return allItems.sort((a, b) => {
+			const aOrder = orderMap.get(`${a.itemType}-${a.id}`) ?? Infinity;
+			const bOrder = orderMap.get(`${b.itemType}-${b.id}`) ?? Infinity;
+			return aOrder - bOrder;
+		});
+	});
+
+	let highlightedItems = new SvelteSet<string>(); // Use 'type-id' as key
+
+	function highlightItem(event: MouseEvent) {
+		const button = event.currentTarget as HTMLButtonElement;
+		const itemKey = button.getAttribute('data-key') || '';
+
+		if (event.shiftKey) {
+			alsoToggleHighlightForAllPreviousItems(itemKey);
+			return;
+		}
+
+		if (highlightedItems.has(itemKey)) {
+			highlightedItems.delete(itemKey);
+			button.classList.remove('highlighted');
+		} else {
+			highlightedItems.add(itemKey);
+			button.classList.add('highlighted');
+		}
+	}
+
+	function alsoToggleHighlightForAllPreviousItems(itemKey: string) {
+		for (const item of mergedItems) {
+			const key = `${item.itemType}-${item.id}`;
+			if (!highlightedItems.has(key)) {
+				highlightedItems.add(key);
+				const button = document.querySelector(`button[data-key='${key}']`) as HTMLButtonElement;
+				if (button) {
+					button.classList.add('highlighted');
+				}
+			}
+
+			if (key === itemKey) {
+				break;
+			}
+		}
+	}
+
+	function clearHighlightsForAllItems() {
+		mergedItems.forEach((item) => {
+			const key = `${item.itemType}-${item.id}`;
+			const button = document.querySelector(`button[data-key='${key}']`) as HTMLButtonElement;
+			if (button) {
+				button.classList.remove('highlighted');
+			}
+		});
+		highlightedItems.clear();
+	}
+
+	async function permanentlyDeleteHighlightedItems() {
+		for (const itemKey of highlightedItems) {
+			const [type, idStr] = itemKey.split('-');
+			const id = parseInt(idStr, 10);
+			if (type === 'todo') {
+				await db.todos.delete(id);
+			} else if (type === 'project') {
+				await db.projects.delete(id);
+			}
+		}
+		clearHighlightsForAllItems();
+	}
+
+	async function restoreHighlightedItems() {
+		for (const itemKey of highlightedItems) {
+			const [type, idStr] = itemKey.split('-');
+			const id = parseInt(idStr, 10);
+			if (type === 'todo') {
+				await db.todos.update(id, { deleted_at: null });
+			} else if (type === 'project') {
+				await db.projects.update(id, { deleted_at: null });
+			}
+		}
+		clearHighlightsForAllItems();
+	}
+
+	let draggingItemKey: string | null = $state(null);
+	let dragInsertIndex: number | null = $state(null);
+
+	function handleDragStart(event: DragEvent, itemKey: string) {
+		draggingItemKey = itemKey;
+		if (event.dataTransfer) {
+			event.dataTransfer.setData('application/x-trash-item', itemKey);
+			event.dataTransfer.effectAllowed = 'move';
+		}
+	}
+
+	function handleDragOver(event: DragEvent, targetItemKey?: string) {
+		if (!event.dataTransfer?.types.includes('application/x-trash-item')) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		event.preventDefault();
+		const el = event.currentTarget as HTMLElement;
+		let targetKey = targetItemKey;
+		if (targetKey == null) {
+			const keyAttr = el.getAttribute('data-key');
+			if (!keyAttr) {
+				dragInsertIndex = null;
+				return;
+			}
+			targetKey = keyAttr;
+		}
+
+		const isGroupMove =
+			draggingItemKey != null && highlightedItems.size > 0 && highlightedItems.has(draggingItemKey);
+		if (isGroupMove && highlightedItems.has(targetKey)) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		const rect = el.getBoundingClientRect();
+		const dropAfter = event.clientY > rect.top + rect.height / 2;
+
+		const idx = mergedItems.findIndex((i) => `${i.itemType}-${i.id}` === targetKey);
+		if (idx === -1) {
+			dragInsertIndex = null;
+			return;
+		}
+
+		dragInsertIndex = idx + (dropAfter ? 1 : 0);
+	}
+
+	async function handleDrop(event: DragEvent, targetItemKey: string) {
+		if (!event.dataTransfer?.types.includes('application/x-trash-item')) {
+			resetDragState();
+			return;
+		}
+
+		event.preventDefault();
+
+		const sourceKey =
+			draggingItemKey ?? (event.dataTransfer?.getData('application/x-trash-item') || '');
+		if (!sourceKey) {
+			resetDragState();
+			return;
+		}
+
+		const isGroupMove = highlightedItems.size > 0 && highlightedItems.has(sourceKey);
+		const groupKeys: string[] = isGroupMove
+			? mergedItems
+					.filter((i) => highlightedItems.has(`${i.itemType}-${i.id}`))
+					.map((i) => `${i.itemType}-${i.id}`)
+			: [sourceKey];
+
+		if (groupKeys.includes(targetItemKey)) {
+			resetDragState();
+			return;
+		}
+
+		const currentOrder = [...trashOrder];
+
+		// Remove items being moved
+		const movedItems: typeof trashOrder = [];
+		for (const key of groupKeys) {
+			const idx = currentOrder.findIndex((item) => `${item.type}-${item.id}` === key);
+			if (idx !== -1) {
+				const [mi] = currentOrder.splice(idx, 1);
+				movedItems.push(mi);
+			}
+		}
+
+		// Determine insertion position
+		const el = event.currentTarget as HTMLElement;
+		const rect = el.getBoundingClientRect();
+		const dropAfter = event.clientY > rect.top + rect.height / 2;
+
+		let insertionIndex = currentOrder.findIndex(
+			(item) => `${item.type}-${item.id}` === targetItemKey
+		);
+		if (insertionIndex === -1) {
+			resetDragState();
+			return;
+		}
+		if (dropAfter) insertionIndex += 1;
+
+		currentOrder.splice(insertionIndex, 0, ...movedItems);
+
+		// Update order values
+		currentOrder.forEach((item, idx) => {
+			item.order = idx;
+		});
+
+		trashOrder = currentOrder;
+		localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+
+		resetDragState();
+	}
+
+	function handleDragEnd() {
+		resetDragState();
+	}
+
+	function resetDragState() {
+		draggingItemKey = null;
+		dragInsertIndex = null;
+	}
+
+	function processKeydownEvent(event: KeyboardEvent) {
+		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
+			event.preventDefault();
+			const selectedItems = mergedItems.filter((item) =>
+				highlightedItems.has(`${item.itemType}-${item.id}`)
+			);
+			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
+				const markdown = selectedItems.map((item) => `- ${item.title}`).join('\n');
+				navigator.clipboard.writeText(markdown);
+			}
+			return;
+		}
+
+		if (event.key === 'Escape' && highlightedItems.size > 0) {
+			clearHighlightsForAllItems();
+			return;
+		}
+
+		if (event.key === 'Backspace' && highlightedItems.size > 0) {
+			permanentlyDeleteHighlightedItems();
+			return;
+		}
+	}
+
+	let showMenu = $state(false);
+	let menuX = $state(0);
+	let menuY = $state(0);
+
+	function handleContextMenu(event: MouseEvent) {
+		const path = event.composedPath() as HTMLElement[];
+		const isOverItem = path.some(
+			(el) =>
+				el.classList &&
+				(el.classList.contains('trash-item-button') || el.classList.contains('trash-item'))
+		);
+
+		if (!isOverItem || highlightedItems.size === 0) {
+			return;
+		}
+
+		event.preventDefault();
+
+		showMenu = false;
+
+		menuX = event.clientX;
+		menuY = event.clientY - 150;
+
+		showMenu = true;
+	}
 </script>
+
+<svelte:window onkeydown={processKeydownEvent} oncontextmenu={handleContextMenu} />
 
 <svelte:head>
 	<title>Trash | Things.do</title>
 </svelte:head>
 
-{#if $todos?.length > 0}
+{#if mergedItems.length > 0}
 	<button
 		class="mt-4 cursor-pointer rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
 		onclick={() => {
@@ -29,23 +343,79 @@
 				return;
 			}
 
-			$todos.forEach(async (todo) => {
-				await db.todos.delete(todo.id!);
+			mergedItems.forEach(async (item) => {
+				if (item.itemType === 'todo') {
+					await db.todos.delete(item.id!);
+				} else {
+					await db.projects.delete(item.id!);
+				}
 			});
+
+			// Clear trash order
+			trashOrder = [];
+			localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
 		}}>Empty Trash</button
 	>
 {/if}
 
-<TodosList {todos} {tags}>
-	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
-		<ContextMenu show={showMenu} x={menuX} y={menuY}>
-			{#snippet children()}
-				<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
+<!-- List of Items (Todos and Projects) -->
+{#if mergedItems.length > 0}
+	<ul class="mt-4 space-y-2">
+		{#each mergedItems as item, index (`${item.itemType}-${item.id}`)}
+			<li data-key={`${item.itemType}-${item.id}`} class="trash-item relative">
+				{#if dragInsertIndex === index}
+					<div
+						class="absolute -top-1 right-0 left-0 h-0.5 bg-blue-500 shadow-lg"
+						style="z-index: 50;"
+					></div>
+				{/if}
+				{#if dragInsertIndex === mergedItems.length && index === mergedItems.length - 1}
+					<div
+						class="absolute right-0 -bottom-1 left-0 h-0.5 bg-blue-500 shadow-lg"
+						style="z-index: 50;"
+					></div>
+				{/if}
 
-				<PermanentlyDeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
+				<div class="trash-item-wrapper">
+					<button
+						data-key={`${item.itemType}-${item.id}`}
+						class="trash-item-button w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
+						onclick={highlightItem}
+						draggable="true"
+						ondragstart={(event: DragEvent) =>
+							handleDragStart(event, `${item.itemType}-${item.id}`)}
+						ondragover={(event: DragEvent) => handleDragOver(event, `${item.itemType}-${item.id}`)}
+						ondrop={(event: DragEvent) => handleDrop(event, `${item.itemType}-${item.id}`)}
+						ondragend={handleDragEnd}
+					>
+						<div class="flex items-center gap-2">
+							<span class="text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
+								{item.itemType === 'todo' ? '✓' : '📁'}
+							</span>
+							<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
+						</div>
+					</button>
+				</div>
+			</li>
+		{/each}
+	</ul>
+{/if}
 
-				<ClearSelected {clearHighlightsForAllItems} />
-			{/snippet}
-		</ContextMenu>
-	{/snippet}
-</TodosList>
+<!-- Context Menu -->
+<ContextMenu show={showMenu} x={menuX} y={menuY}>
+	<button
+		class="cursor-pointer rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+		onclick={restoreHighlightedItems}
+	>
+		Restore Selected Items
+	</button>
+
+	<button
+		class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+		onclick={permanentlyDeleteHighlightedItems}
+	>
+		Permanently Delete Selected Items
+	</button>
+
+	<ClearSelected {clearHighlightsForAllItems} />
+</ContextMenu>
