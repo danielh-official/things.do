@@ -2,7 +2,7 @@
 	import { db } from '$lib/db';
 	import { getLaterTodos } from '$lib';
 	import { liveQuery } from 'dexie';
-	import ItemsList from '$lib/components/List.Todo.component.svelte';
+	import TodoList from '$lib/components/List.Todo.component.svelte';
 	import DeleteSelected from '$lib/components/Buttons/DeleteSelected.button.component.svelte';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import FocusOnNowButton from '$lib/components/Buttons/FocusOnNow.button.component.svelte';
@@ -19,7 +19,7 @@
 	<title>Later | Things.do</title>
 </svelte:head>
 
-<ItemsList
+<TodoList
 	{todos}
 	{tags}
 	defaultTodoAdditionParams={{
@@ -54,4 +54,4 @@
 			{/snippet}
 		</ContextMenu>
 	{/snippet}
-</ItemsList>
+</TodoList>
