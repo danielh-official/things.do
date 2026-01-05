@@ -12,7 +12,7 @@
 		shouldPermanentlyDeleteHighlightedItemsOnEscape:
 			shouldPermanentlyDeleteHighlightedItems = false,
 		customKeydownBehavior,
-		contextMenu,
+		contextMenu
 	}: {
 		projects: Observable<Project[]>;
 		shouldPermanentlyDeleteHighlightedItemsOnEscape?: boolean;
@@ -187,7 +187,8 @@
 		event.preventDefault();
 
 		const sourceId =
-			draggingItemId ?? parseInt(event.dataTransfer?.getData('application/x-project-in-index-item') || '', 10);
+			draggingItemId ??
+			parseInt(event.dataTransfer?.getData('application/x-project-in-index-item') || '', 10);
 		if (!sourceId) {
 			resetDragState();
 			return;
@@ -296,9 +297,16 @@
 	function handleContextMenu(event: MouseEvent, highlightedItems: SvelteSet<number>) {
 		// Only show custom menu if it is over a todo item
 		const path = event.composedPath() as HTMLElement[];
-		const isOverProjectItem = path.some((el) => el.classList && el.classList.contains('project-in-index-item'));
+		const isOverProjectItem = path.some(
+			(el) => el.classList && el.classList.contains('project-in-index-item')
+		);
 
-		console.log('isOverProjectItem', isOverProjectItem, 'highlightedItems.size', highlightedItems.size);
+		console.log(
+			'isOverProjectItem',
+			isOverProjectItem,
+			'highlightedItems.size',
+			highlightedItems.size
+		);
 
 		if (!isOverProjectItem || highlightedItems.size === 0) {
 			// Allow default browser context menu for non-todo areas
@@ -361,7 +369,7 @@
 				<div class="project-in-index-item">
 					<button
 						data-id={item.id}
-						class="w-full text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150"
+						class="w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
 						onclick={highlightItem}
 						draggable="true"
 						ondragstart={(event: DragEvent) => handleDragStart(event, item.id)}
@@ -369,7 +377,7 @@
 						ondrop={(event: DragEvent) => handleDrop(event, item.id)}
 						ondragend={handleDragEnd}
 					>
-					 <div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
+						<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
 					</button>
 				</div>
 			</li>
