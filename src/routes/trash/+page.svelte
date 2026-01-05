@@ -3,6 +3,8 @@
 	import { getTrashedTodos, getTrashedProjects } from '$lib';
 	import { liveQuery } from 'dexie';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
+	import RestoreSelected from '$lib/components/Buttons/Mixed/RestoreSelected.mixed.button.component.svelte';
+	import PermanentlyDeleteSelected from '$lib/components/Buttons/Mixed/PermanentlyDeleteSelected.mixed.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
@@ -153,6 +155,7 @@
 		highlightedItems.clear();
 	}
 
+	// Helper functions for keyboard shortcuts
 	async function permanentlyDeleteHighlightedItems() {
 		if (
 			!confirm(
@@ -169,19 +172,6 @@
 				await db.todos.delete(id);
 			} else if (type === 'project') {
 				await db.projects.delete(id);
-			}
-		}
-		clearHighlightsForAllItems();
-	}
-
-	async function restoreHighlightedItems() {
-		for (const itemKey of highlightedItems) {
-			const [type, idStr] = itemKey.split('-');
-			const id = parseInt(idStr, 10);
-			if (type === 'todo') {
-				await db.todos.update(id, { deleted_at: null });
-			} else if (type === 'project') {
-				await db.projects.update(id, { deleted_at: null });
 			}
 		}
 		clearHighlightsForAllItems();
@@ -440,19 +430,9 @@
 <!-- Context Menu -->
 <ContextMenu show={showMenu} x={menuX} y={menuY}>
 	{#snippet children()}
-		<button
-			class="cursor-pointer rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-			onclick={restoreHighlightedItems}
-		>
-			Restore Selected Items
-		</button>
+		<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-		<button
-			class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-			onclick={permanentlyDeleteHighlightedItems}
-		>
-			Permanently Delete Selected Items
-		</button>
+		<PermanentlyDeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
 		<ClearSelected {clearHighlightsForAllItems} />
 	{/snippet}
