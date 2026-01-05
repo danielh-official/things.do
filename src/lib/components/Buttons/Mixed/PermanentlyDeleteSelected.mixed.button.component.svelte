@@ -11,7 +11,11 @@
 	} = $props();
 
 	async function permanentlyDeleteHighlightedItems() {
-		if (!confirm('Are you sure you want to permanently delete the selected items? This action cannot be undone.')) {
+		if (
+			!confirm(
+				'Are you sure you want to permanently delete the selected items? This action cannot be undone.'
+			)
+		) {
 			return;
 		}
 
