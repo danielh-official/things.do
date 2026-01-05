@@ -16,6 +16,13 @@
 	// State for managing cross-table order
 	let trashOrder = $state<{ id: number; type: 'todo' | 'project'; order: number }[]>([]);
 
+	// Helper function to save trash order to localStorage
+	function saveTrashOrder() {
+		if (browser) {
+			localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
+		}
+	}
+
 	// Load or initialize trash order from localStorage
 	$effect(() => {
 		if (browser) {
@@ -46,9 +53,7 @@
 				type: item.itemType,
 				order: idx
 			}));
-			if (browser) {
-				localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
-			}
+			saveTrashOrder();
 			return;
 		}
 
@@ -74,9 +79,7 @@
 
 		if (filteredOrder.length !== trashOrder.length || newItems.length > 0) {
 			trashOrder = [...filteredOrder, ...newItems];
-			if (browser) {
-				localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
-			}
+			saveTrashOrder();
 		}
 	});
 
@@ -285,9 +288,7 @@
 		});
 
 		trashOrder = currentOrder;
-		if (browser) {
-			localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
-		}
+		saveTrashOrder();
 
 		resetDragState();
 	}
@@ -380,9 +381,7 @@
 
 			// Clear trash order
 			trashOrder = [];
-			if (browser) {
-				localStorage.setItem('trashOrder', JSON.stringify(trashOrder));
-			}
+			saveTrashOrder();
 		}}>Empty Trash</button
 	>
 {/if}
