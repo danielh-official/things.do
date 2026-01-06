@@ -178,7 +178,10 @@ export async function getLoggedTodos() {
 		})
 		.sort((a, b) => {
 			// Sort by logged_at descending (most recent first)
-			if (!a.logged_at || !b.logged_at) return 0;
+			// If either doesn't have logged_at, put those at the end
+			if (!a.logged_at && !b.logged_at) return 0;
+			if (!a.logged_at) return 1;
+			if (!b.logged_at) return -1;
 			return b.logged_at.getTime() - a.logged_at.getTime();
 		});
 }
@@ -202,7 +205,10 @@ export async function getLoggedProjects() {
 		})
 		.sort((a, b) => {
 			// Sort by logged_at descending (most recent first)
-			if (!a.logged_at || !b.logged_at) return 0;
+			// If either doesn't have logged_at, put those at the end
+			if (!a.logged_at && !b.logged_at) return 0;
+			if (!a.logged_at) return 1;
+			if (!b.logged_at) return -1;
 			return b.logged_at.getTime() - a.logged_at.getTime();
 		});
 }
