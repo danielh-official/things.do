@@ -415,9 +415,52 @@
 						ondragend={handleDragEnd}
 					>
 						<div class="flex items-center gap-2">
-							<span class="text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								{item.itemType === 'todo' ? '✓' : '📁'}
-							</span>
+							{#if item.itemType === 'todo'}
+								<!-- Todo status indicator -->
+								<div class="flex-shrink-0">
+									{#if item.logged_status === 'completed'}
+										<div
+											class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+											aria-label="Completed"
+										>
+											<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+												<path
+													d="M5 10l3 3 7-7"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												/>
+											</svg>
+										</div>
+									{:else if item.logged_status === 'canceled'}
+										<div
+											class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+											aria-label="Canceled"
+										>
+											<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+												<path
+													d="M5 5l10 10M15 5l-10 10"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+												/>
+											</svg>
+										</div>
+									{:else if item.start === 'someday'}
+										<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
+									{:else}
+										<div class="h-4 w-4 border-2 border-gray-400"></div>
+									{/if}
+								</div>
+							{:else}
+								<!-- Project icon -->
+								<span class="text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
+									📁
+								</span>
+							{/if}
 							<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
 						</div>
 					</button>
