@@ -1,25 +1,11 @@
 <!-- ContextMenu.svelte -->
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, type Snippet } from 'svelte';
 
 	// Props to control visibility and position
-	let {
-		show,
-		x,
-		y,
-		children
-	}: {
-		show: boolean;
-		x: number;
-		y: number;
-		children: () => any;
-	} = $props();
-
-	function handleClick(handler: () => void) {
-		handler();
-		show = false; // Close menu after an item is clicked
-	}
+	let { show, x, y, children }: { show: boolean; x: number; y: number; children: Snippet<[]> } =
+		$props();
 
 	// Close the menu if the user clicks anywhere else
 	function handleGlobalClick() {

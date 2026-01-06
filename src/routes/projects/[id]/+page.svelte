@@ -6,7 +6,6 @@
 	import { page } from '$app/state';
 	import { PenNibOutline } from 'flowbite-svelte-icons';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
-	import { marked } from 'marked';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import DeleteSelected from '$lib/components/Buttons/Todo/DeleteSelected.todo.button.component.svelte';
 	import SetAsideForLater from '$lib/components/Buttons/Todo/SetAsideForLater.todo.button.component.svelte';
@@ -164,9 +163,11 @@
 		}
 
 		if (event.key === 'Backspace' && highlightedItems.size > 0 && !addingNewItem && !openedItem) {
-			shouldPermanentlyDeleteHighlightedItems
-				? permanentlyDeleteHighlightedItems()
-				: deleteHighlightedItems();
+			if (shouldPermanentlyDeleteHighlightedItems) {
+				permanentlyDeleteHighlightedItems();
+			} else {
+				deleteHighlightedItems();
+			}
 			return;
 		}
 
@@ -295,8 +296,8 @@
 			></textarea>
 		{:else}
 			<div class="flex justify-between gap-2">
-				<div class="prose dark:prose-invert">
-					{@html project.notes ? marked.parse(project.notes) : '<em>No notes added.</em>'}
+				<div class="prose whitespace-pre-wrap dark:prose-invert">
+					{project.notes?.trim() ? project.notes : 'No notes added.'}
 				</div>
 
 				<button class="mb-auto text-left" onclick={startEditingNotes}>
@@ -363,15 +364,13 @@
 	>
 		{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
 			<ContextMenu show={showMenu} x={menuX} y={menuY}>
-				{#snippet children()}
-					<FocusOnNow {highlightedItems} {clearHighlightsForAllItems} />
+				<FocusOnNow {highlightedItems} {clearHighlightsForAllItems} />
 
-					<SetAsideForLater {highlightedItems} {clearHighlightsForAllItems} />
+				<SetAsideForLater {highlightedItems} {clearHighlightsForAllItems} />
 
-					<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
+				<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-					<ClearSelected {clearHighlightsForAllItems} />
-				{/snippet}
+				<ClearSelected {clearHighlightsForAllItems} />
 			</ContextMenu>
 		{/snippet}
 	</Todos>

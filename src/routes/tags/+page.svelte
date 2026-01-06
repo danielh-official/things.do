@@ -11,25 +11,21 @@
 	let draggingIds = $state<number[]>([]);
 	let editingId = $state<number | null>(null);
 	let nameDrafts = new SvelteMap<number, string>();
-	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let bulkDeleting = $state(false);
-	let expandedIds = $state(new SvelteSet<number>());
+	let expandedIds = new SvelteSet<number>();
 
 	onMount(async () => {
 		await refreshTags();
 	});
 
 	async function refreshTags() {
-		loading = true;
 		try {
 			const allTags = await db.tags.toArray();
 			buildTree(allTags);
 			error = null;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load tags';
-		} finally {
-			loading = false;
 		}
 	}
 
@@ -54,7 +50,7 @@
 
 		rootTags = mapByParent.get(null) || [];
 
-		expandedIds = pruneExpanded(allTags, expandedIds);
+		replaceExpanded(pruneExpanded(allTags, expandedIds));
 	}
 
 	function getChildren(parentId: number | null): Tag[] {
@@ -264,13 +260,11 @@
 
 	function toggleExpanded(id: number, hasChildren: boolean) {
 		if (!hasChildren) return;
-		const next = new SvelteSet(expandedIds);
-		if (next.has(id)) {
-			next.delete(id);
+		if (expandedIds.has(id)) {
+			expandedIds.delete(id);
 		} else {
-			next.add(id);
+			expandedIds.add(id);
 		}
-		expandedIds = next;
 	}
 
 	async function createNewTag() {
@@ -297,11 +291,18 @@
 				allIds.push(t.id);
 			}
 		}
-		expandedIds = new SvelteSet(allIds);
+		replaceExpanded(new SvelteSet(allIds));
 	}
 
 	function collapseAll() {
-		expandedIds = new SvelteSet();
+		expandedIds.clear();
+	}
+
+	function replaceExpanded(next: SvelteSet<number>) {
+		expandedIds.clear();
+		for (const id of next) {
+			expandedIds.add(id);
+		}
 	}
 </script>
 

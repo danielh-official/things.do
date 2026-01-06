@@ -16,11 +16,9 @@
 <List {projects}>
 	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
 		<ContextMenu show={showMenu} x={menuX} y={menuY}>
-			{#snippet children()}
-				<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
+			<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-				<ClearSelected {clearHighlightsForAllItems} />
-			{/snippet}
+			<ClearSelected {clearHighlightsForAllItems} />
 		</ContextMenu>
 	{/snippet}
 </List>

@@ -328,7 +328,9 @@
 					</button>
 				</li>
 				{#if projectsCount > 0}
-					{#each $projects.sort((a, b) => a.order - b.order).slice(0, 5) ?? [] as project}
+					{#each $projects
+						.sort((a, b) => a.order - b.order)
+						.slice(0, 5) ?? [] as project (project.id)}
 						<li
 							draggable="true"
 							ondragstart={(event: DragEvent) => handleDragStart(event, project.id)}

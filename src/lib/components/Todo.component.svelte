@@ -32,18 +32,15 @@
 	let tagsForItem: Tag[] = $state([]);
 
 	$effect(() => {
-		item.tag_ids;
-
-		updateTagsForItem();
+		const tagIds = item.tag_ids;
+		updateTagsForItem(tagIds);
 	});
 
-	async function updateTagsForItem() {
+	async function updateTagsForItem(tagIds: number[] | null | undefined) {
 		tags = await db.tags.toArray();
 
-		if (item.tag_ids && item.tag_ids.length > 0) {
-			tagsForItem = tags
-				.filter((t) => item.tag_ids?.includes(t.id))
-				.sort((a, b) => a.order - b.order);
+		if (tagIds && tagIds.length > 0) {
+			tagsForItem = tags.filter((t) => tagIds?.includes(t.id)).sort((a, b) => a.order - b.order);
 		} else {
 			tagsForItem = [];
 		}
@@ -298,7 +295,7 @@
 				}}
 			>
 				<option value={null}>No Parent Project</option>
-				{#each $projects as project}
+				{#each $projects as project (project.id)}
 					<option value={project.id} selected={openedItem.parent_id === project.id}>
 						{project.title}
 					</option>
@@ -341,7 +338,7 @@
 
 		{#if item.tag_ids && item.tag_ids.length}
 			<div class="mt-3 flex flex-wrap gap-2">
-				{#each tagsForItem as tag}
+				{#each tagsForItem as tag (tag.id)}
 					<button
 						class="cursor-pointer rounded px-2 py-1 text-xs hover:line-through"
 						onclick={() => {
@@ -375,7 +372,7 @@
 				/>
 				{#if filteredTagOptions.length}
 					<ul class="absolute z-40 mt-1 w-full rounded border bg-white shadow dark:bg-gray-700">
-						{#each filteredTagOptions as opt}
+						{#each filteredTagOptions as opt (opt.id)}
 							<li>
 								<button
 									class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -481,7 +478,7 @@
 				{/if}
 				<!-- MARK: Tags Preview -->
 				{#if item.tag_ids && item.tag_ids.length > 0}
-					{#each item.tag_ids as tagId}
+					{#each item.tag_ids as tagId (tagId)}
 						<span
 							class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
 						>

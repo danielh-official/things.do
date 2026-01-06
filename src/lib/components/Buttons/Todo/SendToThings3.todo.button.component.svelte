@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { db, type Item } from '$lib/db';
-	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import { SvelteDate, SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 
 	let {
 		highlightedItems = $bindable()
@@ -109,7 +109,7 @@
 
 		let path = 'success';
 
-		const query = new URLSearchParams();
+		const query = new SvelteURLSearchParams();
 
 		query.set('sent-at', SvelteDate.now().toString());
 
@@ -127,7 +127,7 @@
 	async function syncAllSelectedItemsToThings3() {
 		let items: Item[] = [];
 
-		let data: any[] = [];
+		const data: ThingsObject[] = [];
 
 		for (let itemId of highlightedItems) {
 			let { item, obj } = await getJsonForItemId(itemId);

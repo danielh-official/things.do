@@ -59,7 +59,7 @@
 		}
 	});
 
-	let highlightedItems = $state(new SvelteSet<number>());
+	let highlightedItems = new SvelteSet<number>();
 
 	function alsoToggleHighlightForAllPreviousItems(itemId: number) {
 		const projectsArray = $projects;
@@ -124,6 +124,7 @@
 		// Remove item parameter from URL
 		const url = new URL(window.location.href);
 		url.searchParams.delete('item');
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto(url.pathname + url.search, { replaceState: true, noScroll: true });
 	}
 
@@ -283,9 +284,11 @@
 		}
 
 		if (event.key === 'Backspace' && highlightedItems.size > 0 && !openedItem) {
-			shouldPermanentlyDeleteHighlightedItems
-				? permanentlyDeleteHighlightedItems()
-				: deleteHighlightedItems();
+			if (shouldPermanentlyDeleteHighlightedItems) {
+				permanentlyDeleteHighlightedItems();
+			} else {
+				deleteHighlightedItems();
+			}
 			return;
 		}
 	}

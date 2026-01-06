@@ -21,7 +21,7 @@
 		checklist: string | null;
 	}
 
-	function isInitialParsedDataObject(item: any): item is InitialParsedDataObject {
+	function isInitialParsedDataObject(item: unknown): item is InitialParsedDataObject {
 		return (
 			typeof item === 'object' &&
 			item !== null &&

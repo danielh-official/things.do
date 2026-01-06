@@ -41,17 +41,15 @@
 >
 	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
 		<ContextMenu show={showMenu} x={menuX} y={menuY}>
-			{#snippet children()}
-				<SetAsideForLater {highlightedItems} {clearHighlightsForAllItems} />
+			<SetAsideForLater {highlightedItems} {clearHighlightsForAllItems} />
 
-				<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
+			<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-				<ClearSelected {clearHighlightsForAllItems} />
+			<ClearSelected {clearHighlightsForAllItems} />
 
-				<SendToThings3 {highlightedItems} />
+			<SendToThings3 {highlightedItems} />
 
-				<UnattachFromThings3 {highlightedItems} />
-			{/snippet}
+			<UnattachFromThings3 {highlightedItems} />
 		</ContextMenu>
 	{/snippet}
 </TodoList>

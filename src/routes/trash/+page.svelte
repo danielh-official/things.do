@@ -417,7 +417,7 @@
 						<div class="flex items-center gap-2">
 							{#if item.itemType === 'todo'}
 								<!-- Todo status indicator -->
-								<div class="flex-shrink-0">
+								<div class="shrink-0">
 									{#if item.logged_status === 'completed'}
 										<div
 											class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
@@ -472,11 +472,9 @@
 
 <!-- Context Menu -->
 <ContextMenu show={showMenu} x={menuX} y={menuY}>
-	{#snippet children()}
-		<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
+	<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-		<PermanentlyDeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
+	<PermanentlyDeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
-		<ClearSelected {clearHighlightsForAllItems} />
-	{/snippet}
+	<ClearSelected {clearHighlightsForAllItems} />
 </ContextMenu>

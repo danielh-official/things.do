@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { db } from '$lib/db';
-	import { addToast, toasts } from '$lib/toastStore';
+	import { addToast } from '$lib/toastStore';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let {
