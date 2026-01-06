@@ -52,9 +52,7 @@
 	let trashedProjectsCount = $derived($trashedProjects?.length ?? 0);
 	let tagsCount = $derived($tags?.length ?? 0);
 	let projectsCount = $derived($projects?.length ?? 0);
-	let loggedItemsCount = $derived(
-		($loggedTodos?.length ?? 0) + ($loggedProjects?.length ?? 0)
-	);
+	let loggedItemsCount = $derived(($loggedTodos?.length ?? 0) + ($loggedProjects?.length ?? 0));
 
 	async function createNewProject() {
 		const name = prompt('New project name?')?.trim();
