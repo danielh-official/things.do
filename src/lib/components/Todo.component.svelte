@@ -452,6 +452,7 @@
 			class="flex w-full cursor-pointer justify-between rounded p-2 text-left"
 			ondblclick={openItem}
 			data-id={item.id}
+			data-testid="todo-item-button"
 			onclick={highlightItem}
 			oncontextmenu={oneWayHighlightItem}
 		>

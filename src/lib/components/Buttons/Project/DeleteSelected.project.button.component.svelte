@@ -20,6 +20,7 @@
 
 <button
 	class="cursor-pointer rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+	data-testid="delete-selected-button"
 	onclick={deleteHighlightedItems}
 >
 	Delete
