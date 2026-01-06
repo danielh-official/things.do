@@ -442,7 +442,7 @@
 						{/if}
 					</button>
 
-					<button
+					<div
 						data-id={item.id}
 						role="button"
 						tabindex="0"
@@ -453,9 +453,20 @@
 						ondragover={(event: DragEvent) => handleDragOver(event, item.id)}
 						ondrop={(event: DragEvent) => handleDrop(event, item.id)}
 						ondragend={handleDragEnd}
+						onkeydown={(event: KeyboardEvent) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault();
+								highlightItem(event as unknown as MouseEvent);
+							}
+						}}
 					>
-						<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
-					</button>
+						<div
+							data-id={item.id}
+							class="w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
+						>
+							<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
+						</div>
+					</div>
 				</div>
 			</li>
 		{/each}
