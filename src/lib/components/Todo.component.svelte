@@ -374,10 +374,10 @@
 					onkeydown={onTagInputKeydown}
 				/>
 				{#if filteredTagOptions.length}
-					<ul class="absolute z-40 mt-1 w-full rounded border shadow">
+					<ul class="absolute z-40 mt-1 w-full rounded border shadow bg-white dark:bg-gray-700">
 						{#each filteredTagOptions as opt}
 							<li>
-								<button class="w-full px-3 py-2 text-left" onclick={() => addTagId(opt.id)}
+								<button class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600" onclick={() => addTagId(opt.id)}
 									>{opt.name}</button
 								>
 							</li>
