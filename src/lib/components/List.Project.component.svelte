@@ -444,6 +444,8 @@
 
 					<button
 						data-id={item.id}
+						role="button"
+						tabindex="0"
 						draggable="true"
 						class="w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
 						onclick={highlightItem}
