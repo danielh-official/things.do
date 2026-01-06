@@ -25,7 +25,9 @@ test.describe('Trash Page', () => {
 		await page.waitForTimeout(500);
 
 		// Delete the todo - click to select, then right-click for context menu
-		const todoForTrash = page.getByTestId('todo-item-button').filter({ hasText: 'Test Todo for Trash' });
+		const todoForTrash = page
+			.getByTestId('todo-item-button')
+			.filter({ hasText: 'Test Todo for Trash' });
 		await todoForTrash.click();
 		await todoForTrash.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -35,7 +37,9 @@ test.describe('Trash Page', () => {
 		// Delete the project
 		await page.goto('/projects');
 		await page.waitForTimeout(300);
-		const projectForTrash = page.getByTestId('project-item-button').filter({ hasText: 'Test Project for Trash' });
+		const projectForTrash = page
+			.getByTestId('project-item-button')
+			.filter({ hasText: 'Test Project for Trash' });
 		await projectForTrash.click();
 		await projectForTrash.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -47,8 +51,12 @@ test.describe('Trash Page', () => {
 		await page.waitForTimeout(300);
 
 		// Verify both items are in trash
-		await expect(page.locator('.trash-item-button').filter({ hasText: /test todo for trash/i })).toBeVisible();
-		await expect(page.locator('.trash-item-button').filter({ hasText: /test project for trash/i })).toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /test todo for trash/i })
+		).toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /test project for trash/i })
+		).toBeVisible();
 	});
 
 	test('should show confirmation dialog when pressing Backspace on selected items', async ({
@@ -69,7 +77,9 @@ test.describe('Trash Page', () => {
 		await page.waitForTimeout(500);
 
 		// Delete both items
-		const todoBackspace = page.getByTestId('todo-item-button').filter({ hasText: 'Todo to Delete with Backspace' });
+		const todoBackspace = page
+			.getByTestId('todo-item-button')
+			.filter({ hasText: 'Todo to Delete with Backspace' });
 		await todoBackspace.click();
 		await todoBackspace.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -78,7 +88,9 @@ test.describe('Trash Page', () => {
 
 		await page.goto('/projects');
 		await page.waitForTimeout(300);
-		const projectBackspace = page.getByTestId('project-item-button').filter({ hasText: 'Project to Delete with Backspace' });
+		const projectBackspace = page
+			.getByTestId('project-item-button')
+			.filter({ hasText: 'Project to Delete with Backspace' });
 		await projectBackspace.click();
 		await projectBackspace.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -90,9 +102,15 @@ test.describe('Trash Page', () => {
 		await page.waitForTimeout(300);
 
 		// Select both items (click first, shift+click second)
-		await page.locator('.trash-item-button').filter({ hasText: /todo to delete with backspace/i }).click();
+		await page
+			.locator('.trash-item-button')
+			.filter({ hasText: /todo to delete with backspace/i })
+			.click();
 		await page.keyboard.down('Shift');
-		await page.locator('.trash-item-button').filter({ hasText: /project to delete with backspace/i }).click();
+		await page
+			.locator('.trash-item-button')
+			.filter({ hasText: /project to delete with backspace/i })
+			.click();
 		await page.keyboard.up('Shift');
 
 		// Setup dialog handler before pressing Backspace
@@ -137,7 +155,9 @@ test.describe('Trash Page', () => {
 		await page.getByTestId('create-project-btn').click();
 		await page.waitForTimeout(500);
 
-		const todoContext = page.getByTestId('todo-item-button').filter({ hasText: 'Todo for Context Menu Delete' });
+		const todoContext = page
+			.getByTestId('todo-item-button')
+			.filter({ hasText: 'Todo for Context Menu Delete' });
 		await todoContext.click();
 		await todoContext.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -146,7 +166,9 @@ test.describe('Trash Page', () => {
 
 		await page.goto('/projects');
 		await page.waitForTimeout(300);
-		const projectContext = page.getByTestId('project-item-button').filter({ hasText: 'Project for Context Menu Delete' });
+		const projectContext = page
+			.getByTestId('project-item-button')
+			.filter({ hasText: 'Project for Context Menu Delete' });
 		await projectContext.click();
 		await projectContext.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -157,14 +179,21 @@ test.describe('Trash Page', () => {
 		await page.getByRole('link', { name: 'Trash' }).click({ timeout: 10000 });
 		await page.waitForTimeout(300);
 
-		await page.locator('.trash-item-button').filter({ hasText: /todo for context menu delete/i }).click();
+		await page
+			.locator('.trash-item-button')
+			.filter({ hasText: /todo for context menu delete/i })
+			.click();
 		await page.keyboard.down('Shift');
-		await page.locator('.trash-item-button').filter({ hasText: /project for context menu delete/i }).click();
+		await page
+			.locator('.trash-item-button')
+			.filter({ hasText: /project for context menu delete/i })
+			.click();
 		await page.keyboard.up('Shift');
 
 		// Right-click to open context menu
 		await page
-			.locator('.trash-item-button').filter({ hasText: /todo for context menu delete/i })
+			.locator('.trash-item-button')
+			.filter({ hasText: /todo for context menu delete/i })
 			.click({ button: 'right' });
 		await page.waitForTimeout(300);
 
@@ -218,7 +247,9 @@ test.describe('Trash Page', () => {
 
 		await page.goto('/projects');
 		await page.waitForTimeout(300);
-		const projectRestore = page.getByTestId('project-item-button').filter({ hasText: 'Project to Restore' });
+		const projectRestore = page
+			.getByTestId('project-item-button')
+			.filter({ hasText: 'Project to Restore' });
 		await projectRestore.click();
 		await projectRestore.click({ button: 'right' });
 		await page.getByRole('button', { name: 'Delete' }).click();
@@ -228,20 +259,33 @@ test.describe('Trash Page', () => {
 		await page.getByRole('link', { name: 'Trash' }).click();
 		await page.waitForTimeout(300);
 
-		await page.locator('.trash-item-button').filter({ hasText: /todo to restore/i }).click();
+		await page
+			.locator('.trash-item-button')
+			.filter({ hasText: /todo to restore/i })
+			.click();
 		await page.keyboard.down('Shift');
-		await page.locator('.trash-item-button').filter({ hasText: /project to restore/i }).click();
+		await page
+			.locator('.trash-item-button')
+			.filter({ hasText: /project to restore/i })
+			.click();
 		await page.keyboard.up('Shift');
 
 		// Right-click and restore
-		await page.locator('.trash-item-button').filter({ hasText: /todo to restore/i }).click({ button: 'right' });
+		await page
+			.locator('.trash-item-button')
+			.filter({ hasText: /todo to restore/i })
+			.click({ button: 'right' });
 		await page.waitForTimeout(300);
 		await page.getByRole('button', { name: /restore selected items/i }).click();
 		await page.waitForTimeout(500);
 
 		// Verify trash is empty (no items visible)
-		await expect(page.locator('.trash-item-button').filter({ hasText: /todo to restore/i })).not.toBeVisible();
-		await expect(page.locator('.trash-item-button').filter({ hasText: /project to restore/i })).not.toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /todo to restore/i })
+		).not.toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /project to restore/i })
+		).not.toBeVisible();
 
 		// Verify trash link is not visible in sidebar
 		await expect(page.getByRole('link', { name: 'Trash' })).not.toBeVisible();
@@ -249,12 +293,16 @@ test.describe('Trash Page', () => {
 		// Verify todo is back in focusing
 		await page.goto('/focusing');
 		await page.waitForTimeout(300);
-		await expect(page.getByTestId('todo-item-button').filter({ hasText: 'Todo to Restore' })).toBeVisible();
+		await expect(
+			page.getByTestId('todo-item-button').filter({ hasText: 'Todo to Restore' })
+		).toBeVisible();
 
 		// Verify project is back in projects list
 		await page.goto('/projects');
 		await page.waitForTimeout(300);
-		await expect(page.getByTestId('project-item-button').filter({ hasText: 'Project to Restore' })).toBeVisible();
+		await expect(
+			page.getByTestId('project-item-button').filter({ hasText: 'Project to Restore' })
+		).toBeVisible();
 	});
 
 	test('should permanently delete all items when clicking "Empty Trash" with confirmation', async ({
@@ -274,7 +322,9 @@ test.describe('Trash Page', () => {
 		await page.getByTestId('create-project-btn').click();
 		await page.waitForTimeout(500);
 
-		const todoEmpty = page.getByTestId('todo-item-button').filter({ hasText: 'Todo for Empty Trash' });
+		const todoEmpty = page
+			.getByTestId('todo-item-button')
+			.filter({ hasText: 'Todo for Empty Trash' });
 		await todoEmpty.click();
 		await todoEmpty.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -283,7 +333,9 @@ test.describe('Trash Page', () => {
 
 		await page.goto('/projects');
 		await page.waitForTimeout(300);
-		const projectEmpty = page.getByTestId('project-item-button').filter({ hasText: 'Project for Empty Trash' });
+		const projectEmpty = page
+			.getByTestId('project-item-button')
+			.filter({ hasText: 'Project for Empty Trash' });
 		await projectEmpty.click();
 		await projectEmpty.click({ button: 'right' });
 		await page.waitForTimeout(300);
@@ -295,8 +347,12 @@ test.describe('Trash Page', () => {
 		await page.waitForTimeout(300);
 
 		// Verify items are there
-		await expect(page.locator('.trash-item-button').filter({ hasText: /todo for empty trash/i })).toBeVisible();
-		await expect(page.locator('.trash-item-button').filter({ hasText: /project for empty trash/i })).toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /todo for empty trash/i })
+		).toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /project for empty trash/i })
+		).toBeVisible();
 
 		// Setup dialog handler to accept the confirmation
 		page.once('dialog', async (dialog) => {
@@ -306,12 +362,19 @@ test.describe('Trash Page', () => {
 		});
 
 		// Click "Empty Trash"
-		await page.getByRole('button', { name: /empty trash/i }).first().click();
+		await page
+			.getByRole('button', { name: /empty trash/i })
+			.first()
+			.click();
 		await page.waitForTimeout(500);
 
 		// Verify trash is empty
-		await expect(page.locator('.trash-item-button').filter({ hasText: /todo for empty trash/i })).not.toBeVisible();
-		await expect(page.locator('.trash-item-button').filter({ hasText: /project for empty trash/i })).not.toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /todo for empty trash/i })
+		).not.toBeVisible();
+		await expect(
+			page.locator('.trash-item-button').filter({ hasText: /project for empty trash/i })
+		).not.toBeVisible();
 
 		// Verify trash link is no longer visible in sidebar
 		await expect(page.getByRole('link', { name: 'Trash' })).not.toBeVisible();
