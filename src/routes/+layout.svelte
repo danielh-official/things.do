@@ -319,6 +319,8 @@
 				<hr class="my-2 border-t border-gray-600 dark:border-gray-300" />
 				<li>
 					<button
+						data-testid="create-project-btn"
+						id="create-project-btn"
 						onclick={createNewProject}
 						class="text-body rounded-base group flex w-full items-center px-2 py-1.5 text-left hover:bg-gray-200 dark:text-white dark:hover:bg-gray-700"
 					>
