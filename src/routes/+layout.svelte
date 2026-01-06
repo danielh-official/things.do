@@ -10,7 +10,9 @@
 		getTags,
 		getTrashedTodos,
 		getTrashedProjects,
-		getProjects
+		getProjects,
+		getLoggedTodos,
+		getLoggedProjects
 	} from '$lib';
 	import { liveQuery } from 'dexie';
 	import ToastHost from '$lib/components/ToastHost.component.svelte';
@@ -21,7 +23,8 @@
 		TagOutline,
 		TrashBinOutline,
 		CogOutline,
-		FolderOutline
+		FolderOutline,
+		FileCheckOutline
 	} from 'flowbite-svelte-icons';
 	import { db } from '$lib/db';
 	import { SvelteDate } from 'svelte/reactivity';
@@ -35,6 +38,8 @@
 	let trashedProjects = liveQuery(() => getTrashedProjects());
 	let tags = liveQuery(() => getTags());
 	let projects = liveQuery(() => getProjects());
+	let loggedTodos = liveQuery(() => getLoggedTodos());
+	let loggedProjects = liveQuery(() => getLoggedProjects());
 
 	let unloggedFocusingTodosCount = $derived(
 		$focusingTodos?.filter((_) => {
@@ -47,6 +52,9 @@
 	let trashedProjectsCount = $derived($trashedProjects?.length ?? 0);
 	let tagsCount = $derived($tags?.length ?? 0);
 	let projectsCount = $derived($projects?.length ?? 0);
+	let loggedItemsCount = $derived(
+		($loggedTodos?.length ?? 0) + ($loggedProjects?.length ?? 0)
+	);
 
 	async function createNewProject() {
 		const name = prompt('New project name?')?.trim();
@@ -297,6 +305,22 @@
 								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
 							/>
 							<span class="ms-3 flex-1 whitespace-nowrap">Blocked</span>
+						</a>
+					</li>
+				{/if}
+				{#if loggedItemsCount > 0}
+					<li>
+						<a
+							href={resolve('/logbook')}
+							class={{
+								'text-body rounded-base group flex items-center px-2 py-1.5 dark:text-white': true,
+								'bg-gray-300 dark:bg-gray-600': page.url.pathname === '/logbook'
+							}}
+						>
+							<FileCheckOutline
+								class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
+							/>
+							<span class="ms-3 flex-1 whitespace-nowrap">Logbook</span>
 						</a>
 					</li>
 				{/if}
