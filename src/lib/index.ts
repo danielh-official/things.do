@@ -15,6 +15,11 @@ export async function getFocusingTodos() {
 				return false;
 			}
 
+			// Filter out logged items (completed or canceled)
+			if (todo.logged_at || todo.logged_status) {
+				return false;
+			}
+
 			return true;
 		})
 		.sort((a, b) => a.order - b.order);
@@ -26,6 +31,11 @@ export async function getLaterTodos() {
 	return result
 		.filter((todo) => {
 			if (todo.deleted_at && todo.deleted_at !== null) {
+				return false;
+			}
+
+			// Filter out logged items (completed or canceled)
+			if (todo.logged_at || todo.logged_status) {
 				return false;
 			}
 
@@ -44,6 +54,11 @@ export async function getBlockedTodos() {
 	return result
 		.filter((todo) => {
 			if (todo.deleted_at && todo.deleted_at !== null) {
+				return false;
+			}
+
+			// Filter out logged items (completed or canceled)
+			if (todo.logged_at || todo.logged_status) {
 				return false;
 			}
 
@@ -97,6 +112,11 @@ export async function getProjects() {
 				return false;
 			}
 
+			// Filter out logged projects (completed or canceled)
+			if (project.logged_at || project.logged_status) {
+				return false;
+			}
+
 			return true;
 		})
 		.sort((a, b) => a.order - b.order);
@@ -108,6 +128,11 @@ export async function getTodosForProject(projectId: number) {
 	return result
 		.filter((todo) => {
 			if (todo.deleted_at && todo.deleted_at !== null) {
+				return false;
+			}
+
+			// Filter out logged items (completed or canceled)
+			if (todo.logged_at || todo.logged_status) {
 				return false;
 			}
 
@@ -132,4 +157,52 @@ export async function cleanupTags() {
 			await db.todos.update(todo.id!, { tag_ids: filteredTagIds });
 		}
 	}
+}
+
+export async function getLoggedTodos() {
+	const result = await db.todos.toArray();
+
+	return result
+		.filter((todo) => {
+			// Only show logged items that aren't deleted
+			if (todo.deleted_at && todo.deleted_at !== null) {
+				return false;
+			}
+
+			// Show items that are logged (completed or canceled)
+			if (todo.logged_at || todo.logged_status) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => {
+			// Sort by logged_at descending (most recent first)
+			if (!a.logged_at || !b.logged_at) return 0;
+			return b.logged_at.getTime() - a.logged_at.getTime();
+		});
+}
+
+export async function getLoggedProjects() {
+	const result = await db.projects.toArray();
+
+	return result
+		.filter((project) => {
+			// Only show logged items that aren't deleted
+			if (project.deleted_at && project.deleted_at !== null) {
+				return false;
+			}
+
+			// Show projects that are logged (completed or canceled)
+			if (project.logged_at || project.logged_status) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => {
+			// Sort by logged_at descending (most recent first)
+			if (!a.logged_at || !b.logged_at) return 0;
+			return b.logged_at.getTime() - a.logged_at.getTime();
+		});
 }
