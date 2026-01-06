@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db, type Item, type Project } from '$lib/db';
+	import { db, type Item, type Project, type LogStatus } from '$lib/db';
 	import { getTodosForProject } from '$lib';
 	import { liveQuery, type Observable } from 'dexie';
 	import Todos from '$lib/components/List.Todo.component.svelte';
@@ -212,6 +212,36 @@
 		textarea.style.height = 'auto';
 		textarea.style.height = textarea.scrollHeight + 'px';
 	}
+
+	function cycleProjectStatus(id: number) {
+		const currentStatus: LogStatus = project.logged_status as LogStatus;
+		let newStatus: LogStatus;
+		let newLoggedAt: SvelteDate | null = null;
+
+		if (!currentStatus) {
+			newStatus = 'completed';
+			newLoggedAt = new SvelteDate();
+		} else if (currentStatus === 'completed') {
+			newStatus = 'canceled';
+			newLoggedAt = new SvelteDate();
+		} else {
+			newStatus = null;
+			newLoggedAt = null;
+		}
+
+		// Update local project object for reactive UI
+		project = {
+			...project,
+			logged_status: newStatus,
+			logged_at: newLoggedAt
+		};
+
+		db.projects.update(id, {
+			logged_status: newStatus,
+			logged_at: newLoggedAt,
+			updated_at: new SvelteDate()
+		});
+	}
 </script>
 
 <!-- MARK: Head -->
@@ -241,6 +271,52 @@
 <div>
 	{#if project}
 		<div class="flex items-center gap-2">
+			<!-- MARK: Status button with cycling functionality -->
+			<button
+				class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center text-white"
+				onclick={(event: MouseEvent) => {
+					event.stopPropagation();
+					cycleProjectStatus(project.id);
+				}}
+			>
+				{#if project.logged_status === 'completed'}
+					<div
+						class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+						aria-label="Completed"
+					>
+						<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+							<path
+								d="M5 10l3 3 7-7"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					</div>
+				{:else if project.logged_status === 'canceled'}
+					<div
+						class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+						aria-label="Canceled"
+					>
+						<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+							<path
+								d="M5 5l10 10M15 5l-10 10"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+							/>
+						</svg>
+					</div>
+				{:else if project.start === 'someday'}
+					<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
+				{:else}
+					<div class="h-4 w-4 border-2 border-gray-400"></div>
+				{/if}
+			</button>
+
 			<!-- MARK: Editing Title -->
 
 			{#if editingTitle}
