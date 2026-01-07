@@ -395,77 +395,72 @@
 				{/if}
 				<!-- MARK: Individual Project -->
 
-				<div class="project-in-index-item flex items-center rounded-md" data-id={item.id}>
-					<!-- MARK: Status button with cycling functionality -->
-					<button
-						class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center text-white"
-						onclick={(event: MouseEvent) => {
-							event.stopPropagation();
-							cycleProjectStatus(item.id);
-						}}
-					>
-						{#if item.logged_status === 'completed'}
-							<div
-								class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
-								aria-label="Completed"
-							>
-								<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-									<path
-										d="M5 10l3 3 7-7"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
-							</div>
-						{:else if item.logged_status === 'canceled'}
-							<div
-								class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
-								aria-label="Canceled"
-							>
-								<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-									<path
-										d="M5 5l10 10M15 5l-10 10"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-									/>
-								</svg>
-							</div>
-						{:else if item.start === 'someday'}
-							<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
-						{:else}
-							<div class="h-4 w-4 border-2 border-gray-400"></div>
-						{/if}
-					</button>
-
+				<div class="project-in-index-item">
 					<div
+						class="flex items-center"
 						data-id={item.id}
 						role="button"
 						tabindex="0"
 						draggable="true"
-						class="w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
-						onclick={highlightItem}
 						ondragstart={(event: DragEvent) => handleDragStart(event, item.id)}
 						ondragover={(event: DragEvent) => handleDragOver(event, item.id)}
 						ondrop={(event: DragEvent) => handleDrop(event, item.id)}
 						ondragend={handleDragEnd}
-						onkeydown={(event: KeyboardEvent) => {
-							if (event.key === 'Enter' || event.key === ' ') {
-								event.preventDefault();
-								highlightItem(event as unknown as MouseEvent);
-							}
-						}}
 					>
-						<div
+						<!-- MARK: Status button with cycling functionality -->
+						<button
+							class="mr-2 flex h-6 w-6 shrink-0 items-center justify-center text-white"
+							onclick={(event: MouseEvent) => {
+								event.stopPropagation();
+								cycleProjectStatus(item.id);
+							}}
+						>
+							{#if item.logged_status === 'completed'}
+								<div
+									class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+									aria-label="Completed"
+								>
+									<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+										<path
+											d="M5 10l3 3 7-7"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
+									</svg>
+								</div>
+							{:else if item.logged_status === 'canceled'}
+								<div
+									class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+									aria-label="Canceled"
+								>
+									<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+										<path
+											d="M5 5l10 10M15 5l-10 10"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+										/>
+									</svg>
+								</div>
+							{:else if item.start === 'someday'}
+								<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
+							{:else}
+								<div class="h-4 w-4 border-2 border-gray-400"></div>
+							{/if}
+						</button>
+
+						<button
 							data-id={item.id}
+							data-testid="project-item-button"
 							class="w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
+							onclick={highlightItem}
 						>
 							<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
-						</div>
+						</button>
 					</div>
 				</div>
 			</li>
