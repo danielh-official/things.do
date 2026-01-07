@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { db, type Item, type Project, type LogStatus } from '$lib/db';
+	import { db, type Item, type Project, type LogStatus, type Tag } from '$lib/db';
 	import { getAllTodosForProject } from '$lib';
 	import { liveQuery, type Observable } from 'dexie';
 	import Todos from '$lib/components/List.Todo.component.svelte';
+	import Todo from '$lib/components/Todo.component.svelte';
 	import { page } from '$app/state';
 	import { PenNibOutline } from 'flowbite-svelte-icons';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
@@ -16,6 +17,7 @@
 
 	let allTodos: Observable<Item[]> | undefined = $state();
 	let showLoggedTodos = $state(false);
+	let loggedTodoOpenedItem: Item | null = $state(null);
 
 	let tags = liveQuery(() => db.tags.toArray());
 
@@ -514,70 +516,15 @@
 			<div class="mt-4 opacity-60">
 				<ul class="space-y-2">
 					{#each loggedTodos as todo (todo.id)}
-						<li
-							class="flex items-center gap-2 rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-						>
-							<button
-								class="shrink-0 cursor-pointer"
-								onclick={() => {
-									// Cycle through statuses: completed -> canceled -> open
-									const currentStatus = todo.logged_status;
-									let newStatus: LogStatus;
-									let newLoggedAt: SvelteDate | null;
-
-									if (currentStatus === 'completed') {
-										newStatus = 'canceled';
-										newLoggedAt = new SvelteDate();
-									} else if (currentStatus === 'canceled') {
-										newStatus = null;
-										newLoggedAt = null;
-									} else {
-										newStatus = 'completed';
-										newLoggedAt = new SvelteDate();
-									}
-
-									db.todos.update(todo.id!, {
-										logged_status: newStatus,
-										logged_at: newLoggedAt,
-										updated_at: new SvelteDate()
-									});
-								}}
-							>
-								{#if todo.logged_status === 'completed'}
-									<div
-										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
-										aria-label="Completed"
-									>
-										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-											<path
-												d="M5 10l3 3 7-7"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-												stroke-linejoin="round"
-											/>
-										</svg>
-									</div>
-								{:else if todo.logged_status === 'canceled'}
-									<div
-										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
-										aria-label="Canceled"
-									>
-										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-											<path
-												d="M5 5l10 10M15 5l-10 10"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-											/>
-										</svg>
-									</div>
-								{/if}
-							</button>
-							<span class="text-gray-700 dark:text-gray-300">{todo.title}</span>
-						</li>
+						<Todo
+							item={todo}
+							bind:openedItem={loggedTodoOpenedItem}
+							openItem={() => {}}
+							highlightItem={() => {}}
+							oneWayHighlightItem={() => {}}
+							tags={$tags ?? []}
+							hideParent={true}
+						/>
 					{/each}
 				</ul>
 			</div>
