@@ -92,8 +92,11 @@
 
 	$effect(() => {
 		// Load all tag names for projects that have tags
+		const projectsList = $projects;
+		if (!projectsList || !Array.isArray(projectsList)) return;
+
 		const allTagIds = new Set<number>();
-		for (const project of $projects) {
+		for (const project of projectsList) {
 			if (project.tag_ids && project.tag_ids.length > 0) {
 				for (const tagId of project.tag_ids) {
 					allTagIds.add(tagId);
