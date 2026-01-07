@@ -1,5 +1,7 @@
 # Copilot Instructions for Web Todo Application
 
+<Goals>Build web todo app like Things 3; sync todos/projects; local storage + IndexedDB (Dexie).</Goals>
+
 ## Project Overview
 
 I am trying to build a web todo applications which handles things like individual to-dos and projects, akin to Things 3 by Cultured Code.
@@ -9,6 +11,8 @@ It should have the ability to sync to-dos and projects back and forth.
 The application is currently client-side only, with data being persisted within the browser's local storage and IndexedDB, the latter being managed by Dexie for more complex data handling.
 
 ## Dependencies
+
+<TechStack>SvelteKit 2 / Svelte 5 ($state, no $:, onclick), Tailwind + light custom CSS, pnpm.</TechStack>
 
 The frontend library used is Sveltekit 2 with Svelte 5.
 
@@ -22,11 +26,15 @@ We use pnpm for package management. Make sure to use pnpm when installing depend
 
 ## Code Style
 
+<CodePreferences>Prettier, ESLint; duplicate first, abstract later.</CodePreferences>
+
 Prettier is the formatter, and eslint is the linter. Code should be formatted before being committed.
 
 When making components, don't go out of your way to abstract early. Feel free to duplicate code from existing components if it makes sense or make them from scratch if the requirements are different enough from what already exist. We can abstract the code into components and external functions later if need be, but we need an initial birds eye view of the functionality to determine how we can most efficiently abstract and structure the code.
 
 ## Testing
+
+<Testing>Vitest for units; Playwright on stable routes; prefer data-testid.</Testing>
 
 We use Vitest for testing units, and for browser testing, we use Playwright. Browser testing is more comprehensive but wasted on UI that we haven't solidified yet. Unit tests have higher staying power but do not cover the full user experience. When working with experimental UI, we'll pick out the especially complicated unit logic and write tests for those. For more established UI components and features, we will focus more on writing comprehensive Playwright tests to ensure that the user experience is consistent and that all interactions work as expected. As the project evolves, we can gradually increase our test coverage for both unit tests and browser tests to maintain a high level of quality and reliability in our application. Always consider the balance between testing effort and the stability of the code when deciding which tests to write, especially in the early stages of development.
 
@@ -50,3 +58,7 @@ Feel free to proactively add Playwright tests for new or existing features, impr
 - /settings
 
 As said previously, if tests fail, target only the failing tests when attempting to repair. Once the failing tests pass, determine--based on what changes were made--whether to run all tests or just tests related to the code that was changed. If the changes were minor and only affected a small portion of the code, it may be sufficient to run just the tests related to that code. However, if the changes were more significant or had the potential to impact other parts of the application, it would be prudent to run the full test suite to ensure that everything is still functioning correctly and that no new issues have been introduced. Always use your judgment to determine the appropriate level of testing based on the scope and impact of the changes made.
+
+## References
+
+<Reference>See AGENTS.md for detailed, tool-agnostic guidance (MCP tools, Svelte/SvelteKit docs usage, and autofixer rules).</Reference>
