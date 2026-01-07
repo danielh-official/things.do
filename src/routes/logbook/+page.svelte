@@ -5,7 +5,7 @@
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import DeleteSelected from '$lib/components/Buttons/Mixed/DeleteSelected.mixed.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 
 	let todos = liveQuery(() => getLoggedTodos());
@@ -160,9 +160,9 @@
 			const [type, idStr] = itemKey.split('-');
 			const id = parseInt(idStr, 10);
 			if (type === 'todo') {
-				await db.todos.update(id, { deleted_at: new Date() });
+				await db.todos.update(id, { deleted_at: new SvelteDate() });
 			} else if (type === 'project') {
-				await db.projects.update(id, { deleted_at: new Date() });
+				await db.projects.update(id, { deleted_at: new SvelteDate() });
 			}
 		}
 		clearHighlightsForAllItems();
