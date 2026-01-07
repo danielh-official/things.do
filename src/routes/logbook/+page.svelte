@@ -304,7 +304,7 @@
 								{/if}
 							</button>
 						{:else}
-							<!-- Project icon -->
+							<!-- Project status indicator with larger circle -->
 							<button
 								class="shrink-0 cursor-pointer"
 								data-key={`${item.itemType}-${item.id}`}
@@ -333,14 +333,50 @@
 									});
 								}}
 							>
-								<span class="text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-									📁
-								</span>
+								{#if item.logged_status === 'completed'}
+									<div
+										class="grid h-5 w-5 place-items-center rounded-full border-2 border-blue-500 bg-blue-500 text-white"
+										aria-label="Completed"
+									>
+										<svg viewBox="0 0 20 20" class="h-3.5 w-3.5" aria-hidden="true">
+											<path
+												d="M5 10l3 3 7-7"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+									</div>
+								{:else if item.logged_status === 'canceled'}
+									<div
+										class="grid h-5 w-5 place-items-center rounded-full border-2 border-blue-500 bg-blue-500 text-white"
+										aria-label="Canceled"
+									>
+										<svg viewBox="0 0 20 20" class="h-3.5 w-3.5" aria-hidden="true">
+											<path
+												d="M5 5l10 10M15 5l-10 10"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+											/>
+										</svg>
+									</div>
+								{:else if item.start === 'someday'}
+									<div class="h-5 w-5 rounded-full border-2 border-dashed border-gray-400"></div>
+								{:else}
+									<div class="h-5 w-5 rounded-full border-2 border-gray-400"></div>
+								{/if}
 							</button>
 						{/if}
 						<button
 							data-key={`${item.itemType}-${item.id}`}
-							class="logbook-item-button flex-1 text-left font-medium text-gray-900 dark:text-gray-100"
+							class="logbook-item-button flex-1 text-left font-medium text-gray-900 dark:text-gray-100 {item.itemType ===
+							'project'
+								? 'text-base'
+								: ''}"
 							onclick={highlightItem}
 						>
 							{item.title}
