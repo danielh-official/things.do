@@ -532,7 +532,7 @@
 											class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
 										>
 											<TagOutline class="inline h-4 w-4" />
-											{tagNameById[tagId]}
+											{tagNameById[tagId] ?? '...'}
 										</span>
 									{/each}
 								{/if}
