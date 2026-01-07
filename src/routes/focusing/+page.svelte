@@ -40,9 +40,11 @@
 			return allTodos;
 		}
 		
+		// Filter the already-loaded data instead of re-querying
 		return liveQuery(async () => {
-			const items = await getFocusingTodos();
-			return items.filter(todo => 
+			const allItems = await allTodos;
+			if (!allItems) return [];
+			return allItems.filter(todo => 
 				todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId))
 			);
 		});

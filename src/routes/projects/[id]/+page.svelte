@@ -106,23 +106,25 @@
 			return allTodosUnfiltered;
 		}
 		
+		// Filter the already-loaded data instead of re-querying
 		return liveQuery(async () => {
-			const items = await getAllTodosForProject(projectId ?? -1);
-			return items
-				.filter(todo => todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId)))
-				.sort((a, b) => a.order - b.order);
+			const allItems = await allTodosUnfiltered;
+			if (!allItems) return [];
+			return allItems.filter(todo => 
+				todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId))
+			).sort((a, b) => a.order - b.order);
 		});
 	});
 
 	// Create Observable for unlogged todos
 	let todos = $derived.by(() => {
 		if (!allTodos) return emptyTodosObservable;
+		
+		// Filter to show only unlogged todos
 		return liveQuery(async () => {
-			const items = await getAllTodosForProject(projectId ?? -1);
-			const filtered = selectedTagIds.length === 0 
-				? items 
-				: items.filter(todo => todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId)));
-			return filtered.filter((todo) => !todo.logged_at).sort((a, b) => a.order - b.order);
+			const allItems = await allTodos;
+			if (!allItems) return [];
+			return allItems.filter((todo) => !todo.logged_at).sort((a, b) => a.order - b.order);
 		});
 	});
 
