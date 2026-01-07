@@ -1,7 +1,7 @@
 name: Format and Lint
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
       - master
@@ -18,7 +18,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
