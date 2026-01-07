@@ -74,12 +74,6 @@
 			newStatus = null;
 		}
 
-		// Clear any pending timeout
-		if (pendingLogTimeout) {
-			clearTimeout(pendingLogTimeout);
-			pendingLogTimeout = null;
-		}
-
 		// Update local task object for reactive UI (status only, not logged_at yet)
 		item = {
 			...item,
@@ -87,26 +81,13 @@
 			updated_at: new SvelteDate()
 		};
 
-		// Set pending removal if transitioning to completed or cancelled
-		if ((newStatus === 'completed' || newStatus === 'canceled') && currentStatus === null) {
-			pendingRemovalTaskId = id;
-
-			// Update status in DB immediately (for UI feedback)
-			db.todos.update(id, {
-				logged_status: newStatus,
-				updated_at: new SvelteDate()
-			});
-
-			// Delay setting logged_at (this triggers the filter)
-			pendingLogTimeout = setTimeout(() => {
-				db.todos.update(id, {
-					logged_at: new SvelteDate()
-				});
-				pendingRemovalTaskId = null;
-				pendingLogTimeout = null;
-			}, 2000) as unknown as number;
-		} else if (newStatus === null) {
+		// Handle status transitions
+		if (newStatus === null) {
 			// Immediately clear logged_at when unmarking
+			if (pendingLogTimeout) {
+				clearTimeout(pendingLogTimeout);
+				pendingLogTimeout = null;
+			}
 			pendingRemovalTaskId = null;
 			db.todos.update(id, {
 				logged_status: null,
@@ -117,12 +98,28 @@
 				...item,
 				logged_at: null
 			};
-		} else {
-			// Cycling between completed and canceled - update immediately
+		} else if (newStatus === 'completed' || newStatus === 'canceled') {
+			// Update status in DB immediately (for UI feedback)
 			db.todos.update(id, {
 				logged_status: newStatus,
 				updated_at: new SvelteDate()
 			});
+
+			// If transitioning from open to logged state, start the delay timer
+			if (currentStatus === null) {
+				pendingRemovalTaskId = id;
+
+				// Delay setting logged_at (this triggers the filter)
+				pendingLogTimeout = setTimeout(() => {
+					db.todos.update(id, {
+						logged_at: new SvelteDate()
+					});
+					pendingRemovalTaskId = null;
+					pendingLogTimeout = null;
+				}, 2000) as unknown as number;
+			}
+			// If already in a logged state (cycling between completed/canceled),
+			// keep the existing delay timer running - don't clear it
 		}
 	}
 
