@@ -84,10 +84,8 @@
 		});
 	});
 
-	// Get logged todos separately
-	let loggedTodos = $derived(
-		$allTodos?.filter((todo) => todo.logged_at || todo.logged_status) ?? []
-	);
+	// Get logged todos separately (only those with logged_at set)
+	let loggedTodos = $derived($allTodos?.filter((todo) => todo.logged_at) ?? []);
 	let loggedTodosCount = $derived(loggedTodos.length);
 
 	let editingTitle = $state(false);
@@ -233,34 +231,65 @@
 		textarea.style.height = textarea.scrollHeight + 'px';
 	}
 
+	let pendingProjectLogTimeout: number | null = null;
+
 	function cycleProjectStatus(id: number) {
 		const currentStatus: LogStatus = project.logged_status as LogStatus;
 		let newStatus: LogStatus;
-		let newLoggedAt: SvelteDate | null = null;
 
 		if (!currentStatus) {
 			newStatus = 'completed';
-			newLoggedAt = new SvelteDate();
 		} else if (currentStatus === 'completed') {
 			newStatus = 'canceled';
-			newLoggedAt = new SvelteDate();
 		} else {
 			newStatus = null;
-			newLoggedAt = null;
 		}
 
-		// Update local project object for reactive UI
+		// Clear any pending timeout
+		if (pendingProjectLogTimeout) {
+			clearTimeout(pendingProjectLogTimeout);
+			pendingProjectLogTimeout = null;
+		}
+
+		// Update local project object for reactive UI (status only, not logged_at yet)
 		project = {
 			...project,
-			logged_status: newStatus,
-			logged_at: newLoggedAt
+			logged_status: newStatus
 		};
 
-		db.projects.update(id, {
-			logged_status: newStatus,
-			logged_at: newLoggedAt,
-			updated_at: new SvelteDate()
-		});
+		// Handle different status transitions
+		if ((newStatus === 'completed' || newStatus === 'canceled') && currentStatus === null) {
+			// Update status in DB immediately (for UI feedback)
+			db.projects.update(id, {
+				logged_status: newStatus,
+				updated_at: new SvelteDate()
+			});
+
+			// Delay setting logged_at (this triggers the filter)
+			pendingProjectLogTimeout = setTimeout(() => {
+				db.projects.update(id, {
+					logged_at: new SvelteDate()
+				});
+				pendingProjectLogTimeout = null;
+			}, 2000) as unknown as number;
+		} else if (newStatus === null) {
+			// Immediately clear logged_at when unmarking
+			db.projects.update(id, {
+				logged_status: null,
+				logged_at: null,
+				updated_at: new SvelteDate()
+			});
+			project = {
+				...project,
+				logged_at: null
+			};
+		} else {
+			// Cycling between completed and canceled - update immediately
+			db.projects.update(id, {
+				logged_status: newStatus,
+				updated_at: new SvelteDate()
+			});
+		}
 	}
 </script>
 

@@ -60,47 +60,69 @@
 	}
 
 	let pendingRemovalTaskId: number | null = $state(null);
+	let pendingLogTimeout: number | null = null;
 
 	function cycleTaskStatus(id: number) {
 		const currentStatus: LogStatus = item.logged_status as LogStatus;
 		let newStatus: LogStatus;
-		let newLoggedAt: SvelteDate | null = null;
 
 		if (!currentStatus) {
 			newStatus = 'completed';
-			newLoggedAt = new SvelteDate();
 		} else if (currentStatus === 'completed') {
 			newStatus = 'canceled';
-			newLoggedAt = new SvelteDate();
 		} else {
 			newStatus = null;
-			newLoggedAt = null;
 		}
 
-		// Update local task object for reactive UI
+		// Clear any pending timeout
+		if (pendingLogTimeout) {
+			clearTimeout(pendingLogTimeout);
+			pendingLogTimeout = null;
+		}
+
+		// Update local task object for reactive UI (status only, not logged_at yet)
 		item = {
 			...item,
 			logged_status: newStatus,
-			logged_at: newLoggedAt,
 			updated_at: new SvelteDate()
 		};
-
-		db.todos.update(id, {
-			logged_status: newStatus,
-			logged_at: newLoggedAt,
-			updated_at: new SvelteDate()
-		});
 
 		// Set pending removal if transitioning to completed or cancelled
 		if ((newStatus === 'completed' || newStatus === 'canceled') && currentStatus === null) {
 			pendingRemovalTaskId = id;
-			setTimeout(() => {
-				if (pendingRemovalTaskId === id) {
-					pendingRemovalTaskId = null;
-				}
-			}, 2000);
+
+			// Update status in DB immediately (for UI feedback)
+			db.todos.update(id, {
+				logged_status: newStatus,
+				updated_at: new SvelteDate()
+			});
+
+			// Delay setting logged_at (this triggers the filter)
+			pendingLogTimeout = setTimeout(() => {
+				db.todos.update(id, {
+					logged_at: new SvelteDate()
+				});
+				pendingRemovalTaskId = null;
+				pendingLogTimeout = null;
+			}, 2000) as unknown as number;
 		} else if (newStatus === null) {
+			// Immediately clear logged_at when unmarking
 			pendingRemovalTaskId = null;
+			db.todos.update(id, {
+				logged_status: null,
+				logged_at: null,
+				updated_at: new SvelteDate()
+			});
+			item = {
+				...item,
+				logged_at: null
+			};
+		} else {
+			// Cycling between completed and canceled - update immediately
+			db.todos.update(id, {
+				logged_status: newStatus,
+				updated_at: new SvelteDate()
+			});
 		}
 	}
 
