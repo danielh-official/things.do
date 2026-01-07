@@ -15,6 +15,9 @@
 	import { tick } from 'svelte';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
 
+	// Create a static empty observable for when there are no todos
+	const emptyTodosObservable = liveQuery(async () => []);
+
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
 	let allTodosUnfiltered: Observable<Item[]> | undefined = $state();
@@ -113,7 +116,7 @@
 
 	// Create Observable for unlogged todos
 	let todos = $derived.by(() => {
-		if (!allTodos) return liveQuery(async () => []);
+		if (!allTodos) return emptyTodosObservable;
 		return liveQuery(async () => {
 			const items = await getAllTodosForProject(projectId ?? -1);
 			const filtered = selectedTagIds.length === 0 

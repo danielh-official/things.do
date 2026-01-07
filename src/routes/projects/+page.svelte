@@ -31,7 +31,7 @@
 
 	// Filter projects based on selected tags
 	let projects = $derived.by(() => {
-		if (!$allProjects) return liveQuery(async () => []);
+		if (!$allProjects) return allProjects;
 		
 		if (selectedTagIds.length === 0) {
 			return allProjects;

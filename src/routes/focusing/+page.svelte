@@ -34,7 +34,7 @@
 
 	// Filter todos based on selected tags
 	let todos = $derived.by(() => {
-		if (!$allTodos) return liveQuery(async () => []);
+		if (!$allTodos) return allTodos;
 		
 		if (selectedTagIds.length === 0) {
 			return allTodos;
