@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { cleanupTags } from '$lib';
+	import { cleanupTags, getProjectProgress } from '$lib';
 	import { onMount, type Snippet } from 'svelte';
 	import { db, type Project, type LogStatus } from '$lib/db';
 	import type { Observable } from 'dexie';
-	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import { SvelteDate, SvelteSet, SvelteMap } from 'svelte/reactivity';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import ProgressCircle from '$lib/components/ProgressCircle.svelte';
 
 	let {
 		projects = $bindable(),
@@ -36,6 +37,25 @@
 			]
 		>;
 	} = $props();
+
+	// Store progress for each project
+	let projectProgress = new SvelteMap<number, { completed: number; total: number }>();
+
+	// Update progress whenever projects change
+	$effect(() => {
+		if ($projects) {
+			Promise.all(
+				$projects.map(async (project) => {
+					const progress = await getProjectProgress(project.id);
+					return { id: project.id, progress };
+				})
+			).then((results) => {
+				results.forEach(({ id, progress }) => {
+					projectProgress.set(id, progress);
+				});
+			});
+		}
+	});
 
 	onMount(() => {
 		cleanupTags();
@@ -456,10 +476,16 @@
 						<button
 							data-id={item.id}
 							data-testid="project-item-button"
-							class="w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
+							class="flex w-full items-center rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
 							onclick={highlightItem}
 						>
-							<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
+							<div class="flex-1 font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
+							{#if projectProgress.get(item.id)}
+								{@const progress = projectProgress.get(item.id)}
+								{#if progress && progress.total > 0}
+									<ProgressCircle completed={progress.completed} total={progress.total} size={20} />
+								{/if}
+							{/if}
 						</button>
 					</div>
 				</div>
