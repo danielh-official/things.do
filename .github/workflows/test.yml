@@ -39,7 +39,7 @@ jobs:
         run: pnpm exec playwright install --with-deps
 
       - name: Run unit tests
-        run: pnpm test:unit -- --bail
+        run: pnpm test:unit --bail
 
       - name: Run e2e tests
-        run: pnpm test:e2e -- --max-failures=1
+        run: pnpm test:e2e --max-failures=1
