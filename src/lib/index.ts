@@ -145,6 +145,24 @@ export async function getTodosForProject(projectId: number) {
 		.sort((a, b) => a.order - b.order);
 }
 
+export async function getAllTodosForProject(projectId: number) {
+	const result = await db.todos.toArray();
+
+	return result
+		.filter((todo) => {
+			if (todo.deleted_at && todo.deleted_at !== null) {
+				return false;
+			}
+
+			if (todo.parent_id === projectId) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
 export async function cleanupTags() {
 	const allTags = await db.tags.toArray();
 	const validTagIds = new Set(allTags.map((tag) => tag.id));

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { db, type Item, type Project, type LogStatus } from '$lib/db';
-	import { getTodosForProject } from '$lib';
+	import { getAllTodosForProject } from '$lib';
 	import { liveQuery, type Observable } from 'dexie';
 	import Todos from '$lib/components/List.Todo.component.svelte';
 	import { page } from '$app/state';
@@ -14,7 +14,8 @@
 
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
-	let todos: Observable<Item[]> | undefined = $state();
+	let allTodos: Observable<Item[]> | undefined = $state();
+	let showLoggedTodos = $state(false);
 
 	let tags = liveQuery(() => db.tags.toArray());
 
@@ -64,11 +65,30 @@
 				}
 			});
 
-			todos = liveQuery(() =>
-				getTodosForProject(projectId ?? -1).then((items) => items.sort((a, b) => a.order - b.order))
+			allTodos = liveQuery(() =>
+				getAllTodosForProject(projectId ?? -1).then((items) =>
+					items.sort((a, b) => a.order - b.order)
+				)
 			);
 		}
 	});
+
+	// Create Observable for unlogged todos
+	let todos = $derived.by(() => {
+		if (!allTodos) return liveQuery(async () => []);
+		return liveQuery(async () => {
+			const items = await getAllTodosForProject(projectId ?? -1);
+			return items
+				.filter((todo) => !todo.logged_at && !todo.logged_status)
+				.sort((a, b) => a.order - b.order);
+		});
+	});
+
+	// Get logged todos separately
+	let loggedTodos = $derived(
+		$allTodos?.filter((todo) => todo.logged_at || todo.logged_status) ?? []
+	);
+	let loggedTodosCount = $derived(loggedTodos.length);
 
 	let editingTitle = $state(false);
 
@@ -122,13 +142,13 @@
 			return;
 		}
 
-		if (!$todos) {
+		if (!$allTodos) {
 			return;
 		}
 
 		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
 			event.preventDefault();
-			const selectedItems = $todos.filter(
+			const selectedItems = $allTodos.filter(
 				(item: Item) => item.id != null && highlightedItems.has(item.id)
 			);
 			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
@@ -450,6 +470,68 @@
 			</ContextMenu>
 		{/snippet}
 	</Todos>
+{/if}
+
+<!-- MARK: Logged Todos Section -->
+
+{#if loggedTodosCount > 0}
+	<div class="mt-8">
+		<button
+			class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+			onclick={() => (showLoggedTodos = !showLoggedTodos)}
+		>
+			{showLoggedTodos ? '▼' : '▶'}
+			{showLoggedTodos ? 'Hide' : 'Show'} Logged To-Dos ({loggedTodosCount})
+		</button>
+
+		{#if showLoggedTodos}
+			<div class="mt-4 opacity-60">
+				<ul class="space-y-2">
+					{#each loggedTodos as todo (todo.id)}
+						<li
+							class="flex items-center gap-2 rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+						>
+							<div class="shrink-0">
+								{#if todo.logged_status === 'completed'}
+									<div
+										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+										aria-label="Completed"
+									>
+										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+											<path
+												d="M5 10l3 3 7-7"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+									</div>
+								{:else if todo.logged_status === 'canceled'}
+									<div
+										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+										aria-label="Canceled"
+									>
+										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+											<path
+												d="M5 5l10 10M15 5l-10 10"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+											/>
+										</svg>
+									</div>
+								{/if}
+							</div>
+							<span class="text-gray-700 dark:text-gray-300">{todo.title}</span>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+	</div>
 {/if}
 
 <!-- MARK: Styles -->
