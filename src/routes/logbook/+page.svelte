@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db, type Item, type Project } from '$lib/db';
+	import { db, type Item, type Project, type LogStatus } from '$lib/db';
 	import { getLoggedTodos, getLoggedProjects } from '$lib';
 	import { liveQuery } from 'dexie';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
@@ -233,61 +233,119 @@
 		{#each mergedItems as item (`${item.itemType}-${item.id}`)}
 			<li data-key={`${item.itemType}-${item.id}`} class="logbook-item relative">
 				<div class="logbook-item-wrapper">
-					<button
-						data-key={`${item.itemType}-${item.id}`}
-						class="logbook-item-button w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
-						onclick={highlightItem}
+					<div
+						class="flex w-full items-center gap-2 rounded-md p-3 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-800"
 					>
-						<div class="flex items-center gap-2">
-							{#if item.itemType === 'todo'}
-								<!-- Todo status indicator -->
-								<div class="shrink-0">
-									{#if item.logged_status === 'completed'}
-										<div
-											class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
-											aria-label="Completed"
-										>
-											<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-												<path
-													d="M5 10l3 3 7-7"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												/>
-											</svg>
-										</div>
-									{:else if item.logged_status === 'canceled'}
-										<div
-											class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
-											aria-label="Canceled"
-										>
-											<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-												<path
-													d="M5 5l10 10M15 5l-10 10"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-												/>
-											</svg>
-										</div>
-									{:else if item.start === 'someday'}
-										<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
-									{:else}
-										<div class="h-4 w-4 border-2 border-gray-400"></div>
-									{/if}
-								</div>
-							{:else}
-								<!-- Project icon -->
+						{#if item.itemType === 'todo'}
+							<!-- Todo status indicator -->
+							<button
+								class="shrink-0 cursor-pointer"
+								data-key={`${item.itemType}-${item.id}`}
+								onclick={(event) => {
+									event.stopPropagation();
+									// Cycle through statuses
+									const currentStatus = item.logged_status;
+									let newStatus: LogStatus;
+									let newLoggedAt: SvelteDate | null;
+
+									if (currentStatus === 'completed') {
+										newStatus = 'canceled';
+										newLoggedAt = new SvelteDate();
+									} else if (currentStatus === 'canceled') {
+										newStatus = null;
+										newLoggedAt = null;
+									} else {
+										newStatus = 'completed';
+										newLoggedAt = new SvelteDate();
+									}
+
+									db.todos.update(item.id!, {
+										logged_status: newStatus,
+										logged_at: newLoggedAt,
+										updated_at: new SvelteDate()
+									});
+								}}
+							>
+								{#if item.logged_status === 'completed'}
+									<div
+										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
+										aria-label="Completed"
+									>
+										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+											<path
+												d="M5 10l3 3 7-7"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+									</div>
+								{:else if item.logged_status === 'canceled'}
+									<div
+										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
+										aria-label="Canceled"
+									>
+										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+											<path
+												d="M5 5l10 10M15 5l-10 10"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+											/>
+										</svg>
+									</div>
+								{:else if item.start === 'someday'}
+									<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
+								{:else}
+									<div class="h-4 w-4 border-2 border-gray-400"></div>
+								{/if}
+							</button>
+						{:else}
+							<!-- Project icon -->
+							<button
+								class="shrink-0 cursor-pointer"
+								data-key={`${item.itemType}-${item.id}`}
+								onclick={(event) => {
+									event.stopPropagation();
+									// Cycle through project statuses
+									const currentStatus = item.logged_status;
+									let newStatus: LogStatus;
+									let newLoggedAt: SvelteDate | null;
+
+									if (currentStatus === 'completed') {
+										newStatus = 'canceled';
+										newLoggedAt = new SvelteDate();
+									} else if (currentStatus === 'canceled') {
+										newStatus = null;
+										newLoggedAt = null;
+									} else {
+										newStatus = 'completed';
+										newLoggedAt = new SvelteDate();
+									}
+
+									db.projects.update(item.id!, {
+										logged_status: newStatus,
+										logged_at: newLoggedAt,
+										updated_at: new SvelteDate()
+									});
+								}}
+							>
 								<span class="text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
 									📁
 								</span>
-							{/if}
-							<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
-						</div>
-					</button>
+							</button>
+						{/if}
+						<button
+							data-key={`${item.itemType}-${item.id}`}
+							class="logbook-item-button flex-1 text-left font-medium text-gray-900 dark:text-gray-100"
+							onclick={highlightItem}
+						>
+							{item.title}
+						</button>
+					</div>
 				</div>
 			</li>
 		{/each}
