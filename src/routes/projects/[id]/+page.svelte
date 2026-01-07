@@ -390,7 +390,7 @@
 			return;
 		}
 		const nextOrder = allTagOptions.length > 0
-			? Math.max(0, ...allTagOptions.map((t) => t.order ?? 0)) + 1
+			? Math.max(...allTagOptions.map((t) => t.order ?? 0), 0) + 1
 			: 1;
 		const id = await db.tags.add({
 			name,
