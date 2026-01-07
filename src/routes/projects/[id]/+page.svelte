@@ -299,7 +299,7 @@
 	let tagNameById: Record<number, string> = $state({});
 
 	$effect(() => {
-		const tagIds = project.tag_ids;
+		const tagIds = project.tag_ids ?? [];
 		updateTagsForProject(tagIds);
 	});
 
@@ -389,8 +389,8 @@
 			await addTagId(existing.id);
 			return;
 		}
-		const nextOrder = allTagOptions.length
-			? Math.max(...allTagOptions.map((t) => t.order ?? 0)) + 1
+		const nextOrder = allTagOptions.length > 0
+			? Math.max(0, ...allTagOptions.map((t) => t.order ?? 0)) + 1
 			: 1;
 		const id = await db.tags.add({
 			name,
