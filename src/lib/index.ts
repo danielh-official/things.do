@@ -15,8 +15,8 @@ export async function getFocusingTodos() {
 				return false;
 			}
 
-			// Filter out logged items (completed or canceled)
-			if (todo.logged_at || todo.logged_status) {
+			// Filter out logged items (only check logged_at for delay support)
+			if (todo.logged_at) {
 				return false;
 			}
 
@@ -34,8 +34,8 @@ export async function getLaterTodos() {
 				return false;
 			}
 
-			// Filter out logged items (completed or canceled)
-			if (todo.logged_at || todo.logged_status) {
+			// Filter out logged items (only check logged_at for delay support)
+			if (todo.logged_at) {
 				return false;
 			}
 
@@ -57,8 +57,8 @@ export async function getBlockedTodos() {
 				return false;
 			}
 
-			// Filter out logged items (completed or canceled)
-			if (todo.logged_at || todo.logged_status) {
+			// Filter out logged items (only check logged_at for delay support)
+			if (todo.logged_at) {
 				return false;
 			}
 
@@ -112,8 +112,8 @@ export async function getProjects() {
 				return false;
 			}
 
-			// Filter out logged projects (completed or canceled)
-			if (project.logged_at || project.logged_status) {
+			// Filter out logged projects (only check logged_at for delay support)
+			if (project.logged_at) {
 				return false;
 			}
 
@@ -131,8 +131,8 @@ export async function getTodosForProject(projectId: number) {
 				return false;
 			}
 
-			// Filter out logged items (completed or canceled)
-			if (todo.logged_at || todo.logged_status) {
+			// Filter out logged items (only check logged_at for delay support)
+			if (todo.logged_at) {
 				return false;
 			}
 
@@ -187,8 +187,8 @@ export async function getLoggedTodos() {
 				return false;
 			}
 
-			// Show items that are logged (completed or canceled)
-			if (todo.logged_at || todo.logged_status) {
+			// Show items that have logged_at set
+			if (todo.logged_at) {
 				return true;
 			}
 
@@ -214,8 +214,8 @@ export async function getLoggedProjects() {
 				return false;
 			}
 
-			// Show projects that are logged (completed or canceled)
-			if (project.logged_at || project.logged_status) {
+			// Show projects that have logged_at set
+			if (project.logged_at) {
 				return true;
 			}
 
