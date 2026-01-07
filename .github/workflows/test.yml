@@ -1,7 +1,7 @@
 name: Test
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - main
       - master
@@ -39,7 +39,7 @@ jobs:
         run: pnpm exec playwright install --with-deps
 
       - name: Run unit tests
-        run: pnpm exec vitest --bail
+        run: pnpm exec vitest --bail=1
 
       - name: Run e2e tests
-        run: pnpm exec playwright test --max-failures=1
+        run: pnpm exec playwright test --max-fails=1
