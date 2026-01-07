@@ -13,14 +13,17 @@
 	import FocusOnNow from '$lib/components/Buttons/Todo/FocusOnNow.todo.button.component.svelte';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import { tick } from 'svelte';
+	import TagFilter from '$lib/components/TagFilter.component.svelte';
 
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
-	let allTodos: Observable<Item[]> | undefined = $state();
+	let allTodosUnfiltered: Observable<Item[]> | undefined = $state();
 	let showLoggedTodos = $state(false);
 	let loggedTodoOpenedItem: Item | null = $state(null);
 
 	let tags = liveQuery(() => db.tags.toArray());
+
+	let selectedTagIds = $state<number[]>([]);
 
 	let project: Omit<Project, 'created_at' | 'updated_at'> = $state({
 		id: 1,
@@ -68,7 +71,7 @@
 				}
 			});
 
-			allTodos = liveQuery(() =>
+			allTodosUnfiltered = liveQuery(() =>
 				getAllTodosForProject(projectId ?? -1).then((items) =>
 					items.sort((a, b) => a.order - b.order)
 				)
@@ -76,12 +79,47 @@
 		}
 	});
 
+	// Collect tags used by current items
+	let availableTags = $derived.by(() => {
+		if (!$allTodosUnfiltered || !$tags) return [];
+		
+		const usedTagIds = new Set<number>();
+		for (const todo of $allTodosUnfiltered) {
+			if (todo.tag_ids) {
+				for (const tagId of todo.tag_ids) {
+					usedTagIds.add(tagId);
+				}
+			}
+		}
+		
+		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+	});
+
+	// Apply tag filter
+	let allTodos = $derived.by(() => {
+		if (!allTodosUnfiltered) return undefined;
+		
+		if (selectedTagIds.length === 0) {
+			return allTodosUnfiltered;
+		}
+		
+		return liveQuery(async () => {
+			const items = await getAllTodosForProject(projectId ?? -1);
+			return items
+				.filter(todo => todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId)))
+				.sort((a, b) => a.order - b.order);
+		});
+	});
+
 	// Create Observable for unlogged todos
 	let todos = $derived.by(() => {
 		if (!allTodos) return liveQuery(async () => []);
 		return liveQuery(async () => {
 			const items = await getAllTodosForProject(projectId ?? -1);
-			return items.filter((todo) => !todo.logged_at).sort((a, b) => a.order - b.order);
+			const filtered = selectedTagIds.length === 0 
+				? items 
+				: items.filter(todo => todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId)));
+			return filtered.filter((todo) => !todo.logged_at).sort((a, b) => a.order - b.order);
 		});
 	});
 
@@ -845,6 +883,8 @@
 <hr class="my-4 mb-40" />
 
 <!-- MARK: Project To-Dos -->
+
+<TagFilter bind:availableTags bind:selectedTagIds />
 
 {#if $todos && $todos.length > 0}
 	<Todos

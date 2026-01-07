@@ -6,11 +6,69 @@
 	import RestoreSelected from '$lib/components/Buttons/Mixed/RestoreSelected.mixed.button.component.svelte';
 	import PermanentlyDeleteSelected from '$lib/components/Buttons/Mixed/PermanentlyDeleteSelected.mixed.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
+	import TagFilter from '$lib/components/TagFilter.component.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 
-	let todos = liveQuery(() => getTrashedTodos());
-	let projects = liveQuery(() => getTrashedProjects());
+	let allTodos = liveQuery(() => getTrashedTodos());
+	let allProjects = liveQuery(() => getTrashedProjects());
+	let tags = liveQuery(() => db.tags.toArray());
+
+	let selectedTagIds = $state<number[]>([]);
+
+	// Collect tags used by current items
+	let availableTags = $derived.by(() => {
+		if (!$allTodos || !$allProjects || !$tags) return [];
+		
+		const usedTagIds = new Set<number>();
+		for (const todo of $allTodos) {
+			if (todo.tag_ids) {
+				for (const tagId of todo.tag_ids) {
+					usedTagIds.add(tagId);
+				}
+			}
+		}
+		for (const project of $allProjects) {
+			if (project.tag_ids) {
+				for (const tagId of project.tag_ids) {
+					usedTagIds.add(tagId);
+				}
+			}
+		}
+		
+		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+	});
+
+	// Filter items based on selected tags
+	let todos = $derived.by(() => {
+		if (!$allTodos) return liveQuery(async () => []);
+		
+		if (selectedTagIds.length === 0) {
+			return allTodos;
+		}
+		
+		return liveQuery(async () => {
+			const items = await getTrashedTodos();
+			return items.filter(todo => 
+				todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId))
+			);
+		});
+	});
+
+	let projects = $derived.by(() => {
+		if (!$allProjects) return liveQuery(async () => []);
+		
+		if (selectedTagIds.length === 0) {
+			return allProjects;
+		}
+		
+		return liveQuery(async () => {
+			const items = await getTrashedProjects();
+			return items.filter(project => 
+				project.tag_ids && selectedTagIds.some(tagId => project.tag_ids.includes(tagId))
+			);
+		});
+	});
 
 	// Type for unified items with their source table
 	type UnifiedItem = (Item | Project) & { itemType: 'todo' | 'project' };
@@ -356,6 +414,8 @@
 <svelte:head>
 	<title>Trash | Things.do</title>
 </svelte:head>
+
+<TagFilter bind:availableTags bind:selectedTagIds />
 
 {#if mergedItems.length > 0}
 	<button
