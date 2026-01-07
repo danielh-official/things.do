@@ -81,7 +81,7 @@
 		return liveQuery(async () => {
 			const items = await getAllTodosForProject(projectId ?? -1);
 			return items
-				.filter((todo) => !todo.logged_at && !todo.logged_status)
+				.filter((todo) => !todo.logged_at)
 				.sort((a, b) => a.order - b.order);
 		});
 	});
