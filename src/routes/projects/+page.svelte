@@ -37,9 +37,11 @@
 			return allProjects;
 		}
 		
+		// Filter the already-loaded data instead of re-querying
 		return liveQuery(async () => {
-			const items = await getProjects();
-			return items.filter(project => 
+			const allItems = await allProjects;
+			if (!allItems) return [];
+			return allItems.filter(project => 
 				project.tag_ids && selectedTagIds.some(tagId => project.tag_ids.includes(tagId))
 			);
 		});
