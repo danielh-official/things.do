@@ -38,7 +38,7 @@ When repairing failing tests, prefer to:
 - Target failing tests when running them to see if they pass, and once all tests are passing, run the full suite to ensure that everything is working as expected and that no new issues have been introduced.
   - By full test suite, unless specified to be the entire test suite, just assume that we're talking about the tests in the file(s) we're currently working on.
 
-Feel free to proactively add Playwright tests for new features, improvements or bugfixes in the following routes:
+Feel free to proactively add Playwright tests for new or existing features, improvements or bugfixes in the following routes (based on the requirements I give or the comments existing in the code):
 
 - /focusing
 - /later
