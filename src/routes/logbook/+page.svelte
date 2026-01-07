@@ -40,7 +40,7 @@
 
 	// Filter items based on selected tags
 	let todos = $derived.by(() => {
-		if (!$allTodos) return liveQuery(async () => []);
+		if (!$allTodos) return allTodos;
 		
 		if (selectedTagIds.length === 0) {
 			return allTodos;
@@ -55,7 +55,7 @@
 	});
 
 	let projects = $derived.by(() => {
-		if (!$allProjects) return liveQuery(async () => []);
+		if (!$allProjects) return allProjects;
 		
 		if (selectedTagIds.length === 0) {
 			return allProjects;
