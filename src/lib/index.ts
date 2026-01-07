@@ -163,6 +163,16 @@ export async function getAllTodosForProject(projectId: number) {
 		.sort((a, b) => a.order - b.order);
 }
 
+export async function getProjectProgress(
+	projectId: number
+): Promise<{ completed: number; total: number }> {
+	const todos = await getAllTodosForProject(projectId);
+	const total = todos.length;
+	const completed = todos.filter((todo) => todo.logged_at !== null).length;
+
+	return { completed, total };
+}
+
 export async function cleanupTags() {
 	const allTags = await db.tags.toArray();
 	const validTagIds = new Set(allTags.map((tag) => tag.id));

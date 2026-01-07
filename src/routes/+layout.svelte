@@ -12,10 +12,12 @@
 		getTrashedProjects,
 		getProjects,
 		getLoggedTodos,
-		getLoggedProjects
+		getLoggedProjects,
+		getProjectProgress
 	} from '$lib';
 	import { liveQuery } from 'dexie';
 	import ToastHost from '$lib/components/ToastHost.component.svelte';
+	import ProgressCircle from '$lib/components/ProgressCircle.svelte';
 	import {
 		ClockOutline,
 		CloseCircleSolid,
@@ -27,7 +29,7 @@
 		FileCheckOutline
 	} from 'flowbite-svelte-icons';
 	import { db } from '$lib/db';
-	import { SvelteDate } from 'svelte/reactivity';
+	import { SvelteDate, SvelteMap } from 'svelte/reactivity';
 
 	let { children } = $props();
 
@@ -40,6 +42,25 @@
 	let projects = liveQuery(() => getProjects());
 	let loggedTodos = liveQuery(() => getLoggedTodos());
 	let loggedProjects = liveQuery(() => getLoggedProjects());
+
+	// Store progress for each project
+	let projectProgress = new SvelteMap<number, { completed: number; total: number }>();
+
+	// Update progress whenever projects change
+	$effect(() => {
+		if ($projects) {
+			Promise.all(
+				$projects.map(async (project) => {
+					const progress = await getProjectProgress(project.id);
+					return { id: project.id, progress };
+				})
+			).then((results) => {
+				results.forEach(({ id, progress }) => {
+					projectProgress.set(id, progress);
+				});
+			});
+		}
+	});
 
 	let unloggedFocusingTodosCount = $derived(
 		$focusingTodos?.filter((_) => {
@@ -388,6 +409,16 @@
 									class="group-hover:text-fg-brand h-5 w-5 shrink-0 transition duration-75"
 								/>
 								<span class="ms-3 flex-1 truncate whitespace-nowrap">{project.title}</span>
+								{#if projectProgress.get(project.id)}
+									{@const progress = projectProgress.get(project.id)}
+									{#if progress && progress.total > 0}
+										<ProgressCircle
+											completed={progress.completed}
+											total={progress.total}
+											size={16}
+										/>
+									{/if}
+								{/if}
 							</a>
 						</li>
 					{/each}
