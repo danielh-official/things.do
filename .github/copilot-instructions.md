@@ -30,14 +30,23 @@ When making components, don't go out of your way to abstract early. Feel free to
 
 We use Vitest for testing units, and for browser testing, we use Playwright. Browser testing is more comprehensive but wasted on UI that we haven't solidified yet. Unit tests have higher staying power but do not cover the full user experience. When working with experimental UI, we'll pick out the especially complicated unit logic and write tests for those. For more established UI components and features, we will focus more on writing comprehensive Playwright tests to ensure that the user experience is consistent and that all interactions work as expected. As the project evolves, we can gradually increase our test coverage for both unit tests and browser tests to maintain a high level of quality and reliability in our application. Always consider the balance between testing effort and the stability of the code when deciding which tests to write, especially in the early stages of development.
 
-As this project evolves, I will start listing routes that I consider stable enough to write Playwright tests for here...
-
-- /trash
-
-## Playwright Testing
+### Playwright Testing
 
 When repairing failing tests, prefer to:
 
 - Use data-testid for getting elements instead of relying on text content or class names, as these are more resilient to changes in the UI and styling.
 - Target failing tests when running them to see if they pass, and once all tests are passing, run the full suite to ensure that everything is working as expected and that no new issues have been introduced.
   - By full test suite, unless specified to be the entire test suite, just assume that we're talking about the tests in the file(s) we're currently working on.
+
+Feel free to proactively add Playwright tests for new features, improvements or bugfixes in the following routes:
+
+- /focusing
+- /later
+- /logbook
+- /trash
+- /projects
+- /projects/[id]
+- /tags
+- /settings
+
+As said previously, if tests fail, target only the failing tests when attempting to repair. Once the failing tests pass, determine--based on what changes were made--whether to run all tests or just tests related to the code that was changed. If the changes were minor and only affected a small portion of the code, it may be sufficient to run just the tests related to that code. However, if the changes were more significant or had the potential to impact other parts of the application, it would be prudent to run the full test suite to ensure that everything is still functioning correctly and that no new issues have been introduced. Always use your judgment to determine the appropriate level of testing based on the scope and impact of the changes made.
