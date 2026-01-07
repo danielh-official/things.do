@@ -1,17 +1,18 @@
 <script lang="ts">
-	import { db, type Item, type Project, type LogStatus } from '$lib/db';
+	import { db, type Item, type Project, type LogStatus, type Tag } from '$lib/db';
 	import { getAllTodosForProject } from '$lib';
 	import { liveQuery, type Observable } from 'dexie';
 	import Todos from '$lib/components/List.Todo.component.svelte';
 	import Todo from '$lib/components/Todo.component.svelte';
 	import { page } from '$app/state';
-	import { PenNibOutline } from 'flowbite-svelte-icons';
+	import { PenNibOutline, TagSolid, TagOutline } from 'flowbite-svelte-icons';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import DeleteSelected from '$lib/components/Buttons/Todo/DeleteSelected.todo.button.component.svelte';
 	import SetAsideForLater from '$lib/components/Buttons/Todo/SetAsideForLater.todo.button.component.svelte';
 	import FocusOnNow from '$lib/components/Buttons/Todo/FocusOnNow.todo.button.component.svelte';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
+	import { tick } from 'svelte';
 
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
@@ -288,6 +289,150 @@
 			// keep the existing delay timer running - don't clear it
 		}
 	}
+
+	// Tags functionality for project
+	let tagsForProject: Tag[] = $state([]);
+	let tagInputOpen = $state(false);
+	let tagInputText = $state('');
+	let allTagOptions = $state<Tag[]>([]);
+	let filteredTagOptions = $state<Tag[]>([]);
+	let tagNameById: Record<number, string> = $state({});
+
+	$effect(() => {
+		const tagIds = project.tag_ids;
+		updateTagsForProject(tagIds);
+	});
+
+	async function updateTagsForProject(tagIds: number[] | null | undefined) {
+		const allTags = await db.tags.toArray();
+
+		if (tagIds && tagIds.length > 0) {
+			tagsForProject = allTags
+				.filter((t) => tagIds?.includes(t.id))
+				.sort((a, b) => a.order - b.order);
+		} else {
+			tagsForProject = [];
+		}
+	}
+
+	$effect(() => {
+		// Ensure names for current project's tags are loaded
+		const ids = (project.tag_ids ?? []) as number[];
+		if (ids.length > 0) {
+			(async () => {
+				const rows = await db.tags.bulkGet(ids);
+				const mapUpdate: Record<number, string> = {};
+				for (const row of rows) {
+					if (row) mapUpdate[row.id] = row.name;
+				}
+				tagNameById = { ...tagNameById, ...mapUpdate };
+			})();
+		}
+	});
+
+	$effect(() => {
+		const q = tagInputText.trim().toLowerCase();
+		const current = new Set<number>((project.tag_ids ?? []) as number[]);
+		const opts = allTagOptions.filter((t) => !current.has(t.id));
+		if (!q) {
+			filteredTagOptions = opts.slice(0, 8);
+			return;
+		}
+		const starts = opts.filter((t) => t.name.toLowerCase().startsWith(q));
+		const contains = opts.filter(
+			(t) => !t.name.toLowerCase().startsWith(q) && t.name.toLowerCase().includes(q)
+		);
+		filteredTagOptions = [...starts, ...contains].slice(0, 8);
+	});
+
+	async function openTagInput() {
+		if (tagInputOpen) {
+			closeTagInput();
+			return;
+		}
+
+		tagInputOpen = true;
+		tagInputText = '';
+		// gather all tags from DB, unique
+		const all = await db.tags.toArray();
+		all.sort((a, b) => a.name.localeCompare(b.name));
+		allTagOptions = all;
+		// populate name map
+		const mapUpdate: Record<number, string> = {};
+		for (const t of all) mapUpdate[t.id] = t.name;
+		tagNameById = { ...tagNameById, ...mapUpdate };
+		await tick();
+		const el = document.getElementById(`project-tag-input`) as HTMLInputElement | null;
+		if (el) el.focus();
+	}
+
+	function closeTagInput() {
+		tagInputOpen = false;
+		tagInputText = '';
+	}
+
+	async function addTagId(tagId: number) {
+		const existingIds = Array.isArray(project.tag_ids) ? (project.tag_ids as number[]) : [];
+		const nextTags = [...existingIds, tagId];
+		project = { ...project, tag_ids: nextTags };
+		if (project.id != null) {
+			await db.projects.update(project.id, { tag_ids: nextTags, updated_at: new SvelteDate() });
+		}
+		tagInputText = '';
+	}
+
+	async function addTagFromInput() {
+		const name = tagInputText.trim();
+		if (!name) return;
+		const existing = allTagOptions.find((t) => t.name.toLowerCase() === name.toLowerCase());
+		if (existing) {
+			await addTagId(existing.id);
+			return;
+		}
+		const nextOrder = allTagOptions.length
+			? Math.max(...allTagOptions.map((t) => t.order ?? 0)) + 1
+			: 1;
+		const id = await db.tags.add({
+			name,
+			parent_tag_id: null,
+			order: nextOrder,
+			created_at: new SvelteDate(),
+			updated_at: new SvelteDate()
+		});
+		const newTag: Tag = {
+			id: id as number,
+			name,
+			parent_tag_id: null,
+			order: nextOrder,
+			created_at: new SvelteDate(),
+			updated_at: new SvelteDate()
+		};
+		allTagOptions = [...allTagOptions, newTag].sort((a, b) => a.name.localeCompare(b.name));
+		tagNameById[newTag.id] = newTag.name;
+		await addTagId(newTag.id);
+	}
+
+	function onTagInputKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			addTagFromInput();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			closeTagInput();
+		}
+	}
+
+	async function removeTagFromProject(tagId: number) {
+		const existingIds = Array.isArray(project.tag_ids) ? (project.tag_ids as number[]) : [];
+		const nextTags = existingIds.filter((id) => id !== tagId);
+		project = { ...project, tag_ids: nextTags };
+		if (project.id != null) {
+			await db.projects.update(project.id, {
+				tag_ids: nextTags,
+				updated_at: new SvelteDate()
+			});
+		}
+	}
 </script>
 
 <!-- MARK: Head -->
@@ -429,6 +574,62 @@
 				</button>
 			</div>
 		{/if}
+
+		<!-- MARK: Project Tags -->
+		<div class="mt-4">
+			{#if !(project.tag_ids && project.tag_ids.length)}
+				<button class="text-sm text-gray-500" title="Add tag" onclick={openTagInput}>
+					<TagSolid class="inline h-5 w-5" />
+					<span class="ml-1">Add tags</span>
+				</button>
+			{/if}
+
+			{#if project.tag_ids && project.tag_ids.length}
+				<div class="flex flex-wrap gap-2">
+					{#each tagsForProject as tag (tag.id)}
+						<button
+							class="cursor-pointer rounded bg-gray-200 px-2 py-1 text-xs hover:line-through dark:bg-gray-700"
+							onclick={() => removeTagFromProject(tag.id)}
+						>
+							<TagOutline class="inline h-3 w-3" />
+							{tag.name}
+						</button>
+					{/each}
+					<button
+						class="rounded px-2 py-1 text-xs text-blue-600 hover:underline"
+						onclick={openTagInput}>+ Add tag</button
+					>
+				</div>
+			{/if}
+
+			{#if tagInputOpen}
+				<div class="relative mt-2">
+					<input
+						id="project-tag-input"
+						class="w-full rounded border border-gray-300 p-2 dark:bg-gray-700"
+						placeholder="Type a tag and press Enter"
+						bind:value={tagInputText}
+						onkeydown={onTagInputKeydown}
+						onblur={() => {
+							// Small delay to allow click events on dropdown items to fire
+							setTimeout(() => closeTagInput(), 200);
+						}}
+					/>
+					{#if filteredTagOptions.length}
+						<ul class="absolute z-40 mt-1 w-full rounded border bg-white shadow dark:bg-gray-700">
+							{#each filteredTagOptions as opt (opt.id)}
+								<li>
+									<button
+										class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600"
+										onclick={() => addTagId(opt.id)}>{opt.name}</button
+									>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
+			{/if}
+		</div>
 	{/if}
 </div>
 

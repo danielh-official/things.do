@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { cleanupTags, getProjectProgress } from '$lib';
 	import { onMount, type Snippet } from 'svelte';
-	import { db, type Project, type LogStatus } from '$lib/db';
+	import { db, type Project, type LogStatus, type Tag } from '$lib/db';
 	import type { Observable } from 'dexie';
 	import { SvelteDate, SvelteSet, SvelteMap } from 'svelte/reactivity';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import ProgressCircle from '$lib/components/ProgressCircle.svelte';
+	import { TagOutline } from 'flowbite-svelte-icons';
 
 	let {
 		projects = $bindable(),
@@ -85,6 +86,33 @@
 	});
 
 	let highlightedItems = new SvelteSet<number>();
+
+	// Tags state
+	let tagNameById: Record<number, string> = $state({});
+
+	$effect(() => {
+		// Load all tag names for projects that have tags
+		const allTagIds = new Set<number>();
+		for (const project of $projects) {
+			if (project.tag_ids && project.tag_ids.length > 0) {
+				for (const tagId of project.tag_ids) {
+					allTagIds.add(tagId);
+				}
+			}
+		}
+
+		if (allTagIds.size > 0) {
+			(async () => {
+				const ids = Array.from(allTagIds);
+				const rows = await db.tags.bulkGet(ids);
+				const mapUpdate: Record<number, string> = {};
+				for (const row of rows) {
+					if (row) mapUpdate[row.id] = row.name;
+				}
+				tagNameById = { ...tagNameById, ...mapUpdate };
+			})();
+		}
+	});
 
 	function alsoToggleHighlightForAllPreviousItems(itemId: number) {
 		const projectsArray = $projects;
@@ -485,12 +513,27 @@
 							onclick={highlightItem}
 						>
 							<div class="flex-1 font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
-							{#if projectProgress.get(item.id)}
-								{@const progress = projectProgress.get(item.id)}
-								{#if progress && progress.total > 0}
-									<ProgressCircle completed={progress.completed} total={progress.total} size={20} />
+								{#if projectProgress.get(item.id)}
+									{@const progress = projectProgress.get(item.id)}
+									{#if progress && progress.total > 0}
+										<ProgressCircle completed={progress.completed} total={progress.total} size={20} />
+									{/if}
 								{/if}
-							{/if}
+							</div>
+							<div class="flex items-center gap-2">
+								<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
+								<!-- MARK: Tags Preview -->
+								{#if item.tag_ids && item.tag_ids.length > 0}
+									{#each item.tag_ids as tagId (tagId)}
+										<span
+											class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
+										>
+											<TagOutline class="inline h-4 w-4" />
+											{tagNameById[tagId]}
+										</span>
+									{/each}
+								{/if}
+							</div>
 						</button>
 					</div>
 				</div>
