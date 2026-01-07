@@ -20,6 +20,11 @@ export async function getFocusingTodos() {
 				return false;
 			}
 
+			// Filter out blocked items
+			if (todo.blocked_by && todo.blocked_by.length > 0) {
+				return false;
+			}
+
 			return true;
 		})
 		.sort((a, b) => a.order - b.order);
@@ -36,6 +41,11 @@ export async function getLaterTodos() {
 
 			// Filter out logged items (only check logged_at for delay support)
 			if (todo.logged_at) {
+				return false;
+			}
+
+			// Filter out blocked items
+			if (todo.blocked_by && todo.blocked_by.length > 0) {
 				return false;
 			}
 
@@ -63,6 +73,29 @@ export async function getBlockedTodos() {
 			}
 
 			if (todo.blocked_by && todo.blocked_by.length > 0) {
+				return true;
+			}
+
+			return false;
+		})
+		.sort((a, b) => a.order - b.order);
+}
+
+export async function getBlockedProjects() {
+	const result = await db.projects.toArray();
+
+	return result
+		.filter((project) => {
+			if (project.deleted_at && project.deleted_at !== null) {
+				return false;
+			}
+
+			// Filter out logged projects (only check logged_at for delay support)
+			if (project.logged_at) {
+				return false;
+			}
+
+			if (project.blocked_by && project.blocked_by.length > 0) {
 				return true;
 			}
 
@@ -117,6 +150,11 @@ export async function getProjects() {
 				return false;
 			}
 
+			// Filter out blocked projects
+			if (project.blocked_by && project.blocked_by.length > 0) {
+				return false;
+			}
+
 			return true;
 		})
 		.sort((a, b) => a.order - b.order);
@@ -133,6 +171,11 @@ export async function getTodosForProject(projectId: number) {
 
 			// Filter out logged items (only check logged_at for delay support)
 			if (todo.logged_at) {
+				return false;
+			}
+
+			// Filter out blocked items
+			if (todo.blocked_by && todo.blocked_by.length > 0) {
 				return false;
 			}
 

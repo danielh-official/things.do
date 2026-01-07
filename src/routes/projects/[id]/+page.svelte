@@ -5,7 +5,7 @@
 	import Todos from '$lib/components/List.Todo.component.svelte';
 	import Todo from '$lib/components/Todo.component.svelte';
 	import { page } from '$app/state';
-	import { PenNibOutline, TagSolid, TagOutline } from 'flowbite-svelte-icons';
+	import { PenNibOutline, TagSolid, TagOutline, LockSolid } from 'flowbite-svelte-icons';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import DeleteSelected from '$lib/components/Buttons/Todo/DeleteSelected.todo.button.component.svelte';
@@ -330,6 +330,36 @@
 		}
 	});
 
+	// Blockers UI state
+	let blockerInputOpen = $state(false);
+	let blockerInputText = $state('');
+	let allBlockerOptions = $state<(Item | Project)[]>([]);
+	let filteredBlockerOptions = $state<(Item | Project)[]>([]);
+	let blockerTitleById: Record<number, string> = $state({});
+	let selectedBlockers = $state<Set<number>>(new Set());
+
+	$effect(() => {
+		// Initialize selectedBlockers from project.blocked_by
+		const ids = (project.blocked_by ?? []) as number[];
+		selectedBlockers = new Set(ids);
+	});
+
+	$effect(() => {
+		// Ensure titles for current project's blockers are loaded
+		const ids = (project.blocked_by ?? []) as number[];
+		if (ids.length > 0) {
+			(async () => {
+				const todos = await db.todos.bulkGet(ids);
+				const projects = await db.projects.bulkGet(ids);
+				const mapUpdate: Record<number, string> = {};
+				for (const row of [...todos, ...projects]) {
+					if (row) mapUpdate[row.id] = row.title;
+				}
+				blockerTitleById = { ...blockerTitleById, ...mapUpdate };
+			})();
+		}
+	});
+
 	$effect(() => {
 		const q = tagInputText.trim().toLowerCase();
 		const current = new Set<number>((project.tag_ids ?? []) as number[]);
@@ -430,6 +460,90 @@
 				tag_ids: nextTags,
 				updated_at: new SvelteDate()
 			});
+		}
+	}
+
+	$effect(() => {
+		const q = blockerInputText.trim().toLowerCase();
+		const current = new Set<number>((project.blocked_by ?? []) as number[]);
+		// Filter out the current project itself
+		const opts = allBlockerOptions.filter((t) => !current.has(t.id) && t.id !== project.id);
+		if (!q) {
+			filteredBlockerOptions = opts.slice(0, 8);
+			return;
+		}
+		const starts = opts.filter((t) => t.title.toLowerCase().startsWith(q));
+		const contains = opts.filter(
+			(t) => !t.title.toLowerCase().startsWith(q) && t.title.toLowerCase().includes(q)
+		);
+		filteredBlockerOptions = [...starts, ...contains].slice(0, 8);
+	});
+
+	async function openBlockerInput() {
+		if (blockerInputOpen) {
+			closeBlockerInput();
+			return;
+		}
+
+		blockerInputOpen = true;
+		blockerInputText = '';
+		// gather all todos and projects from DB
+		const allTodos = await db.todos.toArray();
+		const allProjects = await db.projects.toArray();
+
+		// Filter out deleted and logged items
+		const validTodos = allTodos.filter((t) => !t.deleted_at && !t.logged_at);
+		const validProjects = allProjects.filter((p) => !p.deleted_at && !p.logged_at);
+
+		const all = [...validTodos, ...validProjects];
+		all.sort((a, b) => a.title.localeCompare(b.title));
+		allBlockerOptions = all;
+
+		// populate title map
+		const mapUpdate: Record<number, string> = {};
+		for (const t of all) mapUpdate[t.id] = t.title;
+		blockerTitleById = { ...blockerTitleById, ...mapUpdate };
+
+		// Initialize selected blockers
+		const ids = (project.blocked_by ?? []) as number[];
+		selectedBlockers = new Set(ids);
+
+		await tick();
+		const el = document.getElementById(`blocker-input-${project.id}`) as HTMLInputElement | null;
+		if (el) el.focus();
+	}
+
+	function closeBlockerInput() {
+		blockerInputOpen = false;
+		blockerInputText = '';
+	}
+
+	function toggleBlocker(blockerId: number) {
+		if (selectedBlockers.has(blockerId)) {
+			selectedBlockers.delete(blockerId);
+		} else {
+			selectedBlockers.add(blockerId);
+		}
+		// Trigger reactivity
+		selectedBlockers = new Set(selectedBlockers);
+	}
+
+	async function saveBlockers() {
+		const blockerIds = Array.from(selectedBlockers);
+		project = { ...project, blocked_by: blockerIds };
+		if (project.id != null) {
+			await db.projects.update(project.id, {
+				blocked_by: blockerIds,
+				updated_at: new SvelteDate()
+			});
+		}
+		closeBlockerInput();
+	}
+
+	function onBlockerInputKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			closeBlockerInput();
 		}
 	}
 </script>
@@ -629,6 +743,92 @@
 				</div>
 			{/if}
 		</div>
+
+		<!-- MARK: Blockers Section -->
+		<hr class="my-4" />
+		<div class="mb-4">
+			<div class="mb-2 flex items-center justify-between">
+				<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Blockers</h3>
+				<button
+					class="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
+					onclick={openBlockerInput}
+				>
+					{project.blocked_by && project.blocked_by.length > 0 ? 'Edit Blockers' : 'Add Blockers'}
+				</button>
+			</div>
+			{#if project.blocked_by && project.blocked_by.length > 0}
+				<div class="flex flex-wrap gap-2">
+					{#each project.blocked_by as blockerId (blockerId)}
+						<span
+							class="rounded bg-red-100 px-2 py-1 text-xs text-red-800 dark:bg-red-900 dark:text-red-200"
+						>
+							<LockSolid class="inline h-3 w-3" />
+							{blockerTitleById[blockerId] || `Item ${blockerId}`}
+						</span>
+					{/each}
+				</div>
+			{:else}
+				<p class="text-sm text-gray-500 dark:text-gray-400">No blockers set for this project.</p>
+			{/if}
+		</div>
+
+		{#if blockerInputOpen}
+			<div class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+				<div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+					<h2 class="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">
+						Select Blockers
+					</h2>
+					<input
+						id={`blocker-input-${project.id}`}
+						class="mb-4 w-full rounded border border-gray-300 p-2 dark:bg-gray-700"
+						placeholder="Search for todos or projects..."
+						bind:value={blockerInputText}
+						onkeydown={onBlockerInputKeydown}
+					/>
+					{#if filteredBlockerOptions.length}
+						<div class="mb-4 max-h-64 overflow-y-auto rounded border bg-white dark:bg-gray-700">
+							{#each filteredBlockerOptions as opt (opt.id)}
+								<label class="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+									<input
+										type="checkbox"
+										checked={selectedBlockers.has(opt.id)}
+										onchange={() => toggleBlocker(opt.id)}
+										class="mr-2"
+									/>
+									<span>{opt.title}</span>
+								</label>
+							{/each}
+						</div>
+					{/if}
+					{#if selectedBlockers.size > 0}
+						<div class="mb-4">
+							<div class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+								Selected ({selectedBlockers.size}):
+							</div>
+							<div class="flex flex-wrap gap-2">
+								{#each Array.from(selectedBlockers) as blockerId (blockerId)}
+									<span
+										class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+									>
+										{blockerTitleById[blockerId] || `Item ${blockerId}`}
+									</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+					<div class="flex justify-end space-x-2">
+						<button
+							class="rounded bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200"
+							onclick={closeBlockerInput}>Cancel</button
+						>
+						<button
+							class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+							onclick={saveBlockers}>Save</button
+						>
+					</div>
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
