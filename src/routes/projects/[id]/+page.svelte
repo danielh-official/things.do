@@ -245,12 +245,6 @@
 			newStatus = null;
 		}
 
-		// Clear any pending timeout
-		if (pendingProjectLogTimeout) {
-			clearTimeout(pendingProjectLogTimeout);
-			pendingProjectLogTimeout = null;
-		}
-
 		// Update local project object for reactive UI (status only, not logged_at yet)
 		project = {
 			...project,
@@ -258,22 +252,12 @@
 		};
 
 		// Handle different status transitions
-		if ((newStatus === 'completed' || newStatus === 'canceled') && currentStatus === null) {
-			// Update status in DB immediately (for UI feedback)
-			db.projects.update(id, {
-				logged_status: newStatus,
-				updated_at: new SvelteDate()
-			});
-
-			// Delay setting logged_at (this triggers the filter)
-			pendingProjectLogTimeout = setTimeout(() => {
-				db.projects.update(id, {
-					logged_at: new SvelteDate()
-				});
-				pendingProjectLogTimeout = null;
-			}, 2000) as unknown as number;
-		} else if (newStatus === null) {
+		if (newStatus === null) {
 			// Immediately clear logged_at when unmarking
+			if (pendingProjectLogTimeout) {
+				clearTimeout(pendingProjectLogTimeout);
+				pendingProjectLogTimeout = null;
+			}
 			db.projects.update(id, {
 				logged_status: null,
 				logged_at: null,
@@ -283,12 +267,25 @@
 				...project,
 				logged_at: null
 			};
-		} else {
-			// Cycling between completed and canceled - update immediately
+		} else if (newStatus === 'completed' || newStatus === 'canceled') {
+			// Update status in DB immediately (for UI feedback)
 			db.projects.update(id, {
 				logged_status: newStatus,
 				updated_at: new SvelteDate()
 			});
+
+			// If transitioning from open to logged state, start the delay timer
+			if (currentStatus === null) {
+				// Delay setting logged_at (this triggers the filter)
+				pendingProjectLogTimeout = setTimeout(() => {
+					db.projects.update(id, {
+						logged_at: new SvelteDate()
+					});
+					pendingProjectLogTimeout = null;
+				}, 2000) as unknown as number;
+			}
+			// If already in a logged state (cycling between completed/canceled),
+			// keep the existing delay timer running - don't clear it
 		}
 	}
 </script>
