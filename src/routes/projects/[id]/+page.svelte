@@ -530,12 +530,10 @@
 
 	async function saveBlockers() {
 		const blockerIds = Array.from(selectedBlockers);
+		const now = new SvelteDate();
 		project = { ...project, blocked_by: blockerIds };
 		if (project.id != null) {
-			await db.projects.update(project.id, {
-				blocked_by: blockerIds,
-				updated_at: new SvelteDate()
-			});
+			await db.projects.update(project.id, { blocked_by: blockerIds, updated_at: now });
 		}
 		closeBlockerInput();
 	}
