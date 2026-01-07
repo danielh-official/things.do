@@ -409,7 +409,7 @@
 		>
 			{#if item.logged_status === 'completed'}
 				<div
-					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
 					aria-label="Completed"
 				>
 					<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
@@ -425,7 +425,7 @@
 				</div>
 			{:else if item.logged_status === 'canceled'}
 				<div
-					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+					class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
 					aria-label="Canceled"
 				>
 					<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">

@@ -491,10 +491,35 @@
 						<li
 							class="flex items-center gap-2 rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
 						>
-							<div class="shrink-0">
+							<button
+								class="shrink-0 cursor-pointer"
+								onclick={() => {
+									// Cycle through statuses: completed -> canceled -> open
+									const currentStatus = todo.logged_status;
+									let newStatus: LogStatus;
+									let newLoggedAt: SvelteDate | null;
+
+									if (currentStatus === 'completed') {
+										newStatus = 'canceled';
+										newLoggedAt = new SvelteDate();
+									} else if (currentStatus === 'canceled') {
+										newStatus = null;
+										newLoggedAt = null;
+									} else {
+										newStatus = 'completed';
+										newLoggedAt = new SvelteDate();
+									}
+
+									db.todos.update(todo.id!, {
+										logged_status: newStatus,
+										logged_at: newLoggedAt,
+										updated_at: new SvelteDate()
+									});
+								}}
+							>
 								{#if todo.logged_status === 'completed'}
 									<div
-										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
 										aria-label="Completed"
 									>
 										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
@@ -510,7 +535,7 @@
 									</div>
 								{:else if todo.logged_status === 'canceled'}
 									<div
-										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
 										aria-label="Canceled"
 									>
 										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
@@ -524,7 +549,7 @@
 										</svg>
 									</div>
 								{/if}
-							</div>
+							</button>
 							<span class="text-gray-700 dark:text-gray-300">{todo.title}</span>
 						</li>
 					{/each}
