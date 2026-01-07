@@ -241,7 +241,7 @@
 							<button
 								class="shrink-0 cursor-pointer"
 								data-key={`${item.itemType}-${item.id}`}
-								onclick={(event) => {
+								onclick={(event: { stopPropagation: () => void }) => {
 									event.stopPropagation();
 									// Cycle through statuses
 									const currentStatus = item.logged_status;
@@ -308,7 +308,7 @@
 							<button
 								class="shrink-0 cursor-pointer"
 								data-key={`${item.itemType}-${item.id}`}
-								onclick={(event) => {
+								onclick={(event: { stopPropagation: () => void }) => {
 									event.stopPropagation();
 									// Cycle through project statuses
 									const currentStatus = item.logged_status;

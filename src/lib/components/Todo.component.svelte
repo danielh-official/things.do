@@ -59,7 +59,6 @@
 		});
 	}
 
-	let pendingRemovalTaskId: number | null = $state(null);
 	let pendingLogTimeout: number | null = null;
 
 	function cycleTaskStatus(id: number) {
@@ -88,7 +87,6 @@
 				clearTimeout(pendingLogTimeout);
 				pendingLogTimeout = null;
 			}
-			pendingRemovalTaskId = null;
 			db.todos.update(id, {
 				logged_status: null,
 				logged_at: null,
@@ -107,14 +105,11 @@
 
 			// If transitioning from open to logged state, start the delay timer
 			if (currentStatus === null) {
-				pendingRemovalTaskId = id;
-
 				// Delay setting logged_at (this triggers the filter)
 				pendingLogTimeout = setTimeout(() => {
 					db.todos.update(id, {
 						logged_at: new SvelteDate()
 					});
-					pendingRemovalTaskId = null;
 					pendingLogTimeout = null;
 				}, 2000) as unknown as number;
 			}

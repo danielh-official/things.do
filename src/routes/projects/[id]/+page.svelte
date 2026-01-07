@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db, type Item, type Project, type LogStatus, type Tag } from '$lib/db';
+	import { db, type Item, type Project, type LogStatus } from '$lib/db';
 	import { getAllTodosForProject } from '$lib';
 	import { liveQuery, type Observable } from 'dexie';
 	import Todos from '$lib/components/List.Todo.component.svelte';
@@ -438,7 +438,7 @@
 
 <!-- MARK: Project To-Dos -->
 
-{#if todos}
+{#if $todos && $todos.length > 0}
 	<Todos
 		{todos}
 		{tags}
