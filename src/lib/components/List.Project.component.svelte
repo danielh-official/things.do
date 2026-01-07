@@ -46,8 +46,13 @@
 		if ($projects) {
 			Promise.all(
 				$projects.map(async (project) => {
-					const progress = await getProjectProgress(project.id);
-					return { id: project.id, progress };
+					try {
+						const progress = await getProjectProgress(project.id);
+						return { id: project.id, progress };
+					} catch (error) {
+						console.error(`Failed to get progress for project ${project.id}:`, error);
+						return { id: project.id, progress: { completed: 0, total: 0 } };
+					}
 				})
 			).then((results) => {
 				results.forEach(({ id, progress }) => {

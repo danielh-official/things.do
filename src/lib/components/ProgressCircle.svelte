@@ -5,7 +5,7 @@
 		size = 20
 	}: { completed?: number; total?: number; size?: number } = $props();
 
-	let percentage = $derived(total > 0 ? (completed / total) * 100 : 0);
+	let percentage = $derived(total > 0 ? Math.min(100, Math.max(0, (completed / total) * 100)) : 0);
 	let radius = $derived(size / 2 - 2);
 	let circumference = $derived(2 * Math.PI * radius);
 	let strokeDashoffset = $derived(circumference - (percentage / 100) * circumference);
