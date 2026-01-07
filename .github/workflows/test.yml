@@ -42,4 +42,4 @@ jobs:
         run: pnpm exec vitest --bail=1
 
       - name: Run e2e tests
-        run: pnpm exec playwright test --max-fails=1
+        run: pnpm exec playwright test --max-failures=1

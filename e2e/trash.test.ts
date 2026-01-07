@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Trash Page', () => {
 	test.beforeEach(async ({ page }) => {
 		// Navigate to home page and ensure clean state
