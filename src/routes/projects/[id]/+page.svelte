@@ -544,6 +544,10 @@
 			closeBlockerInput();
 		}
 	}
+
+	function isItemTodoOrProject(item: Item | Project): 'project' | 'todo' {
+		return item.hasOwnProperty('checklist') ? 'todo' : 'project';
+	}
 </script>
 
 <!-- MARK: Head -->
@@ -748,7 +752,7 @@
 			<div class="mb-2 flex items-center justify-between">
 				<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Blockers</h3>
 				<button
-					class="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
+					class="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 cursor-pointer"
 					onclick={openBlockerInput}
 				>
 					{project.blocked_by && project.blocked_by.length > 0 ? 'Edit Blockers' : 'Add Blockers'}
@@ -791,7 +795,10 @@
 										type="checkbox"
 										checked={selectedBlockers.has(opt.id)}
 										onchange={() => toggleBlocker(opt.id)}
-										class="mr-2"
+										class={{
+											"mr-2": true,
+											"rounded-full": isItemTodoOrProject(opt) === 'project'
+										}}
 									/>
 									<span>{opt.title}</span>
 								</label>
@@ -816,11 +823,11 @@
 					{/if}
 					<div class="flex justify-end space-x-2">
 						<button
-							class="rounded bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200"
+							class="rounded bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200 cursor-pointer"
 							onclick={closeBlockerInput}>Cancel</button
 						>
 						<button
-							class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+							class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 cursor-pointer"
 							onclick={saveBlockers}>Save</button
 						>
 					</div>
