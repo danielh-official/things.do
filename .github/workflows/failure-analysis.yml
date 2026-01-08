@@ -1,0 +1,198 @@
+name: Failure Analysis
+
+on:
+  workflow_call:
+    inputs:
+      workflow_name:
+        description: 'Name of the workflow that failed'
+        required: true
+        type: string
+      job_name:
+        description: 'Name of the job that failed'
+        required: true
+        type: string
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  analyze-failure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Analyze failure and create issue
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_NAME: ${{ inputs.workflow_name }}
+          JOB_NAME: ${{ inputs.job_name }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflowName = process.env.WORKFLOW_NAME;
+            const jobName = process.env.JOB_NAME;
+
+            console.log(`Analyzing failure for workflow: ${workflowName}, job: ${jobName}`);
+
+            // Get the current workflow run
+            const { data: workflowRun } = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
+            // Get jobs for this workflow run
+            const { data: jobs } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
+            // Find the failed job
+            const failedJob = jobs.jobs.find(job => 
+              job.name.includes(jobName) && job.conclusion === 'failure'
+            );
+
+            if (!failedJob) {
+              console.log('No failed job found matching criteria');
+              return;
+            }
+
+            // Get job logs
+            let logs = '';
+            try {
+              const logResponse = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                job_id: failedJob.id
+              });
+              logs = logResponse.data || 'Logs not available';
+            } catch (error) {
+              console.log('Error fetching logs:', error.message);
+              logs = 'Unable to fetch logs';
+            }
+
+            // Analyze the failure pattern
+            const errorPatterns = {
+              transient: [
+                /ECONNREFUSED/i,
+                /ETIMEDOUT/i,
+                /network error/i,
+                /timeout/i,
+                /rate limit/i,
+                /503 Service Unavailable/i,
+                /502 Bad Gateway/i
+              ],
+              persistent: [
+                /Test failed/i,
+                /assertion failed/i,
+                /type error/i,
+                /syntax error/i,
+                /cannot find module/i,
+                /lint error/i,
+                /format error/i
+              ]
+            };
+
+            let isPersistent = false;
+            let failureType = 'unknown';
+
+            // Check for transient errors
+            const hasTransientError = errorPatterns.transient.some(pattern => 
+              pattern.test(logs)
+            );
+
+            // Check for persistent errors
+            const hasPersistentError = errorPatterns.persistent.some(pattern => 
+              pattern.test(logs)
+            );
+
+            if (hasPersistentError && !hasTransientError) {
+              isPersistent = true;
+              failureType = 'persistent';
+            } else if (hasTransientError) {
+              failureType = 'transient';
+            }
+
+            console.log(`Failure type determined: ${failureType}`);
+
+            // If failure is persistent, create an issue
+            if (isPersistent) {
+              const issueTitle = `🔴 Workflow Failure: ${workflowName} - ${jobName}`;
+              const issueBody = `
+            ## Workflow Failure Report
+
+            A persistent failure has been detected in the CI/CD pipeline.
+
+            ### Details
+            - **Workflow**: ${workflowName}
+            - **Job**: ${jobName}
+            - **Run ID**: ${context.runId}
+            - **Run URL**: ${workflowRun.html_url}
+            - **Commit**: ${context.sha.substring(0, 7)}
+            - **Branch**: ${context.ref}
+            - **Triggered by**: @${context.actor}
+
+            ### Failure Analysis
+            The failure has been classified as **persistent**, indicating that it's likely caused by a code issue rather than a transient infrastructure problem.
+
+            ### Failed Job Details
+            - **Job Name**: ${failedJob.name}
+            - **Job URL**: ${failedJob.html_url}
+            - **Started**: ${failedJob.started_at}
+            - **Completed**: ${failedJob.completed_at}
+
+            ### Action Required
+            @github please analyze the failure logs and suggest a fix for this issue.
+
+            ### Log Excerpt
+            \`\`\`
+            ${logs.toString().substring(0, 2000)}${logs.length > 2000 ? '...\n[truncated]' : ''}
+            \`\`\`
+
+            ---
+            *This issue was automatically created by the self-healing workflow system.*
+            `;
+              
+              // Check if similar issue already exists
+              const { data: existingIssues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                labels: 'ci-failure',
+                per_page: 10
+              });
+              
+              const similarIssue = existingIssues.find(issue => 
+                issue.title.includes(workflowName) && issue.title.includes(jobName)
+              );
+              
+              if (similarIssue) {
+                console.log(`Similar issue already exists: #${similarIssue.number}`);
+                // Add a comment to the existing issue
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: similarIssue.number,
+                  body: `Another failure occurred in the same workflow.\n\n**Run ID**: ${context.runId}\n**Run URL**: ${workflowRun.html_url}\n**Commit**: ${context.sha.substring(0, 7)}`
+                });
+              } else {
+                // Create new issue
+                const { data: issue } = await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: issueTitle,
+                  body: issueBody,
+                  labels: ['ci-failure', 'automated']
+                });
+                
+                console.log(`Created issue #${issue.number}: ${issue.html_url}`);
+              }
+            } else {
+              console.log('Failure classified as transient or unknown, no issue created');
+            }

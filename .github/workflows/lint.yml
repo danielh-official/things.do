@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   format-and-lint:
@@ -62,3 +63,13 @@ jobs:
 
       - name: Run type check
         run: pnpm check
+
+  analyze-failure:
+    needs: format-and-lint
+    if: failure()
+    uses: ./.github/workflows/failure-analysis.yml
+    with:
+      workflow_name: 'Format and Lint'
+      job_name: 'format-and-lint'
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
