@@ -5,6 +5,7 @@
 	import { resolve } from '$app/paths';
 	import {
 		getBlockedTodos,
+		getBlockedProjects,
 		getFocusingTodos,
 		getLaterTodos,
 		getTags,
@@ -36,6 +37,7 @@
 	let focusingTodos = liveQuery(() => getFocusingTodos());
 	let laterTodos = liveQuery(() => getLaterTodos());
 	let blockedTodos = liveQuery(() => getBlockedTodos());
+	let blockedProjects = liveQuery(() => getBlockedProjects());
 	let trashedTodos = liveQuery(() => getTrashedTodos());
 	let trashedProjects = liveQuery(() => getTrashedProjects());
 	let tags = liveQuery(() => getTags());
@@ -74,6 +76,7 @@
 	);
 	let laterTodosCount = $derived($laterTodos?.length ?? 0);
 	let blockedTodosCount = $derived($blockedTodos?.length ?? 0);
+	let blockedProjectsCount = $derived($blockedProjects?.length ?? 0);
 	let trashedTodosCount = $derived($trashedTodos?.length ?? 0);
 	let trashedProjectsCount = $derived($trashedProjects?.length ?? 0);
 	let tagsCount = $derived($tags?.length ?? 0);
@@ -316,7 +319,7 @@
 						</a>
 					</li>
 				{/if}
-				{#if blockedTodosCount > 0}
+				{#if blockedTodosCount > 0 || blockedProjectsCount > 0}
 					<li>
 						<a
 							href={resolve('/blocked')}
