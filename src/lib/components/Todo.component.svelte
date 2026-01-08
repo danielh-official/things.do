@@ -278,13 +278,7 @@
 	let filteredBlockerOptions = $state<(Item | Project)[]>([]);
 	let blockerTitleById: Record<number, string> = $state({});
 	let selectedBlockers: SvelteSet<number> = new SvelteSet();
-
-	$effect(() => {
-		// Initialize selectedBlockers from item.blocked_by
-		const ids = (item.blocked_by ?? []) as number[];
-		selectedBlockers.clear();
-		ids.forEach((id) => selectedBlockers.add(id));
-	});
+	let originalBlockers: number[] = [];
 
 	$effect(() => {
 		// Ensure titles for current item's blockers are loaded
@@ -343,8 +337,9 @@
 		for (const t of all) mapUpdate[t.id] = t.title;
 		blockerTitleById = { ...blockerTitleById, ...mapUpdate };
 
-		// Initialize selected blockers
+		// Initialize selected blockers and save original state
 		const ids = (item.blocked_by ?? []) as number[];
+		originalBlockers = [...ids];
 		selectedBlockers.clear();
 		ids.forEach((id) => selectedBlockers.add(id));
 
@@ -356,6 +351,9 @@
 	function closeBlockerInput() {
 		blockerInputOpen = false;
 		blockerInputText = '';
+		// Restore original blockers on cancel
+		selectedBlockers.clear();
+		originalBlockers.forEach((id) => selectedBlockers.add(id));
 	}
 
 	function toggleBlocker(blockerId: number) {
@@ -374,6 +372,12 @@
 			await db.todos.update(item.id, { blocked_by: blockerIds, updated_at: now });
 		}
 		closeBlockerInput();
+	}
+
+	function removeBlocker(event: MouseEvent, blockerId: number) {
+		event.preventDefault();
+		event.stopPropagation();
+		selectedBlockers.delete(blockerId);
 	}
 
 	function onBlockerInputKeydown(e: KeyboardEvent) {
@@ -573,11 +577,12 @@
 							</div>
 							<div class="flex flex-wrap gap-2">
 								{#each Array.from(selectedBlockers) as blockerId (blockerId)}
-									<span
-										class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+									<button
+										class="cursor-pointer rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 hover:line-through dark:bg-blue-900 dark:text-blue-200"
+										onclick={(event: MouseEvent) => removeBlocker(event, blockerId)}
 									>
 										{blockerTitleById[blockerId] || `Item ${blockerId}`}
-									</span>
+									</button>
 								{/each}
 							</div>
 						</div>
