@@ -337,13 +337,7 @@
 	let filteredBlockerOptions = $state<(Item | Project)[]>([]);
 	let blockerTitleById: Record<number, string> = $state({});
 	let selectedBlockers: SvelteSet<number> = new SvelteSet();
-
-	$effect(() => {
-		// Initialize selectedBlockers from project.blocked_by
-		const ids = (project.blocked_by ?? []) as number[];
-		selectedBlockers.clear();
-		ids.forEach((id) => selectedBlockers.add(id));
-	});
+	let originalBlockers: number[] = [];
 
 	$effect(() => {
 		// Ensure titles for current project's blockers are loaded
@@ -505,8 +499,9 @@
 		for (const t of all) mapUpdate[t.id] = t.title;
 		blockerTitleById = { ...blockerTitleById, ...mapUpdate };
 
-		// Initialize selected blockers
+		// Initialize selected blockers and save original state
 		const ids = (project.blocked_by ?? []) as number[];
+		originalBlockers = [...ids];
 		selectedBlockers.clear();
 		ids.forEach((id) => selectedBlockers.add(id));
 
@@ -518,6 +513,9 @@
 	function closeBlockerInput() {
 		blockerInputOpen = false;
 		blockerInputText = '';
+		// Restore original blockers on cancel
+		selectedBlockers.clear();
+		originalBlockers.forEach((id) => selectedBlockers.add(id));
 	}
 
 	function toggleBlocker(blockerId: number) {
@@ -553,7 +551,6 @@
 		event.preventDefault();
 		event.stopPropagation();
 		selectedBlockers.delete(blockerId);
-		saveBlockers();
 	}
 </script>
 
