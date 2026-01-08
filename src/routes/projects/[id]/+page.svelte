@@ -336,12 +336,13 @@
 	let allBlockerOptions = $state<(Item | Project)[]>([]);
 	let filteredBlockerOptions = $state<(Item | Project)[]>([]);
 	let blockerTitleById: Record<number, string> = $state({});
-	let selectedBlockers = $state<Set<number>>(new Set());
+	let selectedBlockers: SvelteSet<number> = new SvelteSet();
 
 	$effect(() => {
 		// Initialize selectedBlockers from project.blocked_by
 		const ids = (project.blocked_by ?? []) as number[];
-		selectedBlockers = new Set(ids);
+		selectedBlockers.clear();
+		ids.forEach((id) => selectedBlockers.add(id));
 	});
 
 	$effect(() => {
@@ -506,7 +507,8 @@
 
 		// Initialize selected blockers
 		const ids = (project.blocked_by ?? []) as number[];
-		selectedBlockers = new Set(ids);
+		selectedBlockers.clear();
+		ids.forEach((id) => selectedBlockers.add(id));
 
 		await tick();
 		const el = document.getElementById(`blocker-input-${project.id}`) as HTMLInputElement | null;
@@ -524,8 +526,6 @@
 		} else {
 			selectedBlockers.add(blockerId);
 		}
-		// Trigger reactivity
-		selectedBlockers = new Set(selectedBlockers);
 	}
 
 	async function saveBlockers() {
@@ -546,7 +546,7 @@
 	}
 
 	function isItemTodoOrProject(item: Item | Project): 'project' | 'todo' {
-		return item.hasOwnProperty('checklist') ? 'todo' : 'project';
+		return Object.hasOwn(item, 'checklist') ? 'todo' : 'project';
 	}
 </script>
 
@@ -752,7 +752,7 @@
 			<div class="mb-2 flex items-center justify-between">
 				<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Blockers</h3>
 				<button
-					class="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 cursor-pointer"
+					class="cursor-pointer rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
 					onclick={openBlockerInput}
 				>
 					{project.blocked_by && project.blocked_by.length > 0 ? 'Edit Blockers' : 'Add Blockers'}
@@ -796,8 +796,8 @@
 										checked={selectedBlockers.has(opt.id)}
 										onchange={() => toggleBlocker(opt.id)}
 										class={{
-											"mr-2": true,
-											"rounded-full": isItemTodoOrProject(opt) === 'project'
+											'mr-2': true,
+											'rounded-full': isItemTodoOrProject(opt) === 'project'
 										}}
 									/>
 									<span>{opt.title}</span>
@@ -823,11 +823,11 @@
 					{/if}
 					<div class="flex justify-end space-x-2">
 						<button
-							class="rounded bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200 cursor-pointer"
+							class="cursor-pointer rounded bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-200"
 							onclick={closeBlockerInput}>Cancel</button
 						>
 						<button
-							class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 cursor-pointer"
+							class="cursor-pointer rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
 							onclick={saveBlockers}>Save</button
 						>
 					</div>
