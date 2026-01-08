@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   test:
@@ -43,3 +44,13 @@ jobs:
 
       - name: Run e2e tests
         run: pnpm exec playwright test --max-failures=1
+
+  analyze-failure:
+    needs: test
+    if: failure()
+    uses: ./.github/workflows/failure-analysis.yml
+    with:
+      workflow_name: 'Test'
+      job_name: 'test'
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
