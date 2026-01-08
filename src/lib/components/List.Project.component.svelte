@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cleanupTags, getProjectProgress } from '$lib';
 	import { onMount, type Snippet } from 'svelte';
-	import { db, type Project, type LogStatus, type Tag } from '$lib/db';
+	import { db, type Project, type LogStatus } from '$lib/db';
 	import type { Observable } from 'dexie';
 	import { SvelteDate, SvelteSet, SvelteMap } from 'svelte/reactivity';
 	import { page } from '$app/state';
@@ -95,7 +95,7 @@
 		const projectsList = $projects;
 		if (!projectsList || !Array.isArray(projectsList)) return;
 
-		const allTagIds = new Set<number>();
+		const allTagIds = new SvelteSet<number>();
 		for (const project of projectsList) {
 			if (project.tag_ids && project.tag_ids.length > 0) {
 				for (const tagId of project.tag_ids) {
@@ -516,15 +516,13 @@
 							onclick={highlightItem}
 						>
 							<div class="flex-1 font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
-								{#if projectProgress.get(item.id)}
-									{@const progress = projectProgress.get(item.id)}
-									{#if progress && progress.total > 0}
-										<ProgressCircle completed={progress.completed} total={progress.total} size={20} />
-									{/if}
+							{#if projectProgress.get(item.id)}
+								{@const progress = projectProgress.get(item.id)}
+								{#if progress && progress.total > 0}
+									<ProgressCircle completed={progress.completed} total={progress.total} size={20} />
 								{/if}
-							</div>
+							{/if}
 							<div class="flex items-center gap-2">
-								<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
 								<!-- MARK: Tags Preview -->
 								{#if item.tag_ids && item.tag_ids.length > 0}
 									{#each item.tag_ids as tagId (tagId)}
