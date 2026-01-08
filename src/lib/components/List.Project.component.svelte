@@ -8,6 +8,7 @@
 	import { goto } from '$app/navigation';
 	import ProgressCircle from '$lib/components/ProgressCircle.svelte';
 	import { TagOutline } from 'flowbite-svelte-icons';
+	import { resolve } from '$app/paths';
 
 	let {
 		projects = $bindable(),
@@ -386,13 +387,6 @@
 			(el) => el.classList && el.classList.contains('project-in-index-item')
 		);
 
-		console.log(
-			'isOverProjectItem',
-			isOverProjectItem,
-			'highlightedItems.size',
-			highlightedItems.size
-		);
-
 		if (!isOverProjectItem || highlightedItems.size === 0) {
 			// Allow default browser context menu for non-todo areas
 			return;
@@ -407,6 +401,12 @@
 		menuY = event.clientY - 150;
 
 		showMenu = true;
+	}
+
+	function openProject(id: number) {
+		const route = resolve(`/projects/${id}`);
+
+		goto(route);
 	}
 </script>
 
@@ -514,6 +514,7 @@
 							data-testid="project-item-button"
 							class="flex w-full items-center rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
 							onclick={highlightItem}
+							ondblclick={() => openProject(item.id)}
 						>
 							<div class="flex-1 font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
 							{#if projectProgress.get(item.id)}
