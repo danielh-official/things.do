@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { db, type Item, type LogStatus, type Project } from '$lib/db';
-	import { SvelteDate } from 'svelte/reactivity';
+	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { tick } from 'svelte';
 
 	let {
@@ -277,12 +277,13 @@
 	let allBlockerOptions = $state<(Item | Project)[]>([]);
 	let filteredBlockerOptions = $state<(Item | Project)[]>([]);
 	let blockerTitleById: Record<number, string> = $state({});
-	let selectedBlockers = $state<Set<number>>(new Set());
+	let selectedBlockers: SvelteSet<number> = new SvelteSet();
 
 	$effect(() => {
 		// Initialize selectedBlockers from item.blocked_by
 		const ids = (item.blocked_by ?? []) as number[];
-		selectedBlockers = new Set(ids);
+		selectedBlockers.clear();
+		ids.forEach((id) => selectedBlockers.add(id));
 	});
 
 	$effect(() => {
@@ -344,7 +345,8 @@
 
 		// Initialize selected blockers
 		const ids = (item.blocked_by ?? []) as number[];
-		selectedBlockers = new Set(ids);
+		selectedBlockers.clear();
+		ids.forEach((id) => selectedBlockers.add(id));
 
 		await tick();
 		const el = document.getElementById(`blocker-input-${item.id}`) as HTMLInputElement | null;
@@ -362,8 +364,6 @@
 		} else {
 			selectedBlockers.add(blockerId);
 		}
-		// Trigger reactivity
-		selectedBlockers = new Set(selectedBlockers);
 	}
 
 	async function saveBlockers() {
