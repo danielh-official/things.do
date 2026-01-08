@@ -327,10 +327,10 @@
 			>
 				{#if project.logged_status === 'completed'}
 					<div
-						class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+						class="grid h-5 w-5 place-items-center rounded-full border-2 border-blue-500 bg-blue-500"
 						aria-label="Completed"
 					>
-						<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+						<svg viewBox="0 0 20 20" class="h-3.5 w-3.5" aria-hidden="true">
 							<path
 								d="M5 10l3 3 7-7"
 								fill="none"
@@ -343,10 +343,10 @@
 					</div>
 				{:else if project.logged_status === 'canceled'}
 					<div
-						class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
+						class="grid h-5 w-5 place-items-center rounded-full border-2 border-blue-500 bg-blue-500"
 						aria-label="Canceled"
 					>
-						<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
+						<svg viewBox="0 0 20 20" class="h-3.5 w-3.5" aria-hidden="true">
 							<path
 								d="M5 5l10 10M15 5l-10 10"
 								fill="none"
@@ -357,9 +357,9 @@
 						</svg>
 					</div>
 				{:else if project.start === 'someday'}
-					<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
+					<div class="h-5 w-5 rounded-full border-2 border-dashed border-gray-400"></div>
 				{:else}
-					<div class="h-4 w-4 border-2 border-gray-400"></div>
+					<div class="h-5 w-5 rounded-full border-2 border-gray-400"></div>
 				{/if}
 			</button>
 
