@@ -548,6 +548,13 @@
 	function isItemTodoOrProject(item: Item | Project): 'project' | 'todo' {
 		return Object.hasOwn(item, 'checklist') ? 'todo' : 'project';
 	}
+
+	function removeBlocker(event: MouseEvent, blockerId: number) {
+		event.preventDefault();
+		event.stopPropagation();
+		selectedBlockers.delete(blockerId);
+		saveBlockers();
+	}
 </script>
 
 <!-- MARK: Head -->
@@ -812,11 +819,12 @@
 							</div>
 							<div class="flex flex-wrap gap-2">
 								{#each Array.from(selectedBlockers) as blockerId (blockerId)}
-									<span
-										class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+									<button
+										class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200 cursor-pointer hover:line-through"
+										onclick={(event: MouseEvent) => removeBlocker(event, blockerId)}
 									>
 										{blockerTitleById[blockerId] || `Item ${blockerId}`}
-									</span>
+									</button>
 								{/each}
 							</div>
 						</div>
