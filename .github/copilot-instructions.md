@@ -62,3 +62,21 @@ As said previously, if tests fail, target only the failing tests when attempting
 ## References
 
 <Reference>See AGENTS.md for detailed, tool-agnostic guidance (MCP tools, Svelte/SvelteKit docs usage, and autofixer rules).</Reference>
+
+## Svelte
+
+Since we are using Svelte, make sure to use Svelte's reactivity features effectively. Svelte provides reactive versions of various built-ins like Map, Set and URL that can be used just like their native counterparts, as well as a handful of additional utilities for handling reactivity.
+
+```
+import {
+	MediaQuery,
+	SvelteDate,
+	SvelteMap,
+	SvelteSet,
+	SvelteURL,
+	SvelteURLSearchParams,
+	createSubscriber
+} from 'svelte/reactivity';
+```
+
+Link: https://svelte.dev/docs/svelte/svelte-reactivity
