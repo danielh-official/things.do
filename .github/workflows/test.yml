@@ -5,6 +5,13 @@ on:
     branches:
       - main
       - master
+    # Skip workflow if only documentation files are changed
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.prettierignore'
+      - '.prettierrc'
 
 permissions:
   contents: read
@@ -22,6 +29,8 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.pull_request.number }}/head
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Fetch full Git history to enable changed file detection
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,10 +49,10 @@ jobs:
         run: pnpm exec playwright install --with-deps
 
       - name: Run unit tests
-        run: pnpm exec vitest --bail=1
+        run: pnpm exec vitest --bail=1 --changed origin/${{ github.base_ref }}
 
       - name: Run e2e tests
-        run: pnpm exec playwright test --max-failures=1
+        run: pnpm exec playwright test --max-failures=1 --only-changed=origin/${{ github.base_ref }}
 
   analyze-failure:
     needs: test
