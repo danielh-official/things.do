@@ -389,9 +389,8 @@
 			await addTagId(existing.id);
 			return;
 		}
-		const nextOrder = allTagOptions.length > 0
-			? Math.max(...allTagOptions.map((t) => t.order ?? 0), 0) + 1
-			: 1;
+		const nextOrder =
+			allTagOptions.length > 0 ? Math.max(...allTagOptions.map((t) => t.order ?? 0), 0) + 1 : 1;
 		const id = await db.tags.add({
 			name,
 			parent_tag_id: null,
