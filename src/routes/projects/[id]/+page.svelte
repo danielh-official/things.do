@@ -115,9 +115,7 @@
 				if (!projectId) return [];
 				const items = await getAllTodosForProject(projectId);
 				return items
-					.filter((todo: Item) => 
-						(!todo.tag_ids || todo.tag_ids.length === 0) && !todo.logged_at
-					)
+					.filter((todo: Item) => (!todo.tag_ids || todo.tag_ids.length === 0) && !todo.logged_at)
 					.sort((a: Item, b: Item) => a.order - b.order);
 			});
 
@@ -125,9 +123,7 @@
 				if (!projectId) return [];
 				const items = await getAllTodosForProject(projectId);
 				return items
-					.filter((todo: Item) => 
-						(!todo.tag_ids || todo.tag_ids.length === 0) && todo.logged_at
-					)
+					.filter((todo: Item) => (!todo.tag_ids || todo.tag_ids.length === 0) && todo.logged_at)
 					.sort((a: Item, b: Item) => b.logged_at!.getTime() - a.logged_at!.getTime());
 			});
 		} else {
@@ -137,8 +133,11 @@
 				if (!projectId) return [];
 				const items = await getAllTodosForProject(projectId);
 				return items
-					.filter((todo: Item) => 
-						todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId)) && !todo.logged_at
+					.filter(
+						(todo: Item) =>
+							todo.tag_ids &&
+							filterIds.every((tagId) => todo.tag_ids.includes(tagId)) &&
+							!todo.logged_at
 					)
 					.sort((a: Item, b: Item) => a.order - b.order);
 			});
@@ -147,8 +146,11 @@
 				if (!projectId) return [];
 				const items = await getAllTodosForProject(projectId);
 				return items
-					.filter((todo: Item) => 
-						todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId)) && todo.logged_at
+					.filter(
+						(todo: Item) =>
+							todo.tag_ids &&
+							filterIds.every((tagId) => todo.tag_ids.includes(tagId)) &&
+							todo.logged_at
 					)
 					.sort((a: Item, b: Item) => b.logged_at!.getTime() - a.logged_at!.getTime());
 			});
@@ -159,7 +161,7 @@
 	let availableTags = $derived.by(() => {
 		if (!$allTodosUnfiltered || !$tags) return [];
 
-		const usedTagIds = new Set<number>();
+		const usedTagIds = new SvelteSet<number>();
 		for (const todo of $allTodosUnfiltered) {
 			if (todo.tag_ids) {
 				for (const tagId of todo.tag_ids) {

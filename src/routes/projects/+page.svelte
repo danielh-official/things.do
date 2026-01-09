@@ -7,6 +7,7 @@
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import DeleteSelected from '$lib/components/Buttons/Project/DeleteSelected.project.button.component.svelte';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let allProjects = liveQuery(() => getProjects());
 	let tags = liveQuery(() => db.tags.toArray());
@@ -17,8 +18,8 @@
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
 		if (!$allProjects || !$tags) return [];
-		
-		const usedTagIds = new Set<number>();
+
+		const usedTagIds = new SvelteSet<number>();
 		for (const project of $allProjects) {
 			if (project.tag_ids) {
 				for (const tagId of project.tag_ids) {
@@ -26,13 +27,15 @@
 				}
 			}
 		}
-		
-		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+
+		return $tags
+			.filter((tag) => usedTagIds.has(tag.id))
+			.sort((a, b) => a.name.localeCompare(b.name));
 	});
 
 	// Filter projects based on selected tags - using $effect to create filtered liveQuery
 	let projects = $state(allProjects);
-	
+
 	$effect(() => {
 		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			projects = allProjects;
@@ -47,8 +50,9 @@
 			const filterIds = [...selectedTagIds];
 			projects = liveQuery(async () => {
 				const items = await getProjects();
-				return items.filter((project: Project) => 
-					project.tag_ids && filterIds.every(tagId => project.tag_ids.includes(tagId))
+				return items.filter(
+					(project: Project) =>
+						project.tag_ids && filterIds.every((tagId) => project.tag_ids.includes(tagId))
 				);
 			});
 		}
