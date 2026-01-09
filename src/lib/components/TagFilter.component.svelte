@@ -39,7 +39,9 @@
 </script>
 
 {#if availableTags.length > 0}
-	<div class="mb-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+	<div
+		class="mb-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+	>
 		<div class="mb-2 flex items-center justify-between">
 			<h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Filter by Tags</h3>
 			{#if selectedTagIds.length > 0 || showNoTagFilter}

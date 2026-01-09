@@ -5,6 +5,7 @@
 	import ProjectList from '$lib/components/List.Project.component.svelte';
 	import { db, type Item, type Project } from '$lib/db';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let allBlockedTodos = liveQuery(() => getBlockedTodos());
 	let allBlockedProjects = liveQuery(() => getBlockedProjects());
@@ -16,8 +17,8 @@
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
 		if (!$allBlockedTodos || !$allBlockedProjects || !$tags) return [];
-		
-		const usedTagIds = new Set<number>();
+
+		const usedTagIds = new SvelteSet<number>();
 		for (const todo of $allBlockedTodos) {
 			if (todo.tag_ids) {
 				for (const tagId of todo.tag_ids) {
@@ -32,14 +33,16 @@
 				}
 			}
 		}
-		
-		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+
+		return $tags
+			.filter((tag) => usedTagIds.has(tag.id))
+			.sort((a, b) => a.name.localeCompare(b.name));
 	});
 
 	// Filter items based on selected tags - using $effect to create filtered liveQuery
 	let blockedTodos = $state(allBlockedTodos);
 	let blockedProjects = $state(allBlockedProjects);
-	
+
 	$effect(() => {
 		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			blockedTodos = allBlockedTodos;
@@ -54,13 +57,13 @@
 			const filterIds = [...selectedTagIds];
 			blockedTodos = liveQuery(async () => {
 				const items = await getBlockedTodos();
-				return items.filter((todo: Item) => 
-					todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId))
+				return items.filter(
+					(todo: Item) => todo.tag_ids && filterIds.every((tagId) => todo.tag_ids.includes(tagId))
 				);
 			});
 		}
 	});
-	
+
 	$effect(() => {
 		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			blockedProjects = allBlockedProjects;
@@ -75,8 +78,9 @@
 			const filterIds = [...selectedTagIds];
 			blockedProjects = liveQuery(async () => {
 				const items = await getBlockedProjects();
-				return items.filter((project: Project) => 
-					project.tag_ids && filterIds.every(tagId => project.tag_ids.includes(tagId))
+				return items.filter(
+					(project: Project) =>
+						project.tag_ids && filterIds.every((tagId) => project.tag_ids.includes(tagId))
 				);
 			});
 		}

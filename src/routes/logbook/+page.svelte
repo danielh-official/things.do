@@ -19,8 +19,8 @@
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
 		if (!$allTodos || !$allProjects || !$tags) return [];
-		
-		const usedTagIds = new Set<number>();
+
+		const usedTagIds = new SvelteSet<number>();
 		for (const todo of $allTodos) {
 			if (todo.tag_ids) {
 				for (const tagId of todo.tag_ids) {
@@ -35,14 +35,16 @@
 				}
 			}
 		}
-		
-		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+
+		return $tags
+			.filter((tag) => usedTagIds.has(tag.id))
+			.sort((a, b) => a.name.localeCompare(b.name));
 	});
 
 	// Filter items based on selected tags - using $effect to create filtered liveQuery
 	let todos = $state(allTodos);
 	let projects = $state(allProjects);
-	
+
 	$effect(() => {
 		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			todos = allTodos;
@@ -57,13 +59,13 @@
 			const filterIds = [...selectedTagIds];
 			todos = liveQuery(async () => {
 				const items = await getLoggedTodos();
-				return items.filter((todo: Item) => 
-					todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId))
+				return items.filter(
+					(todo: Item) => todo.tag_ids && filterIds.every((tagId) => todo.tag_ids.includes(tagId))
 				);
 			});
 		}
 	});
-	
+
 	$effect(() => {
 		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			projects = allProjects;
@@ -78,8 +80,9 @@
 			const filterIds = [...selectedTagIds];
 			projects = liveQuery(async () => {
 				const items = await getLoggedProjects();
-				return items.filter((project: Project) => 
-					project.tag_ids && filterIds.every(tagId => project.tag_ids.includes(tagId))
+				return items.filter(
+					(project: Project) =>
+						project.tag_ids && filterIds.every((tagId) => project.tag_ids.includes(tagId))
 				);
 			});
 		}

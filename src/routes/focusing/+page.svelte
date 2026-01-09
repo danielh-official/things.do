@@ -10,6 +10,7 @@
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import SetAsideForLater from '$lib/components/Buttons/Todo/SetAsideForLater.todo.button.component.svelte';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let allTodos = liveQuery(() => getFocusingTodos());
 	let tags = liveQuery(() => db.tags.toArray());
@@ -20,8 +21,8 @@
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
 		if (!$allTodos || !$tags) return [];
-		
-		const usedTagIds = new Set<number>();
+
+		const usedTagIds = new SvelteSet<number>();
 		for (const todo of $allTodos) {
 			if (todo.tag_ids) {
 				for (const tagId of todo.tag_ids) {
@@ -29,13 +30,15 @@
 				}
 			}
 		}
-		
-		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+
+		return $tags
+			.filter((tag) => usedTagIds.has(tag.id))
+			.sort((a, b) => a.name.localeCompare(b.name));
 	});
 
 	// Filter todos based on selected tags - using $effect to create filtered liveQuery
 	let todos = $state(allTodos);
-	
+
 	$effect(() => {
 		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			todos = allTodos;
@@ -50,8 +53,8 @@
 			const filterIds = [...selectedTagIds];
 			todos = liveQuery(async () => {
 				const items = await getFocusingTodos();
-				return items.filter((todo: Item) => 
-					todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId))
+				return items.filter(
+					(todo: Item) => todo.tag_ids && filterIds.every((tagId) => todo.tag_ids.includes(tagId))
 				);
 			});
 		}
