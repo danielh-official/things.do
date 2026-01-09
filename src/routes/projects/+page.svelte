@@ -8,6 +8,7 @@
 	import DeleteSelected from '$lib/components/Buttons/Project/DeleteSelected.project.button.component.svelte';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
+	import OpenInNewTab from '$lib/components/Buttons/Project/OpenInNewTab.project.button.component.svelte';
 
 	let allProjects = liveQuery(() => getProjects());
 	let tags = liveQuery(() => db.tags.toArray());
@@ -73,6 +74,8 @@
 <List {projects}>
 	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}
 		<ContextMenu show={showMenu} x={menuX} y={menuY}>
+			<OpenInNewTab {highlightedItems} />
+
 			<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
 
 			<ClearSelected {clearHighlightsForAllItems} />
