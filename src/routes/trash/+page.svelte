@@ -15,6 +15,7 @@
 	let tags = liveQuery(() => db.tags.toArray());
 
 	let selectedTagIds = $state<number[]>([]);
+	let showNoTagFilter = $state(false);
 
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
@@ -44,30 +45,42 @@
 	let projects = $state(allProjects);
 	
 	$effect(() => {
-		if (selectedTagIds.length === 0) {
+		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			todos = allTodos;
+		} else if (showNoTagFilter) {
+			// Show only items without tags
+			todos = liveQuery(async () => {
+				const items = await getTrashedTodos();
+				return items.filter((todo: Item) => !todo.tag_ids || todo.tag_ids.length === 0);
+			});
 		} else {
-			// Create a new liveQuery that depends on the current filter
+			// Create a new liveQuery that depends on the current filter (intersection logic)
 			const filterIds = [...selectedTagIds];
 			todos = liveQuery(async () => {
 				const items = await getTrashedTodos();
 				return items.filter((todo: Item) => 
-					todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId))
+					todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId))
 				);
 			});
 		}
 	});
 	
 	$effect(() => {
-		if (selectedTagIds.length === 0) {
+		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			projects = allProjects;
+		} else if (showNoTagFilter) {
+			// Show only items without tags
+			projects = liveQuery(async () => {
+				const items = await getTrashedProjects();
+				return items.filter((project: Project) => !project.tag_ids || project.tag_ids.length === 0);
+			});
 		} else {
-			// Create a new liveQuery that depends on the current filter
+			// Create a new liveQuery that depends on the current filter (intersection logic)
 			const filterIds = [...selectedTagIds];
 			projects = liveQuery(async () => {
 				const items = await getTrashedProjects();
 				return items.filter((project: Project) => 
-					project.tag_ids && filterIds.some(tagId => project.tag_ids.includes(tagId))
+					project.tag_ids && filterIds.every(tagId => project.tag_ids.includes(tagId))
 				);
 			});
 		}
@@ -418,7 +431,7 @@
 	<title>Trash | Things.do</title>
 </svelte:head>
 
-<TagFilter bind:availableTags bind:selectedTagIds />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
 
 {#if mergedItems.length > 0}
 	<button

@@ -15,6 +15,7 @@
 	let tags = liveQuery(() => db.tags.toArray());
 
 	let selectedTagIds = $state<number[]>([]);
+	let showNoTagFilter = $state(false);
 
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
@@ -36,15 +37,21 @@
 	let todos = $state(allTodos);
 	
 	$effect(() => {
-		if (selectedTagIds.length === 0) {
+		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			todos = allTodos;
+		} else if (showNoTagFilter) {
+			// Show only items without tags
+			todos = liveQuery(async () => {
+				const items = await getFocusingTodos();
+				return items.filter((todo: Item) => !todo.tag_ids || todo.tag_ids.length === 0);
+			});
 		} else {
-			// Create a new liveQuery that depends on the current filter
+			// Create a new liveQuery that depends on the current filter (intersection logic)
 			const filterIds = [...selectedTagIds];
 			todos = liveQuery(async () => {
 				const items = await getFocusingTodos();
 				return items.filter((todo: Item) => 
-					todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId))
+					todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId))
 				);
 			});
 		}
@@ -55,7 +62,7 @@
 	<title>Focusing | Things.do</title>
 </svelte:head>
 
-<TagFilter bind:availableTags bind:selectedTagIds />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
 
 <TodoList
 	{todos}
