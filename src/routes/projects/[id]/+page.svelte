@@ -15,9 +15,6 @@
 	import { tick } from 'svelte';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
 
-	// Create a static empty observable for when there are no todos
-	const emptyTodosObservable = liveQuery(async () => []);
-
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
 	let allTodosUnfiltered: Observable<Item[]> | undefined = $state();
@@ -48,6 +45,9 @@
 		later: false
 	});
 
+	let unloggedTodos = $state<Observable<Item[]> | null>(null);
+	let loggedTodos = $state<Observable<Item[]> | null>(null);
+
 	$effect(() => {
 		if (projectId) {
 			db.projects.get(projectId).then((proj) => {
@@ -73,19 +73,45 @@
 					};
 				}
 			});
-
-			allTodosUnfiltered = liveQuery(() =>
-				getAllTodosForProject(projectId ?? -1).then((items) =>
-					items.sort((a, b) => a.order - b.order)
-				)
-			);
 		}
+
+		unloggedTodos = liveQuery(async () => {
+			if (!projectId) return [];
+			let items = await getAllTodosForProject(projectId);
+
+			if (selectedTagIds.length > 0) {
+				items = items
+					.filter((todo) => {
+						return selectedTagIds.every((tagId) => todo.tag_ids?.includes(tagId));
+					})
+					.sort((a, b) => a.order - b.order);
+			}
+
+			return items.sort((a, b) => a.order - b.order).filter((todo) => !todo.logged_at);
+		});
+
+		loggedTodos = liveQuery(async () => {
+			if (!projectId) return [];
+			let items = await getAllTodosForProject(projectId);
+
+			if (selectedTagIds.length > 0) {
+				items = items
+					.filter((todo) => {
+						return selectedTagIds.every((tagId) => todo.tag_ids?.includes(tagId));
+					})
+					.sort((a, b) => a.order - b.order);
+			}
+
+			return items
+				.filter((todo) => todo.logged_at)
+				.sort((a, b) => b.logged_at!.getTime() - a.logged_at!.getTime());
+		});
 	});
 
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
 		if (!$allTodosUnfiltered || !$tags) return [];
-		
+
 		const usedTagIds = new Set<number>();
 		for (const todo of $allTodosUnfiltered) {
 			if (todo.tag_ids) {
@@ -94,43 +120,13 @@
 				}
 			}
 		}
-		
-		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+
+		return $tags
+			.filter((tag) => usedTagIds.has(tag.id))
+			.sort((a, b) => a.name.localeCompare(b.name));
 	});
 
-	// Apply tag filter
-	let allTodos = $derived.by(() => {
-		if (!allTodosUnfiltered) return undefined;
-		
-		if (selectedTagIds.length === 0) {
-			return allTodosUnfiltered;
-		}
-		
-		// Filter the already-loaded data instead of re-querying
-		return liveQuery(async () => {
-			const allItems = await allTodosUnfiltered;
-			if (!allItems) return [];
-			return allItems.filter(todo => 
-				todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId))
-			).sort((a, b) => a.order - b.order);
-		});
-	});
-
-	// Create Observable for unlogged todos
-	let todos = $derived.by(() => {
-		if (!allTodos) return emptyTodosObservable;
-		
-		// Filter to show only unlogged todos
-		return liveQuery(async () => {
-			const allItems = await allTodos;
-			if (!allItems) return [];
-			return allItems.filter((todo) => !todo.logged_at).sort((a, b) => a.order - b.order);
-		});
-	});
-
-	// Get logged todos separately (only those with logged_at set)
-	let loggedTodos = $derived($allTodos?.filter((todo) => todo.logged_at) ?? []);
-	let loggedTodosCount = $derived(loggedTodos.length);
+	let loggedTodosCount = $derived($loggedTodos?.length ?? 0);
 
 	let editingTitle = $state(false);
 
@@ -184,13 +180,13 @@
 			return;
 		}
 
-		if (!$allTodos) {
+		if (!$unloggedTodos) {
 			return;
 		}
 
 		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
 			event.preventDefault();
-			const selectedItems = $allTodos.filter(
+			const selectedItems = $unloggedTodos.filter(
 				(item: Item) => item.id != null && highlightedItems.has(item.id)
 			);
 			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
@@ -860,7 +856,7 @@
 							<div class="flex flex-wrap gap-2">
 								{#each Array.from(selectedBlockers) as blockerId (blockerId)}
 									<button
-										class="rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 dark:bg-blue-900 dark:text-blue-200 cursor-pointer hover:line-through"
+										class="cursor-pointer rounded bg-blue-100 px-2 py-1 text-xs text-blue-800 hover:line-through dark:bg-blue-900 dark:text-blue-200"
 										onclick={(event: MouseEvent) => removeBlocker(event, blockerId)}
 									>
 										{blockerTitleById[blockerId] || `Item ${blockerId}`}
@@ -891,9 +887,9 @@
 
 <TagFilter bind:availableTags bind:selectedTagIds />
 
-{#if $todos && $todos.length > 0}
+{#if unloggedTodos && $unloggedTodos && ($unloggedTodos?.length ?? []) > 0}
 	<Todos
-		{todos}
+		todos={unloggedTodos}
 		{tags}
 		hideParentForTodosInList
 		defaultTodoAdditionParams={{
@@ -968,7 +964,7 @@
 		{#if showLoggedTodos}
 			<div class="mt-4 opacity-60">
 				<ul class="space-y-2">
-					{#each loggedTodos as todo (todo.id)}
+					{#each $loggedTodos as todo (todo.id)}
 						<Todo
 							item={todo}
 							bind:openedItem={loggedTodoOpenedItem}
