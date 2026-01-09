@@ -159,16 +159,17 @@ ComponentName.svelte
 ### Setting Up Locally
 
 1. Install dependencies: `pnpm install`
-2. Run dev server: `pnpm run dev`
-3. Run tests: `pnpm run test` or `pnpm run test:e2e`
-4. Build: `pnpm run build`
+2. Run dev server: `pnpm dev`
+3. Run tests: `pnpm test`
+4. Build: `pnpm build`
 
 ### Before Committing
 
-1. Run Prettier: `pnpm run format`
-2. Run ESLint: `pnpm run lint`
-3. Run relevant tests to ensure no regressions
-4. Verify changes work as expected in the browser
+1. Run Prettier: `pnpm format`
+2. Run ESLint: `pnpm lint`
+3. Run check: `pnpm check`
+4. Run relevant tests to ensure no regressions
+5. Verify changes work as expected in the browser
 
 ### Git Workflow
 
