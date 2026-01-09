@@ -1,3 +1,7 @@
+---
+applyTo: "**"
+---
+
 # Copilot Instructions for Web Todo Application
 
 <Goals>Build web todo app like Things 3; sync todos/projects; local storage + IndexedDB (Dexie).</Goals>
