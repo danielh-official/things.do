@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db } from '$lib/db';
+	import { db, type Item } from '$lib/db';
 	import { getLaterTodos } from '$lib';
 	import { liveQuery } from 'dexie';
 	import TodoList from '$lib/components/List.Todo.component.svelte';
@@ -32,22 +32,22 @@
 		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
 	});
 
-	// Filter todos based on selected tags
-	let todos = $derived.by(() => {
-		if (!$allTodos) return allTodos;
-		
+	// Filter todos based on selected tags - using $effect to create filtered liveQuery
+	let todos = $state(allTodos);
+	
+	$effect(() => {
 		if (selectedTagIds.length === 0) {
-			return allTodos;
+			todos = allTodos;
+		} else {
+			// Create a new liveQuery that depends on the current filter
+			const filterIds = [...selectedTagIds];
+			todos = liveQuery(async () => {
+				const items = await getLaterTodos();
+				return items.filter((todo: Item) => 
+					todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId))
+				);
+			});
 		}
-		
-		// Filter the already-loaded data instead of re-querying
-		return liveQuery(async () => {
-			const allItems = await allTodos;
-			if (!allItems) return [];
-			return allItems.filter(todo => 
-				todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId))
-			);
-		});
 	});
 </script>
 

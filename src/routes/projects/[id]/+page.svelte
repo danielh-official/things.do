@@ -17,7 +17,6 @@
 
 	let projectId = $derived(page.params.id ? parseInt(page.params.id, 10) : null);
 
-	let allTodosUnfiltered: Observable<Item[]> | undefined = $state();
 	let showLoggedTodos = $state(false);
 	let loggedTodoOpenedItem: Item | null = $state(null);
 
@@ -45,6 +44,8 @@
 		later: false
 	});
 
+	// Base query for all todos (unfiltered)
+	let allTodosUnfiltered = $state<Observable<Item[]> | null>(null);
 	let unloggedTodos = $state<Observable<Item[]> | null>(null);
 	let loggedTodos = $state<Observable<Item[]> | null>(null);
 
@@ -73,39 +74,63 @@
 					};
 				}
 			});
+
+			// Set up the base unfiltered query
+			allTodosUnfiltered = liveQuery(async () => {
+				if (!projectId) return [];
+				return await getAllTodosForProject(projectId);
+			});
+		}
+	});
+
+	// Filter todos based on selected tags
+	$effect(() => {
+		if (!allTodosUnfiltered) {
+			unloggedTodos = null;
+			loggedTodos = null;
+			return;
 		}
 
-		unloggedTodos = liveQuery(async () => {
-			if (!projectId) return [];
-			let items = await getAllTodosForProject(projectId);
+		if (selectedTagIds.length === 0) {
+			// No filter - separate logged from unlogged
+			unloggedTodos = liveQuery(async () => {
+				if (!projectId) return [];
+				const items = await getAllTodosForProject(projectId);
+				return items
+					.filter((todo: Item) => !todo.logged_at)
+					.sort((a: Item, b: Item) => a.order - b.order);
+			});
 
-			if (selectedTagIds.length > 0) {
-				items = items
-					.filter((todo) => {
-						return selectedTagIds.every((tagId) => todo.tag_ids?.includes(tagId));
-					})
-					.sort((a, b) => a.order - b.order);
-			}
+			loggedTodos = liveQuery(async () => {
+				if (!projectId) return [];
+				const items = await getAllTodosForProject(projectId);
+				return items
+					.filter((todo: Item) => todo.logged_at)
+					.sort((a: Item, b: Item) => b.logged_at!.getTime() - a.logged_at!.getTime());
+			});
+		} else {
+			// With filter - create new queries with filter applied
+			const filterIds = [...selectedTagIds];
+			unloggedTodos = liveQuery(async () => {
+				if (!projectId) return [];
+				const items = await getAllTodosForProject(projectId);
+				return items
+					.filter((todo: Item) => 
+						todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId)) && !todo.logged_at
+					)
+					.sort((a: Item, b: Item) => a.order - b.order);
+			});
 
-			return items.sort((a, b) => a.order - b.order).filter((todo) => !todo.logged_at);
-		});
-
-		loggedTodos = liveQuery(async () => {
-			if (!projectId) return [];
-			let items = await getAllTodosForProject(projectId);
-
-			if (selectedTagIds.length > 0) {
-				items = items
-					.filter((todo) => {
-						return selectedTagIds.every((tagId) => todo.tag_ids?.includes(tagId));
-					})
-					.sort((a, b) => a.order - b.order);
-			}
-
-			return items
-				.filter((todo) => todo.logged_at)
-				.sort((a, b) => b.logged_at!.getTime() - a.logged_at!.getTime());
-		});
+			loggedTodos = liveQuery(async () => {
+				if (!projectId) return [];
+				const items = await getAllTodosForProject(projectId);
+				return items
+					.filter((todo: Item) => 
+						todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId)) && todo.logged_at
+					)
+					.sort((a: Item, b: Item) => b.logged_at!.getTime() - a.logged_at!.getTime());
+			});
+		}
 	});
 
 	// Collect tags used by current items
