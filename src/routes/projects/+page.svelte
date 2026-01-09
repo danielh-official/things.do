@@ -12,6 +12,7 @@
 	let tags = liveQuery(() => db.tags.toArray());
 
 	let selectedTagIds = $state<number[]>([]);
+	let showNoTagFilter = $state(false);
 
 	// Collect tags used by current items
 	let availableTags = $derived.by(() => {
@@ -33,15 +34,21 @@
 	let projects = $state(allProjects);
 	
 	$effect(() => {
-		if (selectedTagIds.length === 0) {
+		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			projects = allProjects;
+		} else if (showNoTagFilter) {
+			// Show only items without tags
+			projects = liveQuery(async () => {
+				const items = await getProjects();
+				return items.filter((project: Project) => !project.tag_ids || project.tag_ids.length === 0);
+			});
 		} else {
-			// Create a new liveQuery that depends on the current filter
+			// Create a new liveQuery that depends on the current filter (intersection logic)
 			const filterIds = [...selectedTagIds];
 			projects = liveQuery(async () => {
 				const items = await getProjects();
 				return items.filter((project: Project) => 
-					project.tag_ids && filterIds.some(tagId => project.tag_ids.includes(tagId))
+					project.tag_ids && filterIds.every(tagId => project.tag_ids.includes(tagId))
 				);
 			});
 		}
@@ -52,7 +59,7 @@
 	<title>Projects | Things.do</title>
 </svelte:head>
 
-<TagFilter bind:availableTags bind:selectedTagIds />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
 
 <List {projects}>
 	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}

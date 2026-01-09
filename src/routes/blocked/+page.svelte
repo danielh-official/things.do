@@ -3,16 +3,91 @@
 	import { liveQuery } from 'dexie';
 	import TodoList from '$lib/components/List.Todo.component.svelte';
 	import ProjectList from '$lib/components/List.Project.component.svelte';
-	import { db } from '$lib/db';
+	import { db, type Item, type Project } from '$lib/db';
+	import TagFilter from '$lib/components/TagFilter.component.svelte';
 
-	let blockedTodos = liveQuery(() => getBlockedTodos());
-	let blockedProjects = liveQuery(() => getBlockedProjects());
+	let allBlockedTodos = liveQuery(() => getBlockedTodos());
+	let allBlockedProjects = liveQuery(() => getBlockedProjects());
 	let tags = liveQuery(() => db.tags.toArray());
+
+	let selectedTagIds = $state<number[]>([]);
+	let showNoTagFilter = $state(false);
+
+	// Collect tags used by current items
+	let availableTags = $derived.by(() => {
+		if (!$allBlockedTodos || !$allBlockedProjects || !$tags) return [];
+		
+		const usedTagIds = new Set<number>();
+		for (const todo of $allBlockedTodos) {
+			if (todo.tag_ids) {
+				for (const tagId of todo.tag_ids) {
+					usedTagIds.add(tagId);
+				}
+			}
+		}
+		for (const project of $allBlockedProjects) {
+			if (project.tag_ids) {
+				for (const tagId of project.tag_ids) {
+					usedTagIds.add(tagId);
+				}
+			}
+		}
+		
+		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
+	});
+
+	// Filter items based on selected tags - using $effect to create filtered liveQuery
+	let blockedTodos = $state(allBlockedTodos);
+	let blockedProjects = $state(allBlockedProjects);
+	
+	$effect(() => {
+		if (selectedTagIds.length === 0 && !showNoTagFilter) {
+			blockedTodos = allBlockedTodos;
+		} else if (showNoTagFilter) {
+			// Show only items without tags
+			blockedTodos = liveQuery(async () => {
+				const items = await getBlockedTodos();
+				return items.filter((todo: Item) => !todo.tag_ids || todo.tag_ids.length === 0);
+			});
+		} else {
+			// Create a new liveQuery that depends on the current filter (intersection logic)
+			const filterIds = [...selectedTagIds];
+			blockedTodos = liveQuery(async () => {
+				const items = await getBlockedTodos();
+				return items.filter((todo: Item) => 
+					todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId))
+				);
+			});
+		}
+	});
+	
+	$effect(() => {
+		if (selectedTagIds.length === 0 && !showNoTagFilter) {
+			blockedProjects = allBlockedProjects;
+		} else if (showNoTagFilter) {
+			// Show only items without tags
+			blockedProjects = liveQuery(async () => {
+				const items = await getBlockedProjects();
+				return items.filter((project: Project) => !project.tag_ids || project.tag_ids.length === 0);
+			});
+		} else {
+			// Create a new liveQuery that depends on the current filter (intersection logic)
+			const filterIds = [...selectedTagIds];
+			blockedProjects = liveQuery(async () => {
+				const items = await getBlockedProjects();
+				return items.filter((project: Project) => 
+					project.tag_ids && filterIds.every(tagId => project.tag_ids.includes(tagId))
+				);
+			});
+		}
+	});
 </script>
 
 <svelte:head>
 	<title>Blocked | Things.do</title>
 </svelte:head>
+
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
 
 {#if $blockedTodos?.length || $blockedProjects?.length}
 	{#if $blockedProjects?.length}

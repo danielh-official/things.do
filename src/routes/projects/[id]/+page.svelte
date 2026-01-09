@@ -23,6 +23,7 @@
 	let tags = liveQuery(() => db.tags.toArray());
 
 	let selectedTagIds = $state<number[]>([]);
+	let showNoTagFilter = $state(false);
 
 	let project: Omit<Project, 'created_at' | 'updated_at'> = $state({
 		id: 1,
@@ -91,7 +92,7 @@
 			return;
 		}
 
-		if (selectedTagIds.length === 0) {
+		if (selectedTagIds.length === 0 && !showNoTagFilter) {
 			// No filter - separate logged from unlogged
 			unloggedTodos = liveQuery(async () => {
 				if (!projectId) return [];
@@ -108,15 +109,14 @@
 					.filter((todo: Item) => todo.logged_at)
 					.sort((a: Item, b: Item) => b.logged_at!.getTime() - a.logged_at!.getTime());
 			});
-		} else {
-			// With filter - create new queries with filter applied
-			const filterIds = [...selectedTagIds];
+		} else if (showNoTagFilter) {
+			// Show only items without tags
 			unloggedTodos = liveQuery(async () => {
 				if (!projectId) return [];
 				const items = await getAllTodosForProject(projectId);
 				return items
 					.filter((todo: Item) => 
-						todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId)) && !todo.logged_at
+						(!todo.tag_ids || todo.tag_ids.length === 0) && !todo.logged_at
 					)
 					.sort((a: Item, b: Item) => a.order - b.order);
 			});
@@ -126,7 +126,29 @@
 				const items = await getAllTodosForProject(projectId);
 				return items
 					.filter((todo: Item) => 
-						todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId)) && todo.logged_at
+						(!todo.tag_ids || todo.tag_ids.length === 0) && todo.logged_at
+					)
+					.sort((a: Item, b: Item) => b.logged_at!.getTime() - a.logged_at!.getTime());
+			});
+		} else {
+			// With filter - create new queries with filter applied (intersection logic)
+			const filterIds = [...selectedTagIds];
+			unloggedTodos = liveQuery(async () => {
+				if (!projectId) return [];
+				const items = await getAllTodosForProject(projectId);
+				return items
+					.filter((todo: Item) => 
+						todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId)) && !todo.logged_at
+					)
+					.sort((a: Item, b: Item) => a.order - b.order);
+			});
+
+			loggedTodos = liveQuery(async () => {
+				if (!projectId) return [];
+				const items = await getAllTodosForProject(projectId);
+				return items
+					.filter((todo: Item) => 
+						todo.tag_ids && filterIds.every(tagId => todo.tag_ids.includes(tagId)) && todo.logged_at
 					)
 					.sort((a: Item, b: Item) => b.logged_at!.getTime() - a.logged_at!.getTime());
 			});
@@ -910,7 +932,7 @@
 
 <!-- MARK: Project To-Dos -->
 
-<TagFilter bind:availableTags bind:selectedTagIds />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
 
 {#if unloggedTodos && $unloggedTodos && ($unloggedTodos?.length ?? []) > 0}
 	<Todos
