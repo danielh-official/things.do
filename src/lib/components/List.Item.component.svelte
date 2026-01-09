@@ -414,7 +414,7 @@
 					<!-- Render Todo using the Todo component -->
 					<Todo
 						item={item as Item}
-						openedItem={openedItem as Item | null}
+						openedItem={openedItem?.itemType === 'todo' ? (openedItem as Item) : null}
 						{openItem}
 						{highlightItem}
 						handleDragStart={(event: DragEvent) => handleDragStart(event, getItemKey(item))}
