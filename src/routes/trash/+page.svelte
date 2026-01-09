@@ -7,11 +7,10 @@
 	import PermanentlyDeleteSelected from '$lib/components/Buttons/Mixed/PermanentlyDeleteSelected.mixed.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
+	import List from '$lib/components/List.Item.component.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
-	import { TagOutline } from 'flowbite-svelte-icons';
 
 	let allTodos = liveQuery(() => getTrashedTodos());
 	let allProjects = liveQuery(() => getTrashedProjects());
@@ -106,61 +105,6 @@
 	// State for opened item
 	let openedItem = $state<UnifiedItem | null>(null);
 
-	// Tags state
-	let tagNameById: Record<number, string> = $state({});
-
-	$effect(() => {
-		// Load all tag names for items that have tags
-		if (!mergedItems) return;
-
-		(async () => {
-			const allTagIds = new SvelteSet<number>();
-			for (const item of mergedItems) {
-				if (item.tag_ids && item.tag_ids.length > 0) {
-					for (const tagId of item.tag_ids) {
-						allTagIds.add(tagId);
-					}
-				}
-			}
-
-			if (allTagIds.size > 0) {
-				const ids = Array.from(allTagIds);
-				const rows = await db.tags.bulkGet(ids);
-				const mapUpdate: Record<number, string> = {};
-				for (const row of rows) {
-					if (row) mapUpdate[row.id] = row.name;
-				}
-				tagNameById = { ...tagNameById, ...mapUpdate };
-			}
-		})();
-	});
-
-	function openItem(event: MouseEvent) {
-		clearHighlightsForAllItems();
-
-		const button = event.currentTarget as HTMLButtonElement;
-		const itemKey = button.getAttribute('data-key') || '';
-		const [itemType, itemId] = itemKey.split('-');
-
-		if (itemType === 'todo') {
-			const item = mergedItems.find((i) => i.itemType === 'todo' && i.id === parseInt(itemId, 10));
-			openedItem = item || null;
-		} else {
-			const item = mergedItems.find(
-				(i) => i.itemType === 'project' && i.id === parseInt(itemId, 10)
-			);
-			openedItem = item || null;
-		}
-
-		// Update URL with item parameter
-		if (openedItem) {
-			const url = new URL(window.location.href);
-			url.searchParams.set('item', String(openedItem.id));
-			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			goto(url.pathname + url.search, { replaceState: true, noScroll: true });
-		}
-	}
-
 	// State for managing cross-table order
 	let trashOrder = $state<{ id: number; type: 'todo' | 'project'; order: number }[]>([]);
 
@@ -231,8 +175,8 @@
 		}
 	});
 
-	// Merge and sort items based on cross-table order
-	let mergedItems = $derived.by(() => {
+	// Merge and sort items based on cross-table order - convert to Observable for List.Item component
+	let mergedItems = liveQuery(async () => {
 		const todoItems: UnifiedItem[] = ($todos || []).map((t) => ({
 			...t,
 			itemType: 'todo' as const
@@ -258,8 +202,8 @@
 		const itemIdParam = page.url.searchParams.get('item');
 		if (itemIdParam) {
 			const itemId = parseInt(itemIdParam, 10);
-			if (!isNaN(itemId) && mergedItems.length > 0) {
-				const itemToOpen = mergedItems.find((item) => item.id === itemId);
+			if (!isNaN(itemId) && $mergedItems && $mergedItems.length > 0) {
+				const itemToOpen = $mergedItems.find((item) => item.id === itemId);
 				if (itemToOpen) {
 					openedItem = itemToOpen;
 				}
@@ -268,52 +212,6 @@
 	});
 
 	let highlightedItems = new SvelteSet<string>(); // Use 'type-id' as key
-
-	function highlightItem(event: MouseEvent) {
-		const button = event.currentTarget as HTMLButtonElement;
-		const itemKey = button.getAttribute('data-key') || '';
-
-		if (event.shiftKey) {
-			alsoToggleHighlightForAllPreviousItems(itemKey);
-			return;
-		}
-
-		if (highlightedItems.has(itemKey)) {
-			highlightedItems.delete(itemKey);
-			button.classList.remove('highlighted');
-		} else {
-			highlightedItems.add(itemKey);
-			button.classList.add('highlighted');
-		}
-	}
-
-	function alsoToggleHighlightForAllPreviousItems(itemKey: string) {
-		for (const item of mergedItems) {
-			const key = `${item.itemType}-${item.id}`;
-			if (!highlightedItems.has(key)) {
-				highlightedItems.add(key);
-				const button = document.querySelector(`button[data-key='${key}']`) as HTMLButtonElement;
-				if (button) {
-					button.classList.add('highlighted');
-				}
-			}
-
-			if (key === itemKey) {
-				break;
-			}
-		}
-	}
-
-	function clearHighlightsForAllItems() {
-		mergedItems.forEach((item) => {
-			const key = `${item.itemType}-${item.id}`;
-			const button = document.querySelector(`button[data-key='${key}']`) as HTMLButtonElement;
-			if (button) {
-				button.classList.remove('highlighted');
-			}
-		});
-		highlightedItems.clear();
-	}
 
 	// Helper functions for keyboard shortcuts
 	async function permanentlyDeleteHighlightedItems() {
@@ -334,136 +232,13 @@
 				await db.projects.delete(id);
 			}
 		}
-		clearHighlightsForAllItems();
-	}
-
-	let draggingItemKey: string | null = $state(null);
-	let dragInsertIndex: number | null = $state(null);
-
-	function handleDragStart(event: DragEvent, itemKey: string) {
-		draggingItemKey = itemKey;
-		if (event.dataTransfer) {
-			event.dataTransfer.setData('application/x-trash-item', itemKey);
-			event.dataTransfer.effectAllowed = 'move';
-		}
-	}
-
-	function handleDragOver(event: DragEvent, targetItemKey?: string) {
-		if (!event.dataTransfer?.types.includes('application/x-trash-item')) {
-			dragInsertIndex = null;
-			return;
-		}
-
-		event.preventDefault();
-		const el = event.currentTarget as HTMLElement;
-		let targetKey = targetItemKey;
-		if (targetKey == null) {
-			const keyAttr = el.getAttribute('data-key');
-			if (!keyAttr) {
-				dragInsertIndex = null;
-				return;
-			}
-			targetKey = keyAttr;
-		}
-
-		const isGroupMove =
-			draggingItemKey != null && highlightedItems.size > 0 && highlightedItems.has(draggingItemKey);
-		if (isGroupMove && highlightedItems.has(targetKey)) {
-			dragInsertIndex = null;
-			return;
-		}
-
-		const rect = el.getBoundingClientRect();
-		const dropAfter = event.clientY > rect.top + rect.height / 2;
-
-		const idx = mergedItems.findIndex((i) => `${i.itemType}-${i.id}` === targetKey);
-		if (idx === -1) {
-			dragInsertIndex = null;
-			return;
-		}
-
-		dragInsertIndex = idx + (dropAfter ? 1 : 0);
-	}
-
-	async function handleDrop(event: DragEvent, targetItemKey: string) {
-		if (!event.dataTransfer?.types.includes('application/x-trash-item')) {
-			resetDragState();
-			return;
-		}
-
-		event.preventDefault();
-
-		const sourceKey =
-			draggingItemKey ?? (event.dataTransfer?.getData('application/x-trash-item') || '');
-		if (!sourceKey) {
-			resetDragState();
-			return;
-		}
-
-		const isGroupMove = highlightedItems.size > 0 && highlightedItems.has(sourceKey);
-		const groupKeys: string[] = isGroupMove
-			? mergedItems
-					.filter((i) => highlightedItems.has(`${i.itemType}-${i.id}`))
-					.map((i) => `${i.itemType}-${i.id}`)
-			: [sourceKey];
-
-		if (groupKeys.includes(targetItemKey)) {
-			resetDragState();
-			return;
-		}
-
-		const currentOrder = [...trashOrder];
-
-		// Remove items being moved
-		const movedItems: typeof trashOrder = [];
-		for (const key of groupKeys) {
-			const idx = currentOrder.findIndex((item) => `${item.type}-${item.id}` === key);
-			if (idx !== -1) {
-				const [mi] = currentOrder.splice(idx, 1);
-				movedItems.push(mi);
-			}
-		}
-
-		// Determine insertion position
-		const el = event.currentTarget as HTMLElement;
-		const rect = el.getBoundingClientRect();
-		const dropAfter = event.clientY > rect.top + rect.height / 2;
-
-		let insertionIndex = currentOrder.findIndex(
-			(item) => `${item.type}-${item.id}` === targetItemKey
-		);
-		if (insertionIndex === -1) {
-			resetDragState();
-			return;
-		}
-		if (dropAfter) insertionIndex += 1;
-
-		currentOrder.splice(insertionIndex, 0, ...movedItems);
-
-		// Update order values
-		currentOrder.forEach((item, idx) => {
-			item.order = idx;
-		});
-
-		trashOrder = currentOrder;
-		saveTrashOrder();
-
-		resetDragState();
-	}
-
-	function handleDragEnd() {
-		resetDragState();
-	}
-
-	function resetDragState() {
-		draggingItemKey = null;
-		dragInsertIndex = null;
+		// Note: List.Item will clear highlights automatically
 	}
 
 	function processKeydownEvent(event: KeyboardEvent) {
 		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
 			event.preventDefault();
-			const selectedItems = mergedItems.filter((item) =>
+			const selectedItems = ($mergedItems || []).filter((item) =>
 				highlightedItems.has(`${item.itemType}-${item.id}`)
 			);
 			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
@@ -474,7 +249,7 @@
 		}
 
 		if (event.key === 'Escape' && highlightedItems.size > 0) {
-			clearHighlightsForAllItems();
+			// Note: List.Item handles clearing highlights
 			return;
 		}
 
@@ -483,35 +258,9 @@
 			return;
 		}
 	}
-
-	let showMenu = $state(false);
-	let menuX = $state(0);
-	let menuY = $state(0);
-
-	function handleContextMenu(event: MouseEvent) {
-		const path = event.composedPath() as HTMLElement[];
-		const isOverItem = path.some(
-			(el) =>
-				el.classList &&
-				(el.classList.contains('trash-item-button') || el.classList.contains('trash-item'))
-		);
-
-		if (!isOverItem || highlightedItems.size === 0) {
-			return;
-		}
-
-		event.preventDefault();
-
-		showMenu = false;
-
-		menuX = event.clientX;
-		menuY = event.clientY - 150;
-
-		showMenu = true;
-	}
 </script>
 
-<svelte:window onkeydown={processKeydownEvent} oncontextmenu={handleContextMenu} />
+<svelte:window onkeydown={processKeydownEvent} />
 
 <svelte:head>
 	<title>Trash | Things.do</title>
@@ -519,7 +268,7 @@
 
 <TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter {hasItemsWithoutTags} />
 
-{#if mergedItems.length > 0}
+{#if $mergedItems && $mergedItems.length > 0}
 	<button
 		class="mt-4 cursor-pointer rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
 		onclick={() => {
@@ -531,7 +280,7 @@
 				return;
 			}
 
-			mergedItems.forEach(async (item) => {
+			($mergedItems || []).forEach(async (item) => {
 				if (item.itemType === 'todo') {
 					await db.todos.delete(item.id!);
 				} else {
@@ -546,109 +295,13 @@
 	>
 {/if}
 
-<!-- List of Items (Todos and Projects) -->
-{#if mergedItems.length > 0}
-	<ul class="mt-4 space-y-2">
-		{#each mergedItems as item, index (`${item.itemType}-${item.id}`)}
-			<li data-key={`${item.itemType}-${item.id}`} class="trash-item relative">
-				{#if dragInsertIndex === index}
-					<div
-						class="absolute -top-1 right-0 left-0 h-0.5 bg-blue-500 shadow-lg"
-						style="z-index: 50;"
-					></div>
-				{/if}
-				{#if dragInsertIndex === mergedItems.length && index === mergedItems.length - 1}
-					<div
-						class="absolute right-0 -bottom-1 left-0 h-0.5 bg-blue-500 shadow-lg"
-						style="z-index: 50;"
-					></div>
-				{/if}
-
-				<div class="trash-item-wrapper">
-					<button
-						data-key={`${item.itemType}-${item.id}`}
-						class="trash-item-button w-full rounded-md p-3 text-left transition-colors duration-150 hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:hover:bg-gray-800"
-						onclick={highlightItem}
-						ondblclick={openItem}
-						draggable="true"
-						ondragstart={(event: DragEvent) =>
-							handleDragStart(event, `${item.itemType}-${item.id}`)}
-						ondragover={(event: DragEvent) => handleDragOver(event, `${item.itemType}-${item.id}`)}
-						ondrop={(event: DragEvent) => handleDrop(event, `${item.itemType}-${item.id}`)}
-						ondragend={handleDragEnd}
-					>
-						<div class="flex items-center gap-2">
-							{#if item.itemType === 'todo'}
-								<!-- Todo status indicator -->
-								<div class="shrink-0">
-									{#if item.logged_status === 'completed'}
-										<div
-											class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
-											aria-label="Completed"
-										>
-											<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-												<path
-													d="M5 10l3 3 7-7"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												/>
-											</svg>
-										</div>
-									{:else if item.logged_status === 'canceled'}
-										<div
-											class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500"
-											aria-label="Canceled"
-										>
-											<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-												<path
-													d="M5 5l10 10M15 5l-10 10"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-												/>
-											</svg>
-										</div>
-									{:else if item.start === 'someday'}
-										<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
-									{:else}
-										<div class="h-4 w-4 border-2 border-gray-400"></div>
-									{/if}
-								</div>
-							{:else}
-								<!-- Project icon -->
-								<span class="text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-									📁
-								</span>
-							{/if}
-							<div class="font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
-							<!-- MARK: Tags Preview -->
-							{#if item.tag_ids && item.tag_ids.length > 0}
-								{#each item.tag_ids as tagId (tagId)}
-									<span
-										class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
-									>
-										<TagOutline class="inline h-4 w-4" />
-										{tagNameById[tagId] ?? 'Loading...'}
-									</span>
-								{/each}
-							{/if}
-						</div>
-					</button>
-				</div>
-			</li>
-		{/each}
-	</ul>
-{/if}
-
-<!-- Context Menu -->
-<ContextMenu show={showMenu} x={menuX} y={menuY}>
-	<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
-
-	<PermanentlyDeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
-
-	<ClearSelected {clearHighlightsForAllItems} />
-</ContextMenu>
+<!-- List of Items (Todos and Projects) using unified component -->
+<List items={mergedItems} bind:openedItem {highlightedItems}>
+	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, show, x, y)}
+		<ContextMenu {show} {x} {y}>
+			<RestoreSelected {highlightedItems} {clearHighlightsForAllItems} />
+			<PermanentlyDeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
+			<ClearSelected {clearHighlightsForAllItems} />
+		</ContextMenu>
+	{/snippet}
+</List>

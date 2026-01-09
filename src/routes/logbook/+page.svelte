@@ -1,16 +1,15 @@
 <script lang="ts">
-	import { db, type Item, type Project, type LogStatus } from '$lib/db';
+	import { db, type Item, type Project } from '$lib/db';
 	import { getLoggedTodos, getLoggedProjects } from '$lib';
 	import { liveQuery } from 'dexie';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import DeleteSelected from '$lib/components/Buttons/Mixed/DeleteSelected.mixed.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
+	import List from '$lib/components/List.Item.component.svelte';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
-	import { TagOutline } from 'flowbite-svelte-icons';
 
 	let allTodos = liveQuery(() => getLoggedTodos());
 	let allProjects = liveQuery(() => getLoggedProjects());
@@ -105,61 +104,6 @@
 	// State for opened item
 	let openedItem = $state<UnifiedItem | null>(null);
 
-	// Tags state
-	let tagNameById: Record<number, string> = $state({});
-
-	$effect(() => {
-		// Load all tag names for items that have tags
-		if (!mergedItems) return;
-
-		(async () => {
-			const allTagIds = new SvelteSet<number>();
-			for (const item of mergedItems) {
-				if (item.tag_ids && item.tag_ids.length > 0) {
-					for (const tagId of item.tag_ids) {
-						allTagIds.add(tagId);
-					}
-				}
-			}
-
-			if (allTagIds.size > 0) {
-				const ids = Array.from(allTagIds);
-				const rows = await db.tags.bulkGet(ids);
-				const mapUpdate: Record<number, string> = {};
-				for (const row of rows) {
-					if (row) mapUpdate[row.id] = row.name;
-				}
-				tagNameById = { ...tagNameById, ...mapUpdate };
-			}
-		})();
-	});
-
-	function openItem(event: MouseEvent) {
-		clearHighlightsForAllItems();
-
-		const button = event.currentTarget as HTMLButtonElement;
-		const itemKey = button.getAttribute('data-key') || '';
-		const [itemType, itemId] = itemKey.split('-');
-
-		if (itemType === 'todo') {
-			const item = mergedItems.find((i) => i.itemType === 'todo' && i.id === parseInt(itemId, 10));
-			openedItem = item || null;
-		} else {
-			const item = mergedItems.find(
-				(i) => i.itemType === 'project' && i.id === parseInt(itemId, 10)
-			);
-			openedItem = item || null;
-		}
-
-		// Update URL with item parameter
-		if (openedItem) {
-			const url = new URL(window.location.href);
-			url.searchParams.set('item', String(openedItem.id));
-			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			goto(url.pathname + url.search, { replaceState: true, noScroll: true });
-		}
-	}
-
 	// State for managing cross-table order
 	let logbookOrder = $state<{ id: number; type: 'todo' | 'project'; order: number }[]>([]);
 
@@ -230,8 +174,8 @@
 		}
 	});
 
-	// Merge and sort items based on cross-table order
-	let mergedItems = $derived.by(() => {
+	// Merge and sort items based on cross-table order - convert to Observable for List.Item component
+	let mergedItems = liveQuery(async () => {
 		const todoItems: UnifiedItem[] = ($todos || []).map((t) => ({
 			...t,
 			itemType: 'todo' as const
@@ -257,8 +201,8 @@
 		const itemIdParam = page.url.searchParams.get('item');
 		if (itemIdParam) {
 			const itemId = parseInt(itemIdParam, 10);
-			if (!isNaN(itemId) && mergedItems.length > 0) {
-				const itemToOpen = mergedItems.find((item) => item.id === itemId);
+			if (!isNaN(itemId) && $mergedItems && $mergedItems.length > 0) {
+				const itemToOpen = $mergedItems.find((item) => item.id === itemId);
 				if (itemToOpen) {
 					openedItem = itemToOpen;
 				}
@@ -268,49 +212,7 @@
 
 	let highlightedItems = new SvelteSet<string>(); // Use 'type-id' as key
 
-	function highlightItem(event: MouseEvent) {
-		const button = event.currentTarget as HTMLButtonElement;
-		const itemKey = button.getAttribute('data-key') || '';
-
-		if (event.shiftKey) {
-			alsoToggleHighlightForAllPreviousItems(itemKey);
-			return;
-		}
-
-		if (highlightedItems.has(itemKey)) {
-			highlightedItems.delete(itemKey);
-			button.classList.remove('highlighted');
-		} else {
-			highlightedItems.add(itemKey);
-			button.classList.add('highlighted');
-		}
-	}
-
-	function alsoToggleHighlightForAllPreviousItems(itemKey: string) {
-		for (const item of mergedItems) {
-			const key = `${item.itemType}-${item.id}`;
-			if (!highlightedItems.has(key)) {
-				highlightedItems.add(key);
-				const button = document.querySelector(`button[data-key='${key}']`) as HTMLButtonElement;
-				if (button) {
-					button.classList.add('highlighted');
-				}
-			}
-
-			if (key === itemKey) {
-				break;
-			}
-		}
-	}
-
 	function clearHighlightsForAllItems() {
-		mergedItems.forEach((item) => {
-			const key = `${item.itemType}-${item.id}`;
-			const button = document.querySelector(`button[data-key='${key}']`) as HTMLButtonElement;
-			if (button) {
-				button.classList.remove('highlighted');
-			}
-		});
 		highlightedItems.clear();
 	}
 
@@ -331,7 +233,7 @@
 	function processKeydownEvent(event: KeyboardEvent) {
 		if (event.metaKey && (event.key === 'c' || event.key === 'C') && highlightedItems.size > 0) {
 			event.preventDefault();
-			const selectedItems = mergedItems.filter((item) =>
+			const selectedItems = ($mergedItems || []).filter((item) =>
 				highlightedItems.has(`${item.itemType}-${item.id}`)
 			);
 			if (selectedItems.length > 0 && navigator.clipboard?.writeText) {
@@ -389,179 +291,11 @@
 
 <TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter {hasItemsWithoutTags} />
 
-<!-- List of Items (Todos and Projects) -->
-{#if mergedItems.length > 0}
-	<ul class="mt-4 space-y-2">
-		{#each mergedItems as item (`${item.itemType}-${item.id}`)}
-			<li data-key={`${item.itemType}-${item.id}`} class="logbook-item relative">
-				<div class="logbook-item-wrapper">
-					<div
-						class="flex w-full items-center gap-2 rounded-md p-3 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-800"
-					>
-						{#if item.itemType === 'todo'}
-							<!-- Todo status indicator -->
-							<button
-								class="shrink-0 cursor-pointer"
-								data-key={`${item.itemType}-${item.id}`}
-								onclick={(event: { stopPropagation: () => void }) => {
-									event.stopPropagation();
-									// Cycle through statuses
-									const currentStatus = item.logged_status;
-									let newStatus: LogStatus;
-									let newLoggedAt: SvelteDate | null;
+<!-- List of Items (Todos and Projects) using unified component -->
+<List items={mergedItems} bind:openedItem {highlightedItems} />
 
-									if (currentStatus === 'completed') {
-										newStatus = 'canceled';
-										newLoggedAt = new SvelteDate();
-									} else if (currentStatus === 'canceled') {
-										newStatus = null;
-										newLoggedAt = null;
-									} else {
-										newStatus = 'completed';
-										newLoggedAt = new SvelteDate();
-									}
-
-									db.todos.update(item.id!, {
-										logged_status: newStatus,
-										logged_at: newLoggedAt,
-										updated_at: new SvelteDate()
-									});
-								}}
-							>
-								{#if item.logged_status === 'completed'}
-									<div
-										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
-										aria-label="Completed"
-									>
-										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-											<path
-												d="M5 10l3 3 7-7"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-												stroke-linejoin="round"
-											/>
-										</svg>
-									</div>
-								{:else if item.logged_status === 'canceled'}
-									<div
-										class="grid h-4 w-4 place-items-center border-2 border-blue-500 bg-blue-500 text-white"
-										aria-label="Canceled"
-									>
-										<svg viewBox="0 0 20 20" class="h-3 w-3" aria-hidden="true">
-											<path
-												d="M5 5l10 10M15 5l-10 10"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-											/>
-										</svg>
-									</div>
-								{:else if item.start === 'someday'}
-									<div class="h-4 w-4 border-2 border-dashed border-gray-400"></div>
-								{:else}
-									<div class="h-4 w-4 border-2 border-gray-400"></div>
-								{/if}
-							</button>
-						{:else}
-							<!-- Project status indicator with larger circle -->
-							<button
-								class="shrink-0 cursor-pointer"
-								data-key={`${item.itemType}-${item.id}`}
-								onclick={(event: { stopPropagation: () => void }) => {
-									event.stopPropagation();
-									// Cycle through project statuses
-									const currentStatus = item.logged_status;
-									let newStatus: LogStatus;
-									let newLoggedAt: SvelteDate | null;
-
-									if (currentStatus === 'completed') {
-										newStatus = 'canceled';
-										newLoggedAt = new SvelteDate();
-									} else if (currentStatus === 'canceled') {
-										newStatus = null;
-										newLoggedAt = null;
-									} else {
-										newStatus = 'completed';
-										newLoggedAt = new SvelteDate();
-									}
-
-									db.projects.update(item.id!, {
-										logged_status: newStatus,
-										logged_at: newLoggedAt,
-										updated_at: new SvelteDate()
-									});
-								}}
-							>
-								{#if item.logged_status === 'completed'}
-									<div
-										class="grid h-5 w-5 place-items-center rounded-full border-2 border-blue-500 bg-blue-500 text-white"
-										aria-label="Completed"
-									>
-										<svg viewBox="0 0 20 20" class="h-3.5 w-3.5" aria-hidden="true">
-											<path
-												d="M5 10l3 3 7-7"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-												stroke-linejoin="round"
-											/>
-										</svg>
-									</div>
-								{:else if item.logged_status === 'canceled'}
-									<div
-										class="grid h-5 w-5 place-items-center rounded-full border-2 border-blue-500 bg-blue-500 text-white"
-										aria-label="Canceled"
-									>
-										<svg viewBox="0 0 20 20" class="h-3.5 w-3.5" aria-hidden="true">
-											<path
-												d="M5 5l10 10M15 5l-10 10"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-											/>
-										</svg>
-									</div>
-								{:else if item.start === 'someday'}
-									<div class="h-5 w-5 rounded-full border-2 border-dashed border-gray-400"></div>
-								{:else}
-									<div class="h-5 w-5 rounded-full border-2 border-gray-400"></div>
-								{/if}
-							</button>
-						{/if}
-						<button
-							data-key={`${item.itemType}-${item.id}`}
-							class="logbook-item-button flex-1 text-left font-medium text-gray-900 dark:text-gray-100 {item.itemType ===
-							'project'
-								? 'text-base'
-								: ''}"
-							onclick={highlightItem}
-							ondblclick={openItem}
-						>
-							{item.title}
-						</button>
-						<!-- MARK: Tags Preview -->
-						{#if item.tag_ids && item.tag_ids.length > 0}
-							{#each item.tag_ids as tagId (tagId)}
-								<span
-									class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
-								>
-									<TagOutline class="inline h-4 w-4" />
-									{tagNameById[tagId] ?? 'Loading...'}
-								</span>
-							{/each}
-						{/if}
-					</div>
-				</div>
-			</li>
-		{/each}
-	</ul>
-{:else}
-	<p class="text-gray-500">No completed items yet.</p>
+{#if $mergedItems && $mergedItems.length === 0}
+	<p class="mt-4 text-gray-500">No completed items yet.</p>
 {/if}
 
 <!-- Context Menu -->
