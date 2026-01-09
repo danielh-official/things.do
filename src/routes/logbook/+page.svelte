@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { db, type Item, type Project } from '$lib/db';
 	import { getLoggedTodos, getLoggedProjects } from '$lib';
-	import { liveQuery } from 'dexie';
+	import { liveQuery, type Observable } from 'dexie';
 	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import DeleteSelected from '$lib/components/Buttons/Mixed/DeleteSelected.mixed.button.component.svelte';
 	import ContextMenu from '$lib/components/ContextMenu.svelte';
@@ -174,25 +174,31 @@
 		}
 	});
 
-	// Merge and sort items based on cross-table order - convert to Observable for List.Item component
-	let mergedItems = liveQuery(async () => {
-		const todoItems: UnifiedItem[] = ($todos || []).map((t) => ({
-			...t,
-			itemType: 'todo' as const
-		}));
-		const projectItems: UnifiedItem[] = ($projects || []).map((p) => ({
-			...p,
-			itemType: 'project' as const
-		}));
+	// Merge and sort items based on cross-table order
+	let mergedItems: Observable<UnifiedItem[]> = $state(liveQuery(async () => []));
 
-		const allItems = [...todoItems, ...projectItems];
+	$effect(() => {
+		// Create a new liveQuery that merges and sorts based on current state
+		const currentOrder = [...logbookOrder];
+		mergedItems = liveQuery(async () => {
+			const todoItems: UnifiedItem[] = ($todos || []).map((t) => ({
+				...t,
+				itemType: 'todo' as const
+			}));
+			const projectItems: UnifiedItem[] = ($projects || []).map((p) => ({
+				...p,
+				itemType: 'project' as const
+			}));
 
-		// Sort items based on logbookOrder
-		const orderMap = new Map(logbookOrder.map((o) => [`${o.type}-${o.id}`, o.order]));
-		return allItems.sort((a, b) => {
-			const aOrder = orderMap.get(`${a.itemType}-${a.id}`) ?? Infinity;
-			const bOrder = orderMap.get(`${b.itemType}-${b.id}`) ?? Infinity;
-			return aOrder - bOrder;
+			const allItems = [...todoItems, ...projectItems];
+
+			// Sort items based on logbookOrder
+			const orderMap = new Map(currentOrder.map((o) => [`${o.type}-${o.id}`, o.order]));
+			return allItems.sort((a, b) => {
+				const aOrder = orderMap.get(`${a.itemType}-${a.id}`) ?? Infinity;
+				const bOrder = orderMap.get(`${b.itemType}-${b.id}`) ?? Infinity;
+				return aOrder - bOrder;
+			});
 		});
 	});
 
@@ -292,7 +298,7 @@
 <TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter {hasItemsWithoutTags} />
 
 <!-- List of Items (Todos and Projects) using unified component -->
-<List items={mergedItems} bind:openedItem {highlightedItems} />
+<List items={mergedItems} {openedItem} {highlightedItems} />
 
 {#if $mergedItems && $mergedItems.length === 0}
 	<p class="mt-4 text-gray-500">No completed items yet.</p>
