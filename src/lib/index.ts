@@ -1,6 +1,7 @@
 // place files you want to import through the `$lib` alias in this folder.
 
-import { db } from '$lib/db';
+import { db, type Item, type Project } from '$lib/db';
+import { SvelteSet } from 'svelte/reactivity';
 
 export async function getFocusingTodos() {
 	const result = await db.todos.toArray();
@@ -282,4 +283,113 @@ export async function getLoggedProjects() {
 			if (!b.logged_at) return -1;
 			return b.logged_at.getTime() - a.logged_at.getTime();
 		});
+}
+
+/**
+ * Get all descendant tag IDs for a given tag ID (including the tag itself)
+ */
+export async function getTagAndDescendants(tagId: number): Promise<number[]> {
+	const allTags = await db.tags.toArray();
+	const result: number[] = [tagId];
+	const queue: number[] = [tagId];
+
+	while (queue.length > 0) {
+		const currentId = queue.shift()!;
+		const children = allTags.filter((tag) => tag.parent_tag_id === currentId).map((tag) => tag.id);
+		result.push(...children);
+		queue.push(...children);
+	}
+
+	return result;
+}
+
+/**
+ * Check if an item matches the tag filters with hierarchy and inheritance support
+ * An item matches if it has at least one tag from each selected tag's descendant set
+ * For todos, also includes tags inherited from the parent project
+ */
+export async function itemMatchesTagFilters(
+	item: Item | null,
+	selectedTagIds: number[]
+): Promise<boolean> {
+	if (selectedTagIds.length === 0) return true;
+	if (!item) return false;
+
+	let itemTagIds: number[] = [];
+
+	// For todos, get effective tags (own + inherited from project)
+	if ('checklist' in item) {
+		// It's a todo
+		itemTagIds = await getEffectiveTagIds(item);
+	} else {
+		// It's a project
+		itemTagIds = (item as Project).tag_ids || [];
+	}
+
+	if (itemTagIds.length === 0) return false;
+
+	const itemTags = new SvelteSet(itemTagIds);
+
+	// Build expanded tag sets for each filter tag
+	for (const tagId of selectedTagIds) {
+		const descendants = await getTagAndDescendants(tagId);
+		const descendantsSet = new Set(descendants);
+
+		// Item must have at least one tag from this expanded set
+		if (!Array.from(descendantsSet).some((id) => itemTags.has(id))) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Get all items that are blocked by a given item (items it's blocking)
+ */
+export async function getBlockingItems(blockerId: number): Promise<(Item | Project)[]> {
+	const todos = await db.todos.toArray();
+	const projects = await db.projects.toArray();
+
+	const blockedByBlocker: (Item | Project)[] = [];
+
+	for (const todo of todos) {
+		if (todo.blocked_by && todo.blocked_by.includes(blockerId)) {
+			blockedByBlocker.push(todo);
+		}
+	}
+
+	for (const project of projects) {
+		if (project.blocked_by && project.blocked_by.includes(blockerId)) {
+			blockedByBlocker.push(project);
+		}
+	}
+
+	return blockedByBlocker;
+}
+
+/**
+ * Get all tag IDs for a todo, including tags inherited from its parent project
+ */
+export async function getEffectiveTagIds(todo: Item): Promise<number[]> {
+	const effectiveTags = new Set<number>();
+
+	// Add todo's own tags
+	if (todo.tag_ids) {
+		for (const tagId of todo.tag_ids) {
+			effectiveTags.add(tagId);
+		}
+	}
+
+	// Add parent project's tags
+	if (todo.parent_id) {
+		const project = await db.projects.get(todo.parent_id);
+		if (project && project.tag_ids) {
+			for (const tagId of project.tag_ids) {
+				effectiveTags.add(tagId);
+			}
+		}
+	}
+
+	return Array.from(effectiveTags);
 }

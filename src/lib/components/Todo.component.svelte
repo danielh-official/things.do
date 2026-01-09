@@ -2,6 +2,7 @@
 	import { db, type Item, type LogStatus, type Project } from '$lib/db';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { tick } from 'svelte';
+	import { getBlockingItems } from '$lib';
 
 	let {
 		item = $bindable(),
@@ -280,6 +281,25 @@
 	let selectedBlockers: SvelteSet<number> = new SvelteSet();
 	let originalBlockers: number[] = [];
 
+	// Blocking items (inverse relationship)
+	let blockingItems = $state<(Item | Project)[]>([]);
+	let blockingItemsTitleById: Record<number, string> = $state({});
+
+	$effect(() => {
+		// Load items that this item is blocking
+		if (item.id != null) {
+			(async () => {
+				const items = await getBlockingItems(item.id);
+				blockingItems = items;
+				const mapUpdate: Record<number, string> = {};
+				for (const blocking of items) {
+					mapUpdate[blocking.id] = blocking.title;
+				}
+				blockingItemsTitleById = mapUpdate;
+			})();
+		}
+	});
+
 	$effect(() => {
 		// Ensure titles for current item's blockers are loaded
 		const ids = (item.blocked_by ?? []) as number[];
@@ -542,6 +562,23 @@
 			</div>
 		{/if}
 
+		<!-- MARK: Blocking Section -->
+		{#if blockingItems.length > 0}
+			<div class="mt-3">
+				<div class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Blocking:</div>
+				<div class="flex flex-wrap gap-2">
+					{#each blockingItems as blockingItem (blockingItem.id)}
+						<span
+							class="rounded bg-orange-100 px-2 py-1 text-xs text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+						>
+							<LockSolid class="inline h-3 w-3" />
+							{blockingItemsTitleById[blockingItem.id] || `Item ${blockingItem.id}`}
+						</span>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
 		{#if blockerInputOpen}
 			<div class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
 				<div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
@@ -692,8 +729,10 @@
 				{#if item.things_id}
 					<LinkOutline class="inline h-4 w-4 text-gray-400 dark:text-gray-600" />
 				{/if}
-				<!-- MARK: Tags Preview -->
-				{#if item.tag_ids && item.tag_ids.length > 0}
+			</div>
+			<!-- MARK: Tags Preview -->
+			{#if item.tag_ids && item.tag_ids.length > 0}
+				<div class="flex items-center gap-1">
 					{#each item.tag_ids as tagId (tagId)}
 						<span
 							class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
@@ -702,8 +741,8 @@
 							{tagNameById[tagId]}
 						</span>
 					{/each}
-				{/if}
-			</div>
+				</div>
+			{/if}
 			<div>
 				{#if item.deadline}
 					<span class="text-sm text-gray-500">

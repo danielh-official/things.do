@@ -11,7 +11,9 @@ test.describe('Focusing Page', () => {
 	});
 
 	// Core display tests
-	test('should display active todos excluding deleted, later, logged, and blocked items', async ({ page }) => {
+	test('should display active todos excluding deleted, later, logged, and blocked items', async ({
+		page
+	}) => {
 		await page.goto('/focusing');
 		await page.waitForLoadState('networkidle');
 
@@ -108,7 +110,9 @@ test.describe('Focusing Page', () => {
 			await page.waitForTimeout(300);
 
 			// Verify filter is active
-			const activeNoTagFilter = page.locator('[data-testid="tag-filter-no-tag"][aria-pressed="true"]');
+			const activeNoTagFilter = page.locator(
+				'[data-testid="tag-filter-no-tag"][aria-pressed="true"]'
+			);
 			await expect(activeNoTagFilter).toBeVisible();
 		}
 	});
@@ -152,9 +156,7 @@ test.describe('Focusing Page', () => {
 		await page.waitForTimeout(500);
 
 		// Right-click to open context menu
-		const todoItem = page
-			.getByTestId('todo-item-button')
-			.filter({ hasText: 'Todo to Move Later' });
+		const todoItem = page.getByTestId('todo-item-button').filter({ hasText: 'Todo to Move Later' });
 		await todoItem.click({ button: 'right' });
 		await page.waitForTimeout(300);
 
@@ -180,9 +182,7 @@ test.describe('Focusing Page', () => {
 		await page.waitForTimeout(500);
 
 		// Right-click to open context menu
-		const todoItem = page
-			.getByTestId('todo-item-button')
-			.filter({ hasText: 'Todo to Delete' });
+		const todoItem = page.getByTestId('todo-item-button').filter({ hasText: 'Todo to Delete' });
 		await todoItem.click({ button: 'right' });
 		await page.waitForTimeout(300);
 
@@ -208,9 +208,7 @@ test.describe('Focusing Page', () => {
 		await page.waitForTimeout(500);
 
 		// Right-click to open context menu
-		const todoItem = page
-			.getByTestId('todo-item-button')
-			.filter({ hasText: 'Todo to Sync' });
+		const todoItem = page.getByTestId('todo-item-button').filter({ hasText: 'Todo to Sync' });
 		await todoItem.click({ button: 'right' });
 		await page.waitForTimeout(300);
 
@@ -251,9 +249,7 @@ test.describe('Focusing Page', () => {
 		await page.waitForTimeout(500);
 
 		// Click to select
-		const todoItem = page
-			.getByTestId('todo-item-button')
-			.filter({ hasText: 'Todo to Select' });
+		const todoItem = page.getByTestId('todo-item-button').filter({ hasText: 'Todo to Select' });
 		await todoItem.click();
 		await page.waitForTimeout(300);
 
@@ -281,7 +277,12 @@ test.describe('Focusing Page', () => {
 
 		// Click a tag filter
 		const tagFilterButtons = page.getByTestId('tag-filter-button');
-		if (await tagFilterButtons.first().isVisible().catch(() => false)) {
+		if (
+			await tagFilterButtons
+				.first()
+				.isVisible()
+				.catch(() => false)
+		) {
 			await tagFilterButtons.first().click();
 			await page.waitForTimeout(300);
 
@@ -327,9 +328,7 @@ test.describe('Focusing Page', () => {
 		await page.waitForTimeout(500);
 
 		// Verify todo is in the list
-		const todoItem = page
-			.getByTestId('todo-item-button')
-			.filter({ hasText: 'Blockable Todo' });
+		const todoItem = page.getByTestId('todo-item-button').filter({ hasText: 'Blockable Todo' });
 		await expect(todoItem).toBeVisible();
 
 		// Note: Blocking functionality would require additional UI interactions

@@ -8,6 +8,9 @@
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
 	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { TagOutline } from 'flowbite-svelte-icons';
 
 	let allTodos = liveQuery(() => getLoggedTodos());
 	let allProjects = liveQuery(() => getLoggedProjects());
@@ -16,7 +19,7 @@
 	let selectedTagIds = $state<number[]>([]);
 	let showNoTagFilter = $state(false);
 
-	// Collect tags used by current items
+	// Collect tags used by current items and check if there are items without tags
 	let availableTags = $derived.by(() => {
 		if (!$allTodos || !$allProjects || !$tags) return [];
 
@@ -39,6 +42,14 @@
 		return $tags
 			.filter((tag) => usedTagIds.has(tag.id))
 			.sort((a, b) => a.name.localeCompare(b.name));
+	});
+
+	let hasItemsWithoutTags = $derived.by(() => {
+		if (!$allTodos || !$allProjects) return false;
+		return (
+			$allTodos.some((todo) => !todo.tag_ids || todo.tag_ids.length === 0) ||
+			$allProjects.some((project) => !project.tag_ids || project.tag_ids.length === 0)
+		);
 	});
 
 	// Filter items based on selected tags - using $effect to create filtered liveQuery
@@ -90,6 +101,64 @@
 
 	// Type for unified items with their source table
 	type UnifiedItem = (Item | Project) & { itemType: 'todo' | 'project' };
+
+	// State for opened item
+	let openedItem = $state<UnifiedItem | null>(null);
+
+	// Tags state
+	let tagNameById: Record<number, string> = $state({});
+
+	$effect(() => {
+		// Load all tag names for items that have tags
+		if (!mergedItems) return;
+
+		(async () => {
+			const allTagIds = new SvelteSet<number>();
+			for (const item of mergedItems) {
+				if (item.tag_ids && item.tag_ids.length > 0) {
+					for (const tagId of item.tag_ids) {
+						allTagIds.add(tagId);
+					}
+				}
+			}
+
+			if (allTagIds.size > 0) {
+				const ids = Array.from(allTagIds);
+				const rows = await db.tags.bulkGet(ids);
+				const mapUpdate: Record<number, string> = {};
+				for (const row of rows) {
+					if (row) mapUpdate[row.id] = row.name;
+				}
+				tagNameById = { ...tagNameById, ...mapUpdate };
+			}
+		})();
+	});
+
+	function openItem(event: MouseEvent) {
+		clearHighlightsForAllItems();
+
+		const button = event.currentTarget as HTMLButtonElement;
+		const itemKey = button.getAttribute('data-key') || '';
+		const [itemType, itemId] = itemKey.split('-');
+
+		if (itemType === 'todo') {
+			const item = mergedItems.find((i) => i.itemType === 'todo' && i.id === parseInt(itemId, 10));
+			openedItem = item || null;
+		} else {
+			const item = mergedItems.find(
+				(i) => i.itemType === 'project' && i.id === parseInt(itemId, 10)
+			);
+			openedItem = item || null;
+		}
+
+		// Update URL with item parameter
+		if (openedItem) {
+			const url = new URL(window.location.href);
+			url.searchParams.set('item', String(openedItem.id));
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+		}
+	}
 
 	// State for managing cross-table order
 	let logbookOrder = $state<{ id: number; type: 'todo' | 'project'; order: number }[]>([]);
@@ -181,6 +250,20 @@
 			const bOrder = orderMap.get(`${b.itemType}-${b.id}`) ?? Infinity;
 			return aOrder - bOrder;
 		});
+	});
+
+	$effect(() => {
+		// Check if URL has an item parameter and open that item
+		const itemIdParam = page.url.searchParams.get('item');
+		if (itemIdParam) {
+			const itemId = parseInt(itemIdParam, 10);
+			if (!isNaN(itemId) && mergedItems.length > 0) {
+				const itemToOpen = mergedItems.find((item) => item.id === itemId);
+				if (itemToOpen) {
+					openedItem = itemToOpen;
+				}
+			}
+		}
 	});
 
 	let highlightedItems = new SvelteSet<string>(); // Use 'type-id' as key
@@ -304,7 +387,7 @@
 
 <h1 class="mb-4 text-2xl font-bold">Logbook</h1>
 
-<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter {hasItemsWithoutTags} />
 
 <!-- List of Items (Todos and Projects) -->
 {#if mergedItems.length > 0}
@@ -457,9 +540,21 @@
 								? 'text-base'
 								: ''}"
 							onclick={highlightItem}
+							ondblclick={openItem}
 						>
 							{item.title}
 						</button>
+						<!-- MARK: Tags Preview -->
+						{#if item.tag_ids && item.tag_ids.length > 0}
+							{#each item.tag_ids as tagId (tagId)}
+								<span
+									class="m-1 inline-block rounded-2xl border px-[.35rem] py-[.15rem] text-[11px] text-gray-400"
+								>
+									<TagOutline class="inline h-4 w-4" />
+									{tagNameById[tagId] ?? 'Loading...'}
+								</span>
+							{/each}
+						{/if}
 					</div>
 				</div>
 			</li>

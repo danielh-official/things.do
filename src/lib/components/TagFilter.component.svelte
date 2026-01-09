@@ -5,11 +5,13 @@
 		availableTags = $bindable(),
 		selectedTagIds = $bindable(),
 		showNoTagFilter = $bindable(),
+		hasItemsWithoutTags = false,
 		onFilterChange
 	}: {
 		availableTags: Tag[];
 		selectedTagIds: number[];
 		showNoTagFilter: boolean;
+		hasItemsWithoutTags?: boolean;
 		onFilterChange?: (selectedIds: number[], noTag: boolean) => void;
 	} = $props();
 
@@ -55,16 +57,18 @@
 		</div>
 		<div class="flex flex-wrap gap-2">
 			<!-- No Tag button -->
-			<button
-				onclick={toggleNoTag}
-				class={`rounded-full px-3 py-1 text-sm transition-colors ${
-					showNoTagFilter
-						? 'bg-blue-500 text-white hover:bg-blue-600'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-				}`}
-			>
-				No Tag
-			</button>
+			{#if hasItemsWithoutTags}
+				<button
+					onclick={toggleNoTag}
+					class={`rounded-full px-3 py-1 text-sm transition-colors ${
+						showNoTagFilter
+							? 'bg-blue-500 text-white hover:bg-blue-600'
+							: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+					}`}
+				>
+					No Tag
+				</button>
+			{/if}
 			{#each availableTags as tag (tag.id)}
 				<button
 					onclick={() => toggleTag(tag.id)}

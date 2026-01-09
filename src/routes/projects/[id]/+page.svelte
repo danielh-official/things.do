@@ -157,7 +157,7 @@
 		}
 	});
 
-	// Collect tags used by current items
+	// Collect tags used by current items and check if there are items without tags (including logged)
 	let availableTags = $derived.by(() => {
 		if (!$allTodosUnfiltered || !$tags) return [];
 
@@ -173,6 +173,11 @@
 		return $tags
 			.filter((tag) => usedTagIds.has(tag.id))
 			.sort((a, b) => a.name.localeCompare(b.name));
+	});
+
+	let hasItemsWithoutTags = $derived.by(() => {
+		if (!$allTodosUnfiltered) return false;
+		return $allTodosUnfiltered.some((todo) => !todo.tag_ids || todo.tag_ids.length === 0);
 	});
 
 	let loggedTodosCount = $derived($loggedTodos?.length ?? 0);
@@ -934,7 +939,7 @@
 
 <!-- MARK: Project To-Dos -->
 
-<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter {hasItemsWithoutTags} />
 
 {#if unloggedTodos && $unloggedTodos && ($unloggedTodos?.length ?? []) > 0}
 	<Todos

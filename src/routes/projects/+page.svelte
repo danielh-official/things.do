@@ -15,7 +15,7 @@
 	let selectedTagIds = $state<number[]>([]);
 	let showNoTagFilter = $state(false);
 
-	// Collect tags used by current items
+	// Collect tags used by current items and check if there are items without tags
 	let availableTags = $derived.by(() => {
 		if (!$allProjects || !$tags) return [];
 
@@ -31,6 +31,11 @@
 		return $tags
 			.filter((tag) => usedTagIds.has(tag.id))
 			.sort((a, b) => a.name.localeCompare(b.name));
+	});
+
+	let hasItemsWithoutTags = $derived.by(() => {
+		if (!$allProjects) return false;
+		return $allProjects.some((project) => !project.tag_ids || project.tag_ids.length === 0);
 	});
 
 	// Filter projects based on selected tags - using $effect to create filtered liveQuery
@@ -63,7 +68,7 @@
 	<title>Projects | Things.do</title>
 </svelte:head>
 
-<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter {hasItemsWithoutTags} />
 
 <List {projects}>
 	{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, showMenu, menuX, menuY)}

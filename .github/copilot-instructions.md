@@ -1,5 +1,5 @@
 ---
-applyTo: "**"
+applyTo: '**'
 ---
 
 # Copilot Instructions for Web Todo Application
@@ -9,6 +9,7 @@ applyTo: "**"
 ## Quick Reference
 
 **Essential Rules:**
+
 - Use `$state` for reactivity; avoid `$:` reactive statements
 - Use `onclick` instead of `on:click` for event listeners
 - Prefer Tailwind CSS; use custom CSS only when necessary
@@ -41,6 +42,7 @@ When making components, don't go out of your way to abstract early. Feel free to
 ### Naming Conventions
 
 **Files:**
+
 - Component files: `ComponentName.svelte` or `ComponentName.component.svelte` (PascalCase)
 - Button components: `ComponentName.button.component.svelte`
 - Utility/library files: `camelCase.ts` or `camelCase.js`
@@ -48,18 +50,21 @@ When making components, don't go out of your way to abstract early. Feel free to
 - Test files: `file.spec.ts` or `file.test.ts`
 
 **Variables & Functions:**
+
 - Use `camelCase` for variables and functions
 - Use `SCREAMING_SNAKE_CASE` for constants
 - Prefix boolean variables with `is`, `has`, `can`, `should` (e.g., `isVisible`, `hasError`)
 - Use descriptive names; avoid single-letter variables except in loops
 
 **Database (Dexie):**
+
 - Table names: `camelCase` (e.g., `todos`, `projects`, `tags`)
 - Primary keys: `id` (auto-incrementing)
 - Foreign keys: `parentId`, `projectId` (descriptive + Id suffix)
 - Timestamps: `createdAt`, `updatedAt`, `completedAt`
 
 **CSS Classes & IDs:**
+
 - Use kebab-case for CSS classes (e.g., `todo-item`, `project-header`)
 - Avoid inline styles; use Tailwind utilities or component-scoped styles
 - For custom CSS, use BEM methodology when appropriate

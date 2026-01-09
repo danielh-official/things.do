@@ -5,6 +5,9 @@
 	import ProjectList from '$lib/components/List.Project.component.svelte';
 	import { db, type Item, type Project } from '$lib/db';
 	import TagFilter from '$lib/components/TagFilter.component.svelte';
+	import ContextMenu from '$lib/components/ContextMenu.svelte';
+	import DeleteSelected from '$lib/components/Buttons/Project/DeleteSelected.project.button.component.svelte';
+	import ClearSelected from '$lib/components/Buttons/ClearSelected.button.component.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let allBlockedTodos = liveQuery(() => getBlockedTodos());
@@ -14,7 +17,7 @@
 	let selectedTagIds = $state<number[]>([]);
 	let showNoTagFilter = $state(false);
 
-	// Collect tags used by current items
+	// Collect tags used by current items and check if there are items without tags
 	let availableTags = $derived.by(() => {
 		if (!$allBlockedTodos || !$allBlockedProjects || !$tags) return [];
 
@@ -37,6 +40,14 @@
 		return $tags
 			.filter((tag) => usedTagIds.has(tag.id))
 			.sort((a, b) => a.name.localeCompare(b.name));
+	});
+
+	let hasItemsWithoutTags = $derived.by(() => {
+		if (!$allBlockedTodos || !$allBlockedProjects) return false;
+		return (
+			$allBlockedTodos.some((todo) => !todo.tag_ids || todo.tag_ids.length === 0) ||
+			$allBlockedProjects.some((project) => !project.tag_ids || project.tag_ids.length === 0)
+		);
 	});
 
 	// Filter items based on selected tags - using $effect to create filtered liveQuery
@@ -91,7 +102,7 @@
 	<title>Blocked | Things.do</title>
 </svelte:head>
 
-<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter />
+<TagFilter bind:availableTags bind:selectedTagIds bind:showNoTagFilter {hasItemsWithoutTags} />
 
 {#if $blockedTodos?.length || $blockedProjects?.length}
 	{#if $blockedProjects?.length}
@@ -99,7 +110,15 @@
 			<h2 class="mb-2 px-4 text-lg font-semibold text-gray-800 dark:text-gray-200">
 				Blocked Projects ({$blockedProjects.length})
 			</h2>
-			<ProjectList projects={blockedProjects} />
+			<ProjectList projects={blockedProjects}>
+				{#snippet contextMenu(highlightedItems, clearHighlightsForAllItems, show, x, y)}
+					<ContextMenu {show} {x} {y}>
+						<DeleteSelected {highlightedItems} {clearHighlightsForAllItems} />
+
+						<ClearSelected {clearHighlightsForAllItems} />
+					</ContextMenu>
+				{/snippet}
+			</ProjectList>
 		</div>
 	{/if}
 
