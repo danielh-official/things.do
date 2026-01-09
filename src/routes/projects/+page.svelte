@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db } from '$lib/db';
+	import { db, type Project } from '$lib/db';
 	import { getProjects } from '$lib';
 	import { liveQuery } from 'dexie';
 	import List from '$lib/components/List.Project.component.svelte';
@@ -29,22 +29,22 @@
 		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
 	});
 
-	// Filter projects based on selected tags
-	let projects = $derived.by(() => {
-		if (!$allProjects) return allProjects;
-		
+	// Filter projects based on selected tags - using $effect to create filtered liveQuery
+	let projects = $state(allProjects);
+	
+	$effect(() => {
 		if (selectedTagIds.length === 0) {
-			return allProjects;
+			projects = allProjects;
+		} else {
+			// Create a new liveQuery that depends on the current filter
+			const filterIds = [...selectedTagIds];
+			projects = liveQuery(async () => {
+				const items = await getProjects();
+				return items.filter((project: Project) => 
+					project.tag_ids && filterIds.some(tagId => project.tag_ids.includes(tagId))
+				);
+			});
 		}
-		
-		// Filter the already-loaded data instead of re-querying
-		return liveQuery(async () => {
-			const allItems = await allProjects;
-			if (!allItems) return [];
-			return allItems.filter(project => 
-				project.tag_ids && selectedTagIds.some(tagId => project.tag_ids.includes(tagId))
-			);
-		});
 	});
 </script>
 

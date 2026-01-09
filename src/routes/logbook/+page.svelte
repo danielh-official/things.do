@@ -38,39 +38,38 @@
 		return $tags.filter(tag => usedTagIds.has(tag.id)).sort((a, b) => a.name.localeCompare(b.name));
 	});
 
-	// Filter items based on selected tags
-	let todos = $derived.by(() => {
-		if (!$allTodos) return allTodos;
-		
+	// Filter items based on selected tags - using $effect to create filtered liveQuery
+	let todos = $state(allTodos);
+	let projects = $state(allProjects);
+	
+	$effect(() => {
 		if (selectedTagIds.length === 0) {
-			return allTodos;
+			todos = allTodos;
+		} else {
+			// Create a new liveQuery that depends on the current filter
+			const filterIds = [...selectedTagIds];
+			todos = liveQuery(async () => {
+				const items = await getLoggedTodos();
+				return items.filter((todo: Item) => 
+					todo.tag_ids && filterIds.some(tagId => todo.tag_ids.includes(tagId))
+				);
+			});
 		}
-		
-		// Filter the already-loaded data instead of re-querying
-		return liveQuery(async () => {
-			const allItems = await allTodos;
-			if (!allItems) return [];
-			return allItems.filter(todo => 
-				todo.tag_ids && selectedTagIds.some(tagId => todo.tag_ids.includes(tagId))
-			);
-		});
 	});
-
-	let projects = $derived.by(() => {
-		if (!$allProjects) return allProjects;
-		
+	
+	$effect(() => {
 		if (selectedTagIds.length === 0) {
-			return allProjects;
+			projects = allProjects;
+		} else {
+			// Create a new liveQuery that depends on the current filter
+			const filterIds = [...selectedTagIds];
+			projects = liveQuery(async () => {
+				const items = await getLoggedProjects();
+				return items.filter((project: Project) => 
+					project.tag_ids && filterIds.some(tagId => project.tag_ids.includes(tagId))
+				);
+			});
 		}
-		
-		// Filter the already-loaded data instead of re-querying
-		return liveQuery(async () => {
-			const allItems = await allProjects;
-			if (!allItems) return [];
-			return allItems.filter(project => 
-				project.tag_ids && selectedTagIds.some(tagId => project.tag_ids.includes(tagId))
-			);
-		});
 	});
 
 	// Type for unified items with their source table
